@@ -26,11 +26,31 @@ export const getAvailableBrowsers = async (authHeader: HeadersInit): Promise<any
 export const generateScreenshots = async (settings: any, authHeader: HeadersInit): Promise<any> => {
   console.log('Generating screenshots with settings:', JSON.stringify(settings, null, 2));
 
-  // Transform browser_version: 'latest' to 'Latest' as expected by BrowserStack API
-  const browsers = settings.browsers.map((browser: any) => ({
-    ...browser,
-    browser_version: browser.browser_version?.toLowerCase() === 'latest' ? 'Latest' : browser.browser_version
-  }));
+  // Transform browser configurations for BrowserStack API
+  const browsers = settings.browsers.map((browser: any) => {
+    const transformed = { ...browser };
+    
+    // Handle browser version
+    if (browser.browser_version) {
+      if (browser.browser_version.toLowerCase() === 'latest') {
+        transformed.browser_version = null; // BrowserStack uses null for latest version
+      } else {
+        transformed.browser_version = browser.browser_version;
+      }
+    }
+
+    console.log('Transformed browser config:', JSON.stringify(transformed, null, 2));
+    return transformed;
+  });
+
+  const requestBody = {
+    ...settings,
+    browsers,
+    quality: 'compressed',
+    wait_time: 5,
+  };
+
+  console.log('Sending request to BrowserStack:', JSON.stringify(requestBody, null, 2));
 
   const response = await fetch('https://www.browserstack.com/screenshots', {
     method: 'POST',
@@ -38,10 +58,7 @@ export const generateScreenshots = async (settings: any, authHeader: HeadersInit
       ...authHeader,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      ...settings,
-      browsers
-    })
+    body: JSON.stringify(requestBody)
   });
 
   if (!response.ok) {

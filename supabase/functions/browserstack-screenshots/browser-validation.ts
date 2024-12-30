@@ -42,18 +42,17 @@ export const validateBrowserConfig = (config: any, availableBrowsers: any[]): bo
     return false;
   }
 
-  // Handle 'latest' version specially
+  // Always accept 'latest' as a valid version
   if (!normalizedConfig.browser_version || 
       normalizedConfig.browser_version === 'latest') {
-    console.log(`Using latest version for ${normalizedConfig.browser}`);
-    return true; // Accept 'latest' as valid
+    console.log(`Accepting latest version for ${normalizedConfig.browser}`);
+    return true;
   }
 
-  const hasVersion = browserMatches.some(b => {
-    const availableVersion = b.browser_version?.toLowerCase();
-    return availableVersion === normalizedConfig.browser_version ||
-           availableVersion?.startsWith(normalizedConfig.browser_version!);
-  });
+  // For specific versions, check if they exist
+  const hasVersion = browserMatches.some(b => 
+    b.browser_version === normalizedConfig.browser_version
+  );
 
   console.log(`Version validation result for ${normalizedConfig.browser_version}:`, hasVersion);
   return hasVersion;
