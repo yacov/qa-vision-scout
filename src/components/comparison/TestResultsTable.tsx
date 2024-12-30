@@ -8,11 +8,11 @@ import { Badge } from "@/components/ui/badge";
 const getStatusBadgeVariant = (status: string) => {
   switch (status) {
     case 'completed':
-      return 'success';
+      return 'default';
     case 'failed':
       return 'destructive';
     case 'in_progress':
-      return 'warning';
+      return 'secondary';
     default:
       return 'secondary';
   }
