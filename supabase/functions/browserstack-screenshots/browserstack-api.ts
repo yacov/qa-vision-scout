@@ -31,9 +31,16 @@ function validateIOSDevice(device: string, version: string): void {
       `Invalid iOS device: ${device}. Valid devices are: ${Object.keys(SUPPORTED_IOS_DEVICES).join(', ')}`
     );
   }
-  if (version !== supportedVersion) {
+  if (!SUPPORTED_IOS_VERSIONS.includes(version as iOSVersion)) {
     throw new Error(
-      `Invalid iOS version for ${device}. Expected version: ${supportedVersion}, got: ${version}`
+      `Invalid iOS version: ${version}. Valid versions are: ${SUPPORTED_IOS_VERSIONS.join(', ')}`
+    );
+  }
+  const minVersion = parseInt(supportedVersion);
+  const requestedVersion = parseInt(version);
+  if (requestedVersion > minVersion) {
+    throw new Error(
+      `Invalid iOS version for ${device}. Maximum supported version: ${supportedVersion}, got: ${version}`
     );
   }
 }
@@ -335,6 +342,7 @@ export const generateScreenshots = async (settings: ScreenshotSettings, authHead
         // Validate iOS device and version if the OS is iOS
         if (config.os === 'ios') {
           validateIOSDevice(browser.device, browser.os_version);
+          config.os_version = browser.os_version.toString();
         }
         config.device = browser.device;
       } else {
