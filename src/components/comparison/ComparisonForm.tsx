@@ -30,6 +30,14 @@ export const ComparisonForm = ({
     setNewUrl(initialNewUrl);
   }, [initialBaselineUrl, initialNewUrl]);
 
+  const toggleConfig = (configId: string) => {
+    setSelectedConfigs(prev => 
+      prev.includes(configId) 
+        ? prev.filter(id => id !== configId)
+        : [...prev, configId]
+    );
+  };
+
   const createTest = useMutation({
     mutationFn: async () => {
       const { data: test, error: testError } = await supabase
