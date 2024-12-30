@@ -15,21 +15,39 @@ serve(async (req) => {
   try {
     const { testId, baselineUrl, newUrl } = await req.json()
 
+    console.log('Creating screenshots for test:', testId)
+    console.log('Baseline URL:', baselineUrl)
+    console.log('New URL:', newUrl)
+
     // Create BrowserStack client
     const client = BrowserStack.createScreenshotClient({
       username: Deno.env.get('BROWSERSTACK_USERNAME'),
       password: Deno.env.get('BROWSERSTACK_ACCESS_KEY'),
     })
 
-    // Configure screenshot settings
+    // Configure screenshot settings with specific browser versions
     const commonSettings = {
       quality: 'compressed',
       wait_time: 5,
       local: false,
       browsers: [
-        { os: 'Windows', os_version: '11', browser: 'chrome', browser_version: 'latest' },
-        { os: 'OS X', os_version: 'Sonoma', browser: 'safari', browser_version: 'latest' },
-        { device: 'iPhone 14', os_version: '16', real_mobile: true },
+        { 
+          os: 'Windows', 
+          os_version: '11', 
+          browser: 'chrome', 
+          browser_version: '121.0' 
+        },
+        { 
+          os: 'OS X', 
+          os_version: 'Sonoma', 
+          browser: 'safari', 
+          browser_version: '17.0' 
+        },
+        { 
+          device: 'iPhone 14',
+          os_version: '16',
+          real_mobile: true
+        }
       ],
     }
 
@@ -39,8 +57,13 @@ serve(async (req) => {
         ...commonSettings,
         url: baselineUrl,
       }, (error, job) => {
-        if (error) reject(error)
-        else resolve(job)
+        if (error) {
+          console.error('Error generating baseline screenshots:', error)
+          reject(error)
+        } else {
+          console.log('Baseline screenshots job created:', job)
+          resolve(job)
+        }
       })
     })
 
@@ -50,8 +73,13 @@ serve(async (req) => {
         ...commonSettings,
         url: newUrl,
       }, (error, job) => {
-        if (error) reject(error)
-        else resolve(job)
+        if (error) {
+          console.error('Error generating new screenshots:', error)
+          reject(error)
+        } else {
+          console.log('New screenshots job created:', job)
+          resolve(job)
+        }
       })
     })
 
@@ -92,6 +120,7 @@ serve(async (req) => {
       },
     )
   } catch (error) {
+    console.error('Error in browserstack-screenshots function:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       {
