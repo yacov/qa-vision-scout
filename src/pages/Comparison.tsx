@@ -37,7 +37,7 @@ const Comparison = () => {
             <Smartphone className="h-5 w-5" />
             Device Testing
           </a>
-          <a href="#" className="flex items-center gap-2 p-2 rounded-lg hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
+          <a href="/settings" className="flex items-center gap-2 p-2 rounded-lg hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
             <Settings className="h-5 w-5" />
             Settings
           </a>
