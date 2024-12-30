@@ -96,20 +96,54 @@ serve(async (req) => {
     for (const config of selectedConfigs) {
       console.log('Processing config:', JSON.stringify(config, null, 2));
 
-      // Normalize Windows version names
-      const normalizeWindowsVersion = (version: string) => {
-        const versionMap: { [key: string]: string } = {
-          '11': '11',
-          '10': '10',
-          'windows 11': '11',
-          'windows 10': '10'
+      // OS and version mapping
+      const getOsConfig = (config: any) => {
+        const osMap: { [key: string]: string } = {
+          'windows': 'Windows',
+          'macos': 'OS X',
+          'ios': 'ios',
+          'android': 'android'
         };
-        return versionMap[version.toLowerCase()] || version;
+
+        const versionMap: { [key: string]: { [key: string]: string } } = {
+          'Windows': {
+            '11': '11',
+            '10': '10',
+            'windows 11': '11',
+            'windows 10': '10'
+          },
+          'OS X': {
+            'sonoma': 'Sonoma',
+            'ventura': 'Ventura',
+            'monterey': 'Monterey'
+          },
+          'ios': {
+            '17': '17',
+            '16': '16',
+            '15': '15'
+          },
+          'android': {
+            '14': '14.0',
+            '13': '13.0',
+            '12': '12.0'
+          }
+        };
+
+        const normalizedOs = osMap[config.os.toLowerCase()] || config.os;
+        const osVersions = versionMap[normalizedOs] || {};
+        const normalizedVersion = osVersions[config.os_version.toLowerCase()] || config.os_version;
+
+        return {
+          os: normalizedOs,
+          os_version: normalizedVersion
+        };
       };
 
+      const { os, os_version } = getOsConfig(config);
+      
       const browserConfig: BrowserstackBrowser = {
-        os: config.os === 'Windows' ? 'Windows' : config.os, // Preserve Windows casing
-        os_version: normalizeWindowsVersion(config.os_version.trim()),
+        os,
+        os_version,
         browser: undefined,
         browser_version: undefined,
         device: undefined
@@ -118,8 +152,7 @@ serve(async (req) => {
       if (config.device_type === 'mobile') {
         browserConfig.device = config.device;
       } else {
-        browserConfig.browser = config.browser;
-        // Handle browser version with proper casing
+        browserConfig.browser = config.browser?.toLowerCase();
         browserConfig.browser_version = config.browser_version?.toLowerCase() === 'latest' ? 'Latest' : config.browser_version;
       }
 
