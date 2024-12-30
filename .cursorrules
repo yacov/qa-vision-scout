@@ -1,0 +1,119 @@
+# Cursor Rules for Project
+
+## Project Overview
+
+Project Name: TestHub
+
+Description: TestHub is an internal web-based tool for the QA department to test new copies of websites. It automates comparison of new webpage designs and functionalities against a baseline version and assesses their responsiveness across various operating systems and devices using the Browserstack API. It provides an intuitive dashboard with data visualization using Three.js, D3.js, and P5.js.
+
+Tech Stack:
+
+*   **Frontend**: Next.js 14 (app router), TypeScript, Tailwind CSS, shadcn/UI, Radix UI, Lucide Icons.
+*   **Visualization**: Three.js, D3.js, P5.js.
+*   **Backend**: Supabase.
+*   **Authentication**: Supabase.
+*   **API Integration**: Browserstack SDK API
+*   **AI Tools**: Claude AI, ChatGPT, Gemini API (for screenshots visual tests), @antiwork/shortest package for automated testing
+
+Key Features:
+
+*   Compare webpage layout and functions with baseline versions.
+*   Evaluate responsiveness using Browserstack API.
+*   Intuitive dashboard with enhanced visualization.
+
+## Project Structure
+
+### Root Directory:
+
+Contains main configuration files and documentation.
+
+### /frontend:
+
+Contains all frontend-related code, including components, styles, and assets.
+
+/components:
+
+*   Navbar
+*   ComparisonModule
+*   DeviceTester
+*   Dashboard
+*   ReportGenerator
+
+/assets:
+
+*   Icons (Lucide Icons)
+*   Images (for UI)
+
+/styles:
+
+*   Tailwind CSS configuration
+*   Global stylesheets
+
+### /backend:
+
+Contains all backend-related code, including API routes and database models.
+
+/controllers:
+
+*   ComparisonController
+*   ResponsivenessChecker
+
+/models:
+
+*   UserModel
+*   TestModel
+
+/routes:
+
+*   ApiRoutes for comparison and responsiveness
+*   AuthRoutes for user authentication
+
+### /config:
+
+Configuration files for environment variables and application settings.
+
+### /tests:
+
+Contains unit and integration tests for both frontend and backend.
+
+## Development Guidelines
+
+### Coding Standards:
+
+*   Use TypeScript for typed JavaScript support.
+*   Follow Tailwind CSS best practices for styling.
+*   Ensure readability and maintainability of code.
+
+### Component Organization:
+
+*   Components to be modular and reusable.
+*   Separation of concerns: logic in controllers, views in components.
+
+## Cursor IDE Integration
+
+### Setup Instructions:
+
+1.  Clone the repository.
+2.  Navigate to project directory and install dependencies using `npm install`.
+3.  Set up environment variables as per the `/config` documentation.
+4.  Use Supabase CLI for local database setup.
+
+### Key Commands:
+
+*   `npm run dev`: Run the project in development mode.
+*   `npm run build`: Build the project for production.
+*   `npm test`: Run all tests.
+
+## Additional Context
+
+### User Roles:
+
+*   **QA Tester**: Can run tests and view results.
+*   **Departmental Manager**: Full access, manage schedules and reports.
+*   **Customer Support Staff**: Read-only access.
+*   **Administrator**: Full platform access.
+
+### Accessibility Considerations:
+
+*   Ensure visualizations are accessible with text alternatives.
+*   Consider keyboard navigation and screen reader compatibility in the UI design.
