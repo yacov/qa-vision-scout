@@ -27,6 +27,7 @@ export type MacResolution = typeof VALID_MAC_RESOLUTIONS[number];
 export type WaitTime = typeof VALID_WAIT_TIMES[number];
 
 export interface BrowserConfig {
+  device_type?: 'desktop' | 'mobile';
   os: string;
   os_version: string;
   browser?: string;

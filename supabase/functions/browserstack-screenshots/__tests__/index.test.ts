@@ -16,6 +16,70 @@ describe('BrowserStack Screenshots Endpoint', () => {
     });
   });
 
+  it('should handle OPTIONS request', async () => {
+    const optionsRequest = new Request('http://localhost:8000/browserstack-screenshots', {
+      method: 'OPTIONS'
+    });
+
+    const response = await handler(optionsRequest);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('access-control-allow-origin')).toBe('*');
+    expect(response.headers.get('access-control-allow-methods')).toBe('POST, OPTIONS');
+  });
+
+  it('should successfully process desktop configuration', async () => {
+    const request = new Request('http://localhost:8000/browserstack-screenshots', {
+      method: 'POST',
+      headers: {
+        'Authorization': mockAuthHeader,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        url: 'https://example.com',
+        selected_configs: [{
+          device_type: 'desktop',
+          os: 'Windows',
+          os_version: '11',
+          browser: 'chrome',
+          browser_version: 'latest'
+        }]
+      })
+    });
+
+    const response = await handler(request);
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    expect(data).toHaveProperty('job_id');
+    expect(data).toHaveProperty('screenshots');
+    expect(Array.isArray(data.screenshots)).toBe(true);
+  });
+
+  it('should successfully process mobile configuration', async () => {
+    const request = new Request('http://localhost:8000/browserstack-screenshots', {
+      method: 'POST',
+      headers: {
+        'Authorization': mockAuthHeader,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        url: 'https://example.com',
+        selected_configs: [{
+          device_type: 'mobile',
+          os: 'ios',
+          os_version: '16',
+          device: 'iPhone 14'
+        }]
+      })
+    });
+
+    const response = await handler(request);
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    expect(data).toHaveProperty('job_id');
+    expect(data).toHaveProperty('screenshots');
+    expect(Array.isArray(data.screenshots)).toBe(true);
+  });
+
   it('should validate required parameters', async () => {
     // Test missing url
     const requestNoUrl = new Request('http://localhost:8000/browserstack-screenshots', {

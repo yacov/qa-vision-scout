@@ -486,3 +486,20 @@ export const generateScreenshots = async (settings: ScreenshotSettings, authHead
     }
   }, requestId);
 };
+
+// Helper function to transform browser configuration
+export function transformConfig(config: BrowserConfig) {
+  const { device_type, ...rest } = config;
+  return rest;
+}
+
+// Helper function to normalize OS configuration
+export function normalizeOsConfig(config: { os: string; os_version: string }) {
+  const normalizedConfig = { ...config };
+  if (normalizedConfig.os.toLowerCase() === 'windows') {
+    normalizedConfig.os = 'Windows';
+  } else if (normalizedConfig.os.toLowerCase() === 'osx') {
+    normalizedConfig.os = 'OS X';
+  }
+  return normalizedConfig;
+}

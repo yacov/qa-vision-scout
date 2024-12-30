@@ -53,6 +53,28 @@ interface BrowserstackBrowser {
   device?: string;
 }
 
+function transformConfig(config: BrowserstackConfig): BrowserstackBrowser {
+  const browserConfig: BrowserstackBrowser = {
+    os: config.os,
+    os_version: config.os_version
+  };
+
+  if (config.device_type === 'mobile') {
+    if (!config.device) {
+      throw new Error('Device name is required for mobile configurations');
+    }
+    browserConfig.device = config.device;
+  } else {
+    if (!config.browser || !config.browser_version) {
+      throw new Error('Browser and browser version are required for desktop configurations');
+    }
+    browserConfig.browser = config.browser.toLowerCase();
+    browserConfig.browser_version = config.browser_version.toLowerCase() === 'latest' ? 'latest' : config.browser_version;
+  }
+
+  return browserConfig;
+}
+
 export const handler = async (req: Request): Promise<Response> => {
   const requestId = crypto.randomUUID();
   logger.info('Received new request', { requestId, method: req.method, url: req.url });
@@ -107,7 +129,7 @@ export const handler = async (req: Request): Promise<Response> => {
       'Content-Type': 'application/json'
     };
 
-    const browsers: BrowserstackBrowser[] = selected_configs.map((config: BrowserstackConfig, index: number) => {
+    const browsers = selected_configs.map((config: BrowserstackConfig, index: number) => {
       logger.info('Processing browser configuration', { 
         requestId,
         configIndex: index,
@@ -147,43 +169,11 @@ export const handler = async (req: Request): Promise<Response> => {
         normalizedVersion: normalizedConfig.os_version
       });
 
-      const browserConfig: BrowserstackBrowser = {
+      return transformConfig({
+        ...config,
         os: normalizedConfig.os,
         os_version: normalizedConfig.os_version
-      };
-
-      if (config.device_type === 'mobile') {
-        if (!config.device) {
-          logger.warn('Missing device name for mobile config', { 
-            requestId,
-            configIndex: index,
-            os: config.os 
-          });
-          throw new Error('Device name is required for mobile configurations');
-        }
-        browserConfig.device = config.device;
-      } else {
-        if (!config.browser) {
-          logger.warn('Missing browser name for desktop config', { 
-            requestId,
-            configIndex: index,
-            os: config.os 
-          });
-          throw new Error('Browser name is required for desktop configurations');
-        }
-        if (!config.browser_version) {
-          logger.warn('Missing browser version for desktop config', { 
-            requestId,
-            configIndex: index,
-            browser: config.browser 
-          });
-          throw new Error('Browser version is required for desktop configurations');
-        }
-        browserConfig.browser = config.browser.toLowerCase();
-        browserConfig.browser_version = config.browser_version.toLowerCase() === 'latest' ? 'latest' : config.browser_version;
-      }
-
-      return browserConfig;
+      });
     });
 
     const screenshotSettings = {

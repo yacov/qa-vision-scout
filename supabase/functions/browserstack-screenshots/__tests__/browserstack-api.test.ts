@@ -1,4 +1,4 @@
-const { generateScreenshots, getAvailableBrowsers } = require('../browserstack-api');
+const { generateScreenshots, getAvailableBrowsers, transformConfig, normalizeOsConfig } = require('../browserstack-api');
 
 const TEST_URL = process.env.TEST_URL || 'https://example.com';
 const TEST_TIMEOUT = parseInt(process.env.TEST_TIMEOUT || '120000', 10);
@@ -225,5 +225,73 @@ describe('BrowserStack Screenshots API Tests', () => {
         .rejects
         .toThrow('Missing required parameter: browsers must be a non-empty array');
     }, TEST_TIMEOUT);
+  });
+
+  describe('transformConfig', () => {
+    it('should transform desktop config correctly', () => {
+      const input = {
+        device_type: 'desktop',
+        os: 'Windows',
+        os_version: '11',
+        browser: 'chrome',
+        browser_version: 'latest'
+      };
+
+      const result = transformConfig(input);
+      expect(result).toEqual({
+        os: 'Windows',
+        os_version: '11',
+        browser: 'chrome',
+        browser_version: 'latest'
+      });
+    });
+
+    it('should transform mobile config correctly', () => {
+      const input = {
+        device_type: 'mobile',
+        os: 'ios',
+        os_version: '16',
+        device: 'iPhone 14'
+      };
+
+      const result = transformConfig(input);
+      expect(result).toEqual({
+        os: 'ios',
+        os_version: '16',
+        device: 'iPhone 14'
+      });
+    });
+  });
+
+  describe('normalizeOsConfig', () => {
+    it('should normalize Windows OS name', () => {
+      const input = {
+        os: 'windows',
+        os_version: '11'
+      };
+
+      const result = normalizeOsConfig(input);
+      expect(result.os).toBe('Windows');
+    });
+
+    it('should normalize iOS OS name', () => {
+      const input = {
+        os: 'ios',
+        os_version: '16'
+      };
+
+      const result = normalizeOsConfig(input);
+      expect(result.os).toBe('ios');
+    });
+
+    it('should normalize macOS name', () => {
+      const input = {
+        os: 'osx',
+        os_version: 'Ventura'
+      };
+
+      const result = normalizeOsConfig(input);
+      expect(result.os).toBe('OS X');
+    });
   });
 }); 
