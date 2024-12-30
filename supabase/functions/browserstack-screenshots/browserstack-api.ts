@@ -26,11 +26,37 @@ export const getAvailableBrowsers = async (authHeader: HeadersInit): Promise<any
 export const generateScreenshots = async (settings: any, authHeader: HeadersInit): Promise<any> => {
   console.log('Generating screenshots with settings:', JSON.stringify(settings, null, 2));
 
-  // Transform browser_version: 'latest' to 'Latest' as expected by BrowserStack API
-  const browsers = settings.browsers.map((browser: any) => ({
-    ...browser,
-    browser_version: browser.browser_version?.toLowerCase() === 'latest' ? 'Latest' : browser.browser_version
-  }));
+  // Transform browser configurations to match BrowserStack API format
+  const browsers = settings.browsers.map((browser: any) => {
+    const config: any = {
+      os: browser.os,
+      os_version: browser.os_version
+    };
+
+    if (browser.device) {
+      config.device = browser.device;
+    } else {
+      config.browser = browser.browser;
+      config.browser_version = browser.browser_version?.toLowerCase() === 'latest' ? 'Latest' : browser.browser_version;
+    }
+
+    return config;
+  });
+
+  // Prepare request body according to BrowserStack API format
+  const requestBody = {
+    url: settings.url,
+    browsers,
+    quality: settings.quality || 'compressed',
+    wait_time: settings.wait_time || 5
+  };
+
+  // Only add optional parameters if they are needed
+  if (settings.win_res) requestBody.win_res = settings.win_res;
+  if (settings.mac_res) requestBody.mac_res = settings.mac_res;
+  if (settings.orientation) requestBody.orientation = settings.orientation;
+
+  console.log('Sending request to BrowserStack:', JSON.stringify(requestBody, null, 2));
 
   const response = await fetch('https://www.browserstack.com/screenshots', {
     method: 'POST',
@@ -38,10 +64,7 @@ export const generateScreenshots = async (settings: any, authHeader: HeadersInit
       ...authHeader,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      ...settings,
-      browsers
-    })
+    body: JSON.stringify(requestBody)
   });
 
   if (!response.ok) {
