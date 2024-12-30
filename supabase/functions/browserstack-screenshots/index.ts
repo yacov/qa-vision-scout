@@ -1,25 +1,54 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
+// Types for Browserstack API
+interface BrowserstackBrowser {
+  os: string;
+  os_version: string;
+  browser?: string;
+  browser_version?: string;
+  device?: string;
+}
+
+interface ScreenshotRequest {
+  url: string;
+  browsers: BrowserstackBrowser[];
+  win_res?: string;
+  mac_res?: string;
+  quality?: 'compressed' | 'original';
+  wait_time?: number;
+  local?: boolean;
+  orientation?: 'portrait' | 'landscape';
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Function to fetch available browsers from BrowserStack
+// Browserstack API configuration
 const BROWSERSTACK_USERNAME = Deno.env.get('BROWSERSTACK_USERNAME')
 const BROWSERSTACK_ACCESS_KEY = Deno.env.get('BROWSERSTACK_ACCESS_KEY')
-const BROWSERSTACK_API_BASE = 'https://api.browserstack.com/automate'
+const BROWSERSTACK_API_BASE = 'https://www.browserstack.com/screenshots'
 
-const getAvailableBrowsers = async (): Promise<any[]> => {
+if (!BROWSERSTACK_USERNAME || !BROWSERSTACK_ACCESS_KEY) {
+  throw new Error('Browserstack credentials not configured')
+}
+
+const authHeader = {
+  'Authorization': `Basic ${btoa(`${BROWSERSTACK_USERNAME}:${BROWSERSTACK_ACCESS_KEY}`)}`,
+  'Content-Type': 'application/json'
+}
+
+// Function to fetch available browsers from BrowserStack
+const getAvailableBrowsers = async (): Promise<BrowserstackBrowser[]> => {
   const response = await fetch(`${BROWSERSTACK_API_BASE}/browsers.json`, {
-    headers: {
-      'Authorization': `Basic ${btoa(`${BROWSERSTACK_USERNAME}:${BROWSERSTACK_ACCESS_KEY}`)}`
-    }
+    headers: authHeader
   });
   
   if (!response.ok) {
-    throw new Error(`Failed to fetch browsers: ${response.statusText}`);
+    const error = await response.text();
+    throw new Error(`Failed to fetch browsers: ${error}`);
   }
   
   return response.json();
@@ -47,7 +76,7 @@ const validateBrowserVersion = (version: string | null | undefined): string | nu
 }
 
 // Function to validate browser configuration
-const validateBrowserConfig = (config: any, availableBrowsers: any[]): boolean => {
+const validateBrowserConfig = (config: BrowserstackBrowser, availableBrowsers: BrowserstackBrowser[]): boolean => {
   if (config.device) {
     // For mobile devices
     return availableBrowsers.some(b => 
@@ -72,6 +101,22 @@ const validateBrowserConfig = (config: any, availableBrowsers: any[]): boolean =
 
     return true
   }
+}
+
+// Function to generate screenshots
+const generateScreenshots = async (settings: ScreenshotRequest): Promise<any> => {
+  const response = await fetch(BROWSERSTACK_API_BASE, {
+    method: 'POST',
+    headers: authHeader,
+    body: JSON.stringify(settings)
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Failed to generate screenshots: ${error}`);
+  }
+
+  return response.json();
 }
 
 serve(async (req) => {
@@ -115,7 +160,7 @@ serve(async (req) => {
     console.log('Available BrowserStack configurations:', availableBrowsers)
 
     // Map configurations to BrowserStack format
-    const browsers = []
+    const browsers: BrowserstackBrowser[] = []
     for (const config of selectedConfigs) {
       // Validate and format os_version
       if (!config.os_version || config.os_version.trim() === '' || config.os_version === 'null') {
@@ -123,19 +168,15 @@ serve(async (req) => {
         throw new Error(`Invalid os_version for configuration: ${config.name}`)
       }
 
-      let browserConfig: any = {
+      const browserConfig: BrowserstackBrowser = {
         os: config.os,
         os_version: config.os_version.trim()
       }
 
       if (config.device_type === 'mobile') {
-        // For mobile devices
         browserConfig.device = config.device
       } else {
-        // For desktop browsers
         browserConfig.browser = config.browser
-        
-        // Validate and format browser_version
         const validatedVersion = validateBrowserVersion(config.browser_version)
         if (validatedVersion) {
           browserConfig.browser_version = validatedVersion
@@ -155,63 +196,25 @@ serve(async (req) => {
     console.log('Mapped browser configurations:', browsers)
 
     // Configure screenshot settings
-    const commonSettings = {
+    const commonSettings: ScreenshotRequest = {
       quality: 'compressed',
       wait_time: 5,
       local: false,
       mac_res: '1024x768',
       win_res: '1024x768',
-      browsers: browsers,
+      browsers
     }
 
     // Generate screenshots for baseline URL
-    const baselineJob = await new Promise((resolve, reject) => {
-      fetch(`${BROWSERSTACK_API_BASE}/screenshots`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${btoa(`${BROWSERSTACK_USERNAME}:${BROWSERSTACK_ACCESS_KEY}`)}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          ...commonSettings,
-          url: baselineUrl,
-        })
-      })
-      .then(response => {
-        if (!response.ok) {
-          reject(new Error(`Failed to generate baseline screenshots: ${response.statusText}`))
-        } else {
-          resolve(response.json())
-        }
-      })
-      .catch(error => {
-        reject(error)
-      })
+    const baselineJob = await generateScreenshots({
+      ...commonSettings,
+      url: baselineUrl
     })
 
     // Generate screenshots for new URL
-    const newJob = await new Promise((resolve, reject) => {
-      fetch(`${BROWSERSTACK_API_BASE}/screenshots`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${btoa(`${BROWSERSTACK_USERNAME}:${BROWSERSTACK_ACCESS_KEY}`)}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          ...commonSettings,
-          url: newUrl,
-        })
-      })
-      .then(response => {
-        if (!response.ok) {
-          reject(new Error(`Failed to generate new screenshots: ${response.statusText}`))
-        } else {
-          resolve(response.json())
-        }
-      })
-      .catch(error => {
-        reject(error)
-      })
+    const newJob = await generateScreenshots({
+      ...commonSettings,
+      url: newUrl
     })
 
     // Update test status
