@@ -4,6 +4,36 @@ import { getAvailableBrowsers, generateScreenshots } from "./browserstack-api.ts
 import { validateBrowserConfig } from "./browser-validation.ts";
 import { createSupabaseClient, updateTestStatus, createScreenshotRecords } from "./database.ts";
 
+// @ts-ignore: Deno imports
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+
+// Types for Browserstack API
+interface BrowserstackBrowser {
+  os: string;
+  os_version: string;
+  browser?: string;
+  browser_version?: string;
+  device?: string;
+}
+
+interface ScreenshotRequest {
+  url: string;
+  browsers: BrowserstackBrowser[];
+  win_res?: string;
+  mac_res?: string;
+  quality?: 'compressed' | 'original';
+  wait_time?: number;
+  local?: boolean;
+  orientation?: 'portrait' | 'landscape';
+}
+
+// Declare Deno types
+declare const Deno: {
+  env: {
+    get(key: string): string | undefined;
+  };
+};
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -22,19 +52,26 @@ const authHeader = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
     const { testId, baselineUrl, newUrl, configIds } = await req.json();
+
     console.log('Creating screenshots for test:', testId);
     console.log('Baseline URL:', baselineUrl);
     console.log('New URL:', newUrl);
     console.log('Config IDs:', configIds);
 
-    const supabaseClient = createSupabaseClient();
+    // Create Supabase client
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
+    // Fetch selected configurations
     const { data: selectedConfigs, error: configError } = await supabaseClient
       .from('browserstack_configs')
       .select('*')
@@ -51,10 +88,13 @@ serve(async (req) => {
 
     console.log('Selected configurations:', selectedConfigs);
 
+    // Fetch available browsers from BrowserStack
     const availableBrowsers = await getAvailableBrowsers(authHeader);
     console.log('Available BrowserStack configurations:', availableBrowsers);
 
-    const browsers = selectedConfigs.map(config => {
+    // Map configurations to BrowserStack format
+    const browsers: BrowserstackBrowser[] = [];
+    for (const config of selectedConfigs) {
       console.log('Processing config:', JSON.stringify(config, null, 2));
 
       // Normalize Windows version names
@@ -68,9 +108,12 @@ serve(async (req) => {
         return versionMap[version.toLowerCase()] || version;
       };
 
-      const browserConfig = {
+      const browserConfig: BrowserstackBrowser = {
         os: config.os === 'Windows' ? 'Windows' : config.os, // Preserve Windows casing
-        os_version: normalizeWindowsVersion(config.os_version.trim())
+        os_version: normalizeWindowsVersion(config.os_version.trim()),
+        browser: undefined,
+        browser_version: undefined,
+        device: undefined
       };
 
       if (config.device_type === 'mobile') {
@@ -83,10 +126,31 @@ serve(async (req) => {
 
       console.log('Created browser config:', JSON.stringify(browserConfig, null, 2));
 
-      return browserConfig;
-    });
+      // Validate the configuration against available browsers
+      if (!validateBrowserConfig(browserConfig, availableBrowsers)) {
+        const availableConfigs = availableBrowsers
+          .filter(b => b.os?.toLowerCase() === browserConfig.os?.toLowerCase())
+          .map(b => ({
+            browser: b.browser,
+            version: b.browser_version,
+            os_version: b.os_version
+          }));
 
-    const commonSettings = {
+        const errorMsg = `Invalid browser configuration for: ${config.name}. ` +
+          `Requested: ${browserConfig.browser || browserConfig.device} ` +
+          `on ${browserConfig.os} ${browserConfig.os_version}. ` +
+          `Available configurations: ${JSON.stringify(availableConfigs, null, 2)}`;
+        console.error(errorMsg);
+        throw new Error(errorMsg);
+      }
+
+      console.log(`Valid ${config.device_type} configuration:`, JSON.stringify(browserConfig, null, 2));
+      browsers.push(browserConfig);
+    }
+
+    // Configure screenshot settings
+    const commonSettings: ScreenshotRequest = {
+      url: '', // Will be set for each request
       quality: 'compressed' as const,
       wait_time: 5,
       local: false,
@@ -95,18 +159,21 @@ serve(async (req) => {
       browsers
     };
 
+    // Generate screenshots for baseline URL
     console.log('Generating baseline screenshots...');
     const baselineJob = await generateScreenshots({
       ...commonSettings,
       url: baselineUrl
     }, authHeader);
 
+    // Generate screenshots for new URL
     console.log('Generating new version screenshots...');
     const newJob = await generateScreenshots({
       ...commonSettings,
       url: newUrl
     }, authHeader);
 
+    // Update test status
     await updateTestStatus(supabaseClient, testId, 'in_progress');
     await createScreenshotRecords(supabaseClient, testId, browsers);
 
@@ -120,7 +187,7 @@ serve(async (req) => {
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       },
-    );
+    )
   } catch (error) {
     console.error('Error in browserstack-screenshots function:', error);
     return new Response(
@@ -129,7 +196,7 @@ serve(async (req) => {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       },
-    );
+    )
   }
 });
 
