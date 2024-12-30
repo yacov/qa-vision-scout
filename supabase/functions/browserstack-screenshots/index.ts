@@ -1,9 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { getAvailableBrowsers, generateScreenshots } from "./browserstack-api.js";
-import { createSupabaseClient, updateTestStatus, createScreenshotRecords } from "./database.js";
+import { corsHeaders } from "../_shared/cors.js";
+import { BrowserstackBrowser, generateScreenshots, getAvailableBrowsers } from "./browserstack-api.js";
 import { normalizeOsConfig } from "./os-config.js";
+import { createSupabaseClient } from "./database.js";
 
-interface BrowserstackBrowser {
+interface BrowserstackConfig {
+  device_type: 'desktop' | 'mobile';
   os: string;
   os_version: string;
   browser?: string;
@@ -11,55 +13,30 @@ interface BrowserstackBrowser {
   device?: string;
 }
 
-interface ScreenshotRequest {
-  testId: string;
-  baselineUrl: string;
-  newUrl: string;
-  configIds: string[];
-}
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const { testId, baselineUrl, newUrl, configIds }: ScreenshotRequest = await req.json();
-
-    console.log('Creating screenshots for test:', testId);
-    console.log('Baseline URL:', baselineUrl);
-    console.log('New URL:', newUrl);
-    console.log('Config IDs:', configIds);
-
-    const supabaseClient = createSupabaseClient();
-
-    const { data: selectedConfigs, error: configError } = await supabaseClient
-      .from('browserstack_configs')
-      .select('*')
-      .in('id', configIds);
-
-    if (configError) {
-      console.error('Error fetching configurations:', configError);
-      throw new Error('Failed to fetch configurations');
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('No authorization header');
     }
 
-    if (!selectedConfigs || selectedConfigs.length === 0) {
-      throw new Error('No configurations selected');
+    const { baseline_url, new_url, selected_configs } = await req.json();
+    if (!baseline_url || !new_url || !selected_configs) {
+      throw new Error('Missing required parameters');
     }
 
-    console.log('Selected configurations:', selectedConfigs);
+    const supabase = createSupabaseClient();
 
-    const authHeader = {
-      'Authorization': `Basic ${btoa(`${Deno.env.get('BROWSERSTACK_USERNAME')}:${Deno.env.get('BROWSERSTACK_ACCESS_KEY')}`)}`,
+    const responseHeaders = {
+      ...corsHeaders,
       'Content-Type': 'application/json'
     };
 
-    const browsers: BrowserstackBrowser[] = selectedConfigs.map(config => {
+    const browsers: BrowserstackBrowser[] = selected_configs.map((config: BrowserstackConfig) => {
       const normalizedConfig = normalizeOsConfig(config);
       return {
         os: normalizedConfig.os,
@@ -75,47 +52,23 @@ serve(async (req: Request) => {
     });
 
     const screenshotSettings = {
+      url: baseline_url,
       browsers,
-      quality: 'original' as const,
-      wait_time: 5 as const,
-      orientation: 'portrait' as const,
-      win_res: '1920x1080' as const,
-      mac_res: '1920x1080' as const
+      wait_time: 5,
+      quality: "compressed" as const,
     };
 
-    console.log('Generating baseline screenshots...');
-    const baselineJob = await generateScreenshots({
-      ...screenshotSettings,
-      url: baselineUrl
-    }, authHeader);
-
-    console.log('Generating new version screenshots...');
-    const newJob = await generateScreenshots({
-      ...screenshotSettings,
-      url: newUrl
-    }, authHeader);
-
-    await updateTestStatus(supabaseClient, testId, 'in_progress');
-    await createScreenshotRecords(supabaseClient, testId, browsers);
-
-    console.log('Screenshot generation completed successfully');
-    return new Response(
-      JSON.stringify({
-        baselineJob,
-        newJob,
-        message: 'Screenshot generation initiated',
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      },
-    );
+    const screenshotResponse = await generateScreenshots(screenshotSettings, authHeader);
+    return new Response(JSON.stringify(screenshotResponse), {
+      headers: responseHeaders,
+    });
   } catch (error: unknown) {
     console.error('Error in browserstack-screenshots function:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return new Response(
       JSON.stringify({ error: errorMessage }),
       {
-        status: 400,
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       },
     );
