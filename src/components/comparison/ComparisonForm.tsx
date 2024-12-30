@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Loader2, Check } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Badge } from "@/components/ui/badge";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { UrlInputs } from "./UrlInputs";
+import { ConfigSelection } from "./ConfigSelection";
 
 interface ComparisonFormProps {
   onTestCreated: () => void;
@@ -26,22 +25,6 @@ export const ComparisonForm = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch predefined configurations
-  const { data: configs } = useQuery({
-    queryKey: ['predefined-configs'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('browserstack_configs')
-        .select('*')
-        .eq('is_predefined', true)
-        .order('created_at', { ascending: true });
-      
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  // Update form values when initial values change
   useEffect(() => {
     setBaselineUrl(initialBaselineUrl);
     setNewUrl(initialNewUrl);
@@ -49,13 +32,12 @@ export const ComparisonForm = ({
 
   const createTest = useMutation({
     mutationFn: async () => {
-      // Create the test record with a default user ID
       const { data: test, error: testError } = await supabase
         .from('comparison_tests')
         .insert({
           baseline_url: baselineUrl,
           new_url: newUrl,
-          user_id: '00000000-0000-0000-0000-000000000000', // Default system user UUID
+          user_id: '00000000-0000-0000-0000-000000000000',
           status: 'pending'
         })
         .select()
@@ -66,7 +48,6 @@ export const ComparisonForm = ({
         throw new Error(testError.message);
       }
 
-      // Trigger screenshot generation using Supabase Edge Function
       const { data: screenshotData, error: screenshotError } = await supabase.functions
         .invoke('browserstack-screenshots', {
           body: {
@@ -139,59 +120,19 @@ export const ComparisonForm = ({
         <CardTitle>URL Configuration</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="baseline">Baseline URL</Label>
-            <Input
-              id="baseline"
-              placeholder="Enter baseline URL"
-              value={baselineUrl}
-              onChange={(e) => setBaselineUrl(e.target.value)}
-            />
-          </div>
-          <div>
-            <Label htmlFor="new">New Version URL</Label>
-            <Input
-              id="new"
-              placeholder="Enter new version URL"
-              value={newUrl}
-              onChange={(e) => setNewUrl(e.target.value)}
-            />
-          </div>
-        </div>
+        <UrlInputs
+          baselineUrl={baselineUrl}
+          newUrl={newUrl}
+          onBaselineUrlChange={setBaselineUrl}
+          onNewUrlChange={setNewUrl}
+        />
 
         <div className="space-y-4">
-          <Label>Select Configurations for Comparison</Label>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {configs?.map((config) => (
-              <Button
-                key={config.id}
-                variant={selectedConfigs.includes(config.id) ? "default" : "outline"}
-                className="h-auto p-4 flex flex-col items-start space-y-2 relative"
-                onClick={() => toggleConfig(config.id)}
-              >
-                {selectedConfigs.includes(config.id) && (
-                  <Check className="h-4 w-4 absolute top-2 right-2" />
-                )}
-                <div className="font-medium">{config.name}</div>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary">
-                    {config.device_type === 'desktop' ? 'Desktop' : 'Mobile'}
-                  </Badge>
-                  <Badge variant="outline">
-                    {config.os} {config.os_version}
-                  </Badge>
-                  {config.device_type === 'desktop' ? (
-                    <Badge variant="outline">
-                      {config.browser} {config.browser_version}
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline">{config.device}</Badge>
-                  )}
-                </div>
-              </Button>
-            ))}
-          </div>
+          <h3 className="font-semibold">Select Configurations for Comparison</h3>
+          <ConfigSelection
+            selectedConfigs={selectedConfigs}
+            onConfigToggle={toggleConfig}
+          />
         </div>
 
         <Button 
