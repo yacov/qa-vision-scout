@@ -55,21 +55,33 @@ serve(async (req) => {
     console.log('Available BrowserStack configurations:', availableBrowsers);
 
     const browsers = selectedConfigs.map(config => {
-      const browserConfig = {
-        os: config.os,
-        os_version: config.os_version.trim(),
-        ...(config.device_type === 'mobile' 
-          ? { device: config.device }
-          : { 
-              browser: config.browser,
-              browser_version: config.browser_version?.toLowerCase() === 'latest' ? 'Latest' : config.browser_version
-            }
-        )
+      console.log('Processing config:', JSON.stringify(config, null, 2));
+
+      // Normalize Windows version names
+      const normalizeWindowsVersion = (version: string) => {
+        const versionMap: { [key: string]: string } = {
+          '11': '11',
+          '10': '10',
+          'windows 11': '11',
+          'windows 10': '10'
+        };
+        return versionMap[version.toLowerCase()] || version;
       };
 
-      if (!validateBrowserConfig(browserConfig, availableBrowsers)) {
-        throw new Error(`Invalid browser configuration for: ${config.name}. Requested: ${browserConfig.browser || browserConfig.device} on ${browserConfig.os} ${browserConfig.os_version}`);
+      const browserConfig = {
+        os: config.os === 'Windows' ? 'Windows' : config.os, // Preserve Windows casing
+        os_version: normalizeWindowsVersion(config.os_version.trim())
+      };
+
+      if (config.device_type === 'mobile') {
+        browserConfig.device = config.device;
+      } else {
+        browserConfig.browser = config.browser;
+        // Handle browser version with proper casing
+        browserConfig.browser_version = config.browser_version?.toLowerCase() === 'latest' ? 'Latest' : config.browser_version;
       }
+
+      console.log('Created browser config:', JSON.stringify(browserConfig, null, 2));
 
       return browserConfig;
     });
@@ -120,3 +132,99 @@ serve(async (req) => {
     );
   }
 });
+
+// Function to validate browser configuration
+const validateBrowserConfig = (config: BrowserstackBrowser, availableBrowsers: BrowserstackBrowser[]): boolean => {
+  const normalizedConfig = {
+    os: config.os?.toLowerCase(),
+    os_version: config.os_version,
+    browser: config.browser?.toLowerCase(),
+    browser_version: config.browser_version?.toLowerCase(),
+    device: config.device
+  };
+
+  console.log('Validating config:', JSON.stringify(normalizedConfig, null, 2));
+  console.log('Available browsers:', JSON.stringify(availableBrowsers.slice(0, 5), null, 2)); // Show first 5 for brevity
+
+  // Find matching OS configurations
+  const osMatches = availableBrowsers.filter(b => {
+    const osMatch = b.os?.toLowerCase() === normalizedConfig.os;
+    console.log(`Checking OS match for ${b.os?.toLowerCase()} === ${normalizedConfig.os}: ${osMatch}`);
+    return osMatch;
+  });
+
+  console.log(`Found ${osMatches.length} OS matches`);
+
+  // Find matching OS version
+  const osVersionMatches = osMatches.filter(b => {
+    const versionMatch = b.os_version === normalizedConfig.os_version;
+    console.log(`Checking OS version match for ${b.os_version} === ${normalizedConfig.os_version}: ${versionMatch}`);
+    return versionMatch;
+  });
+
+  if (osVersionMatches.length === 0) {
+    console.log('Available OS versions:', osMatches.map(b => b.os_version));
+    console.log(`No matching OS version found for ${normalizedConfig.os} ${normalizedConfig.os_version}`);
+    return false;
+  }
+
+  if (config.device) {
+    // For mobile devices
+    const isValid = osVersionMatches.some(b => b.device === normalizedConfig.device);
+    console.log(`Mobile device validation result for ${normalizedConfig.device}:`, isValid);
+    return isValid;
+  } else {
+    // For desktop browsers
+    if (!normalizedConfig.browser) {
+      console.log('Missing browser information for desktop configuration');
+      return false;
+    }
+
+    const browserMatches = osVersionMatches.filter(b => {
+      const browserMatch = b.browser?.toLowerCase() === normalizedConfig.browser;
+      console.log(`Checking browser match for ${b.browser?.toLowerCase()} === ${normalizedConfig.browser}: ${browserMatch}`);
+      return browserMatch;
+    });
+
+    if (browserMatches.length === 0) {
+      console.log('Available browsers for this OS version:', 
+        osVersionMatches.map(b => ({ browser: b.browser, version: b.browser_version }))
+      );
+      console.log(`No matching browser found for ${normalizedConfig.browser}`);
+      return false;
+    }
+
+    // Special handling for 'latest' version
+    if (!normalizedConfig.browser_version || 
+        normalizedConfig.browser_version === 'latest' || 
+        normalizedConfig.browser_version === 'Latest') {
+      // Get the highest version number for this browser
+      const versions = browserMatches
+        .map(b => b.browser_version)
+        .filter(v => v) // Remove null/undefined
+        .sort((a, b) => {
+          const [aMajor = 0] = a!.split('.').map(Number);
+          const [bMajor = 0] = b!.split('.').map(Number);
+          return bMajor - aMajor;
+        });
+      
+      console.log(`Using latest version (${versions[0]}) for ${normalizedConfig.browser}`);
+      return true;
+    }
+
+    // For specific versions, check if the version exists
+    const hasVersion = browserMatches.some(b => {
+      const availableVersion = b.browser_version?.toLowerCase();
+      console.log(`Comparing requested version ${normalizedConfig.browser_version} with available version ${availableVersion}`);
+      return availableVersion === normalizedConfig.browser_version ||
+             availableVersion?.startsWith(normalizedConfig.browser_version!);
+    });
+    
+    if (!hasVersion) {
+      console.log('Available versions for this browser:', browserMatches.map(b => b.browser_version));
+    }
+    
+    console.log(`Version validation result for ${normalizedConfig.browser_version}:`, hasVersion);
+    return hasVersion;
+  }
+}
