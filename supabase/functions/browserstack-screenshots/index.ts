@@ -82,13 +82,17 @@ const validateBrowserVersion = (version: string | null | undefined): string | nu
 
 // Function to validate browser configuration
 const validateBrowserConfig = (config: BrowserstackBrowser, availableBrowsers: BrowserstackBrowser[]): boolean => {
-  console.log('Validating config:', config);
-  console.log('Available browsers:', availableBrowsers);
+  console.log('Validating config:', JSON.stringify(config, null, 2));
+  
+  if (!config.os || !config.os_version) {
+    console.error('Missing required OS information');
+    return false;
+  }
 
   if (config.device) {
     // For mobile devices
     const isValid = availableBrowsers.some(b => 
-      b.os === config.os &&
+      b.os?.toLowerCase() === config.os?.toLowerCase() &&
       b.os_version === config.os_version &&
       b.device === config.device
     );
@@ -96,35 +100,38 @@ const validateBrowserConfig = (config: BrowserstackBrowser, availableBrowsers: B
     return isValid;
   } else {
     // For desktop browsers
+    if (!config.browser) {
+      console.error('Missing browser information for desktop configuration');
+      return false;
+    }
+
     const matchingBrowsers = availableBrowsers.filter(b => 
-      b.os === config.os &&
+      b.os?.toLowerCase() === config.os?.toLowerCase() &&
       b.os_version === config.os_version &&
-      b.browser === config.browser
+      b.browser?.toLowerCase() === config.browser?.toLowerCase()
     );
 
-    console.log('Matching browsers found:', matchingBrowsers);
+    console.log(`Found ${matchingBrowsers.length} matching browsers for ${config.browser} on ${config.os} ${config.os_version}`);
 
     if (matchingBrowsers.length === 0) {
       console.log('No matching browsers found');
       return false;
     }
 
-    // If browser_version is 'latest', it's valid as long as we found matching browsers
-    if (config.browser_version === 'latest') {
-      console.log('Latest version requested, configuration is valid');
+    // If browser_version is 'latest' or not specified, consider it valid
+    if (!config.browser_version || config.browser_version.toLowerCase() === 'latest') {
+      console.log('Using latest browser version');
       return true;
     }
 
-    // If no browser_version specified, it's valid
-    if (!config.browser_version) {
-      console.log('No browser version specified, configuration is valid');
-      return true;
-    }
-
-    // Check for exact version match
-    const hasExactVersion = matchingBrowsers.some(b => b.browser_version === config.browser_version);
-    console.log('Exact version match result:', hasExactVersion);
-    return hasExactVersion;
+    // For specific versions, check if the version exists
+    const hasVersion = matchingBrowsers.some(b => 
+      b.browser_version === config.browser_version ||
+      b.browser_version?.startsWith(config.browser_version!)
+    );
+    
+    console.log(`Version validation result for ${config.browser_version}:`, hasVersion);
+    return hasVersion;
   }
 }
 
@@ -187,7 +194,7 @@ serve(async (req) => {
     // Map configurations to BrowserStack format
     const browsers: BrowserstackBrowser[] = [];
     for (const config of selectedConfigs) {
-      console.log('Processing config:', config);
+      console.log('Processing config:', JSON.stringify(config, null, 2));
 
       const browserConfig: BrowserstackBrowser = {
         os: config.os,
@@ -198,16 +205,20 @@ serve(async (req) => {
         browserConfig.device = config.device;
       } else {
         browserConfig.browser = config.browser;
-        browserConfig.browser_version = config.browser_version === 'latest' ? 'latest' : validateBrowserVersion(config.browser_version);
+        // Simplified version handling
+        browserConfig.browser_version = config.browser_version?.toLowerCase() === 'latest' ? 'latest' : config.browser_version;
       }
 
       // Validate the configuration against available browsers
       if (!validateBrowserConfig(browserConfig, availableBrowsers)) {
-        console.error('Invalid browser configuration:', browserConfig);
-        throw new Error(`Invalid browser configuration for: ${config.name}. Please check available browsers and versions.`);
+        const errorMsg = `Invalid browser configuration for: ${config.name}. ` +
+          `Requested: ${browserConfig.browser || browserConfig.device} ` +
+          `on ${browserConfig.os} ${browserConfig.os_version}`;
+        console.error(errorMsg);
+        throw new Error(errorMsg);
       }
 
-      console.log(`Valid ${config.device_type} configuration:`, browserConfig);
+      console.log(`Valid ${config.device_type} configuration:`, JSON.stringify(browserConfig, null, 2));
       browsers.push(browserConfig);
     }
 
