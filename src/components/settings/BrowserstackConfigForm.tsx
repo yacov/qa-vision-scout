@@ -1,42 +1,37 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-
-interface ConfigFormData {
-  name: string;
-  deviceType: 'desktop' | 'mobile';
-  os: string;
-  osVersion: string;
-  browser?: string;
-  browserVersion?: string;
-  device?: string;
-}
+import { BrowserStackConfigFormData, browserStackConfigSchema } from "./types";
+import { DesktopFields } from "./DesktopFields";
+import { MobileFields } from "./MobileFields";
 
 export const BrowserstackConfigForm = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [deviceType, setDeviceType] = useState<'desktop' | 'mobile'>('desktop');
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<ConfigFormData>({
+  const form = useForm<BrowserStackConfigFormData>({
+    resolver: zodResolver(browserStackConfigSchema),
     defaultValues: {
       deviceType: 'desktop'
     }
   });
 
   const createConfig = useMutation({
-    mutationFn: async (data: ConfigFormData) => {
+    mutationFn: async (data: BrowserStackConfigFormData) => {
       const { error } = await supabase
         .from('browserstack_configs')
         .insert({
           name: data.name,
-          device_type: deviceType, // Use the state value directly
+          device_type: deviceType,
           os: data.os,
           os_version: data.osVersion,
           browser: deviceType === 'desktop' ? data.browser : null,
@@ -53,7 +48,7 @@ export const BrowserstackConfigForm = () => {
         title: "Configuration created",
         description: "Your BrowserStack configuration has been saved.",
       });
-      reset();
+      form.reset();
     },
     onError: (error: Error) => {
       console.error('Error creating config:', error);
@@ -65,10 +60,10 @@ export const BrowserstackConfigForm = () => {
     },
   });
 
-  const onSubmit = (data: ConfigFormData) => {
+  const onSubmit = (data: BrowserStackConfigFormData) => {
     createConfig.mutate({
       ...data,
-      deviceType // Include deviceType in the mutation data
+      deviceType
     });
   };
 
@@ -78,85 +73,80 @@ export const BrowserstackConfigForm = () => {
         <CardTitle>Add New Configuration</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div>
-            <Label htmlFor="name">Configuration Name</Label>
-            <Input
-              id="name"
-              {...register("name", { required: true })}
-              placeholder="e.g., Windows Chrome Latest"
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Configuration Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g., Windows Chrome Latest" {...field} />
+                  </FormControl>
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div>
-            <Label htmlFor="deviceType">Device Type</Label>
-            <Select
-              value={deviceType}
-              onValueChange={(value: 'desktop' | 'mobile') => setDeviceType(value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select device type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="desktop">Desktop</SelectItem>
-                <SelectItem value="mobile">Mobile</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+            <FormItem>
+              <FormLabel>Device Type</FormLabel>
+              <Select
+                value={deviceType}
+                onValueChange={(value: 'desktop' | 'mobile') => setDeviceType(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select device type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="desktop">Desktop</SelectItem>
+                  <SelectItem value="mobile">Mobile</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormItem>
 
-          <div>
-            <Label htmlFor="os">Operating System</Label>
-            <Input
-              id="os"
-              {...register("os", { required: true })}
-              placeholder={deviceType === 'desktop' ? "e.g., Windows, OS X" : "e.g., ios, android"}
+            <FormField
+              control={form.control}
+              name="os"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Operating System</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={deviceType === 'desktop' ? "e.g., Windows, OS X" : "e.g., ios, android"}
+                      {...field}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
             />
-          </div>
 
-          <div>
-            <Label htmlFor="osVersion">OS Version</Label>
-            <Input
-              id="osVersion"
-              {...register("osVersion", { required: true })}
-              placeholder={deviceType === 'desktop' ? "e.g., 11, Sonoma" : "e.g., 15"}
+            <FormField
+              control={form.control}
+              name="osVersion"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>OS Version</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={deviceType === 'desktop' ? "e.g., 11, Sonoma" : "e.g., 15"}
+                      {...field}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
             />
-          </div>
 
-          {deviceType === 'desktop' ? (
-            <>
-              <div>
-                <Label htmlFor="browser">Browser</Label>
-                <Input
-                  id="browser"
-                  {...register("browser", { required: deviceType === 'desktop' })}
-                  placeholder="e.g., chrome, firefox, safari"
-                />
-              </div>
+            {deviceType === 'desktop' ? (
+              <DesktopFields form={form} />
+            ) : (
+              <MobileFields form={form} />
+            )}
 
-              <div>
-                <Label htmlFor="browserVersion">Browser Version</Label>
-                <Input
-                  id="browserVersion"
-                  {...register("browserVersion", { required: deviceType === 'desktop' })}
-                  placeholder="e.g., 121.0, latest"
-                />
-              </div>
-            </>
-          ) : (
-            <div>
-              <Label htmlFor="device">Device</Label>
-              <Input
-                id="device"
-                {...register("device", { required: deviceType === 'mobile' })}
-                placeholder="e.g., iPhone 13, Pixel 6"
-              />
-            </div>
-          )}
-
-          <Button type="submit" disabled={createConfig.isPending}>
-            {createConfig.isPending ? "Creating..." : "Create Configuration"}
-          </Button>
-        </form>
+            <Button type="submit" disabled={createConfig.isPending}>
+              {createConfig.isPending ? "Creating..." : "Create Configuration"}
+            </Button>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   );
