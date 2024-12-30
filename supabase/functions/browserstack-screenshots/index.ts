@@ -25,7 +25,7 @@ serve(async (req) => {
       password: Deno.env.get('BROWSERSTACK_ACCESS_KEY'),
     })
 
-    // Configure screenshot settings
+    // Configure screenshot settings with proper browser objects
     const commonSettings = {
       quality: 'compressed',
       wait_time: 5,
@@ -33,22 +33,28 @@ serve(async (req) => {
       mac_res: '1024x768',
       win_res: '1024x768',
       browsers: [
-        { 
-          os: 'Windows', 
-          os_version: '11', 
-          browser: 'chrome', 
-          browser_version: '121.0' 
+        // Desktop browsers
+        {
+          os: 'Windows',
+          os_version: '11',
+          browser: 'chrome',
+          browser_version: '121.0',
+          device: null
         },
-        { 
-          os: 'OS X', 
-          os_version: 'Sonoma', 
-          browser: 'safari', 
-          browser_version: '17.0' 
+        {
+          os: 'OS X',
+          os_version: 'Sonoma',
+          browser: 'safari',
+          browser_version: '17.0',
+          device: null
         },
-        { 
-          device: 'iPhone 13',
+        // Mobile device
+        {
+          os: 'ios',
           os_version: '15',
-          real_mobile: true
+          device: 'iPhone 13',
+          browser: null,
+          browser_version: null
         }
       ],
     }
