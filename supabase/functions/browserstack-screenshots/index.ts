@@ -59,28 +59,19 @@ serve(async (req: Request) => {
       'Content-Type': 'application/json'
     };
 
-    const availableBrowsers = await getAvailableBrowsers(authHeader);
-    console.log('Available BrowserStack configurations:', availableBrowsers);
-
     const browsers: BrowserstackBrowser[] = selectedConfigs.map(config => {
-      console.log('Processing config:', JSON.stringify(config, null, 2));
-      
       const normalizedConfig = normalizeOsConfig(config);
-      console.log('Normalized config:', JSON.stringify(normalizedConfig, null, 2));
-
-      const browserConfig: BrowserstackBrowser = {
+      return {
         os: normalizedConfig.os,
         os_version: normalizedConfig.os_version,
+        ...(config.device_type === 'mobile' 
+          ? { device: config.device }
+          : { 
+              browser: config.browser?.toLowerCase(),
+              browser_version: config.browser_version?.toLowerCase() === 'latest' ? null : config.browser_version
+            }
+        )
       };
-
-      if (config.device_type === 'mobile') {
-        browserConfig.device = config.device;
-      } else {
-        browserConfig.browser = config.browser?.toLowerCase();
-        browserConfig.browser_version = config.browser_version?.toLowerCase() === 'latest' ? null : config.browser_version;
-      }
-
-      return browserConfig;
     });
 
     const screenshotSettings = {
@@ -118,7 +109,7 @@ serve(async (req: Request) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       },
     );
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error in browserstack-screenshots function:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return new Response(
