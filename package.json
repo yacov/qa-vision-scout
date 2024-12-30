@@ -4,7 +4,9 @@
   "description": "BrowserStack Screenshots API Testing",
   "scripts": {
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "build:dev": "vite build --mode development"
+
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
