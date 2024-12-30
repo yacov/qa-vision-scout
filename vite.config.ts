@@ -24,7 +24,8 @@ export default defineConfig(({ mode }) => ({
       "@hooks": path.resolve(__dirname, "./src/hooks"),
       "@lib": path.resolve(__dirname, "./src/lib"),
       "@assets": path.resolve(__dirname, "./src/assets"),
-      "@styles": path.resolve(__dirname, "./src/styles")
+      "@styles": path.resolve(__dirname, "./src/styles"),
+      "@utils": path.resolve(__dirname, "./src/utils")
     }
   },
   build: {
