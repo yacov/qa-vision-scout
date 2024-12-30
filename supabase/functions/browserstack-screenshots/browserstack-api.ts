@@ -349,8 +349,14 @@ export const generateScreenshots = async (settings: ScreenshotSettings, authHead
         if (!browser.browser || !browser.browser_version) {
           throw new Error('Browser and browser version are required for desktop configurations');
         }
-        config.browser = browser.browser;
-        config.browser_version = browser.browser_version?.toLowerCase() === 'latest' ? 'Latest' : browser.browser_version;
+        config.browser = browser.browser.toLowerCase();
+        // Handle browser version formatting
+        if (typeof browser.browser_version === 'string' && browser.browser_version.toLowerCase() === 'latest') {
+          config.browser_version = 'latest';
+        } else {
+          // Ensure version is a string and properly formatted
+          config.browser_version = browser.browser_version.toString();
+        }
       }
 
       return config;
