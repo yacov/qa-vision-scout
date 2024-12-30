@@ -74,13 +74,25 @@ serve(async (req) => {
           browser: config.browser
         }
 
-        // Only add browser_version if it exists and is not null/empty
+        // Only add browser_version if it exists, is not null/empty, and after proper validation
         if (config.browser_version && 
             config.browser_version !== 'null' && 
             config.browser_version.trim() !== '') {
-          desktopConfig.browser_version = config.browser_version === 'latest' 
-            ? 'latest' 
-            : config.browser_version.trim()
+          
+          const version = config.browser_version.trim()
+          
+          // Handle 'latest' as a special case
+          if (version.toLowerCase() === 'latest') {
+            desktopConfig.browser_version = 'latest'
+          } else {
+            // Validate version format (should be a number or number.number)
+            const versionRegex = /^\d+(\.\d+)?$/
+            if (!versionRegex.test(version)) {
+              console.error('Invalid browser_version format:', version)
+              throw new Error(`Invalid browser_version format for configuration: ${config.name}. Version should be 'latest' or a valid version number (e.g., '121' or '121.0')`)
+            }
+            desktopConfig.browser_version = version
+          }
         }
 
         console.log('Desktop browser configuration:', desktopConfig)
