@@ -1,675 +1,695 @@
 ﻿"event_message","event_type","function_id","id","level","timestamp"
-"Error in browserstack-screenshots function: Error: Failed to generate screenshots: {"message":"Validation Failed","errors":[{"field":"os_version","code":"invalid"}]}
-    at generateScreenshots (file:///dev-server/supabase/functions/browserstack-screenshots/browserstack-api.ts:58:11)
+"Error in browserstack-screenshots function: Error: Invalid request parameters: {"message":"Validation Failed","errors":[{"field":"os_version","code":"invalid"}]}
+    at file:///dev-server/supabase/functions/browserstack-screenshots/browserstack-api.ts:221:17
     at eventLoopTick (ext:core/01_core.js:168:7)
-    at async Server.<anonymous> (file:///dev-server/supabase/functions/browserstack-screenshots/index.ts:126:25)
-    at async #respond (https://deno.land/std@0.168.0/http/server.ts:221:18)
-","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","96368c4b-1af3-4768-96c9-628a3b504d69","error","1735564461968744"
-"Screenshot generation failed: {"message":"Validation Failed","errors":[{"field":"os_version","code":"invalid"}]}
-","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","671692bf-2aca-4db1-b07d-81e8db82556b","error","1735564461968596"
+    at async withRetry (file:///dev-server/supabase/functions/browserstack-screenshots/browserstack-api.ts:73:12)
+    at async Server.<anonymous> (file:///dev-server/supabase/functions/browserstack-screenshots/index.ts:81:25)
+    at async #respond (https://deno.land/std@0.177.0/http/server.ts:220:18)
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","28c52091-b936-4315-bf49-c3b5c85f39f5","error","1735571088041212"
+"Error in generateScreenshots: Error: Invalid request parameters: {"message":"Validation Failed","errors":[{"field":"os_version","code":"invalid"}]}
+    at file:///dev-server/supabase/functions/browserstack-screenshots/browserstack-api.ts:221:17
+    at eventLoopTick (ext:core/01_core.js:168:7)
+    at async withRetry (file:///dev-server/supabase/functions/browserstack-screenshots/browserstack-api.ts:73:12)
+    at async Server.<anonymous> (file:///dev-server/supabase/functions/browserstack-screenshots/index.ts:81:25)
+    at async #respond (https://deno.land/std@0.177.0/http/server.ts:220:18)
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","019ced60-d0b0-4456-9ca0-27a62221e713","error","1735571088040973"
 "Sending request to BrowserStack: {
   "url": "https://drsisterskincare.com/products/dark-spot-vanish",
   "browsers": [
     {
-      "os": "android",
-      "os_version": "14.0",
-      "device": "Galaxy S24"
+      "os": "Ios",
+      "os_version": "17",
+      "device": "iPhone 15"
     }
   ],
-  "quality": "compressed",
+  "quality": "original",
   "wait_time": 5,
   "orientation": "portrait"
 }
-","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","4ec57f55-5d74-40b6-bc21-6db73e6a6c49","log","1735564461967756"
-"Transformed browser config: {
-  "os": "android",
-  "os_version": "14.0",
-  "device": "Galaxy S24"
-}
-","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","88cfb68b-cf78-4299-a00c-5afbf15a79c6","log","1735564461967528"
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","1489a685-4d3b-425a-b1c5-b3b17b8fe8fa","log","1735571088040499"
 "Generating screenshots with settings: {
   "url": "https://drsisterskincare.com/products/dark-spot-vanish",
   "browsers": [
     {
-      "os": "android",
-      "os_version": "14.0",
-      "device": "Galaxy S24"
+      "os": "ios",
+      "os_version": "17",
+      "device": "iPhone 15"
     }
   ],
   "quality": "original",
   "wait_time": 5,
   "orientation": "portrait"
 }
-","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","966d396b-0bb5-44a4-b850-d561d000dd50","log","1735564461967325"
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","43be2aa8-b02b-4eb7-833f-e0b4cf5573af","log","1735571088040289"
 "Generating baseline screenshots...
-","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","7b782b94-5623-4a45-9d00-424df5427fb0","log","1735564461967194"
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","b178c917-61a8-4294-b5ac-cb7ed2713c9d","log","1735571088040142"
 "Sending screenshot request with settings: {
+  "url": "https://drsisterskincare.com/products/dark-spot-vanish",
   "browsers": [
     {
-      "os": "android",
-      "os_version": "14.0",
-      "device": "Galaxy S24"
+      "os": "ios",
+      "os_version": "17",
+      "device": "iPhone 15"
     }
   ],
   "quality": "original",
   "wait_time": 5,
   "orientation": "portrait"
 }
-","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","a229c675-f5c0-49ed-b62b-5b8d9293c127","log","1735564461967068"
-"Processing mobile configuration: {
-  "os": "android",
-  "os_version": "14.0",
-  "device": "Galaxy S24"
-}
-","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","45ed6ec4-31ef-4306-b67e-c67d844b9fc8","log","1735564461966919"
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","81691a34-c8e4-4819-926e-92dfd69235d7","log","1735571088039967"
 "Created browser config: {
-  "os": "android",
-  "os_version": "14.0",
-  "device": "Galaxy S24"
+  "os": "ios",
+  "os_version": "17",
+  "device": "iPhone 15"
 }
-","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","d5a992ca-fb69-47c8-961b-93d8fb0f9cba","log","1735564461966764"
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","43d431ad-04cb-4754-9cb4-0ec6ad3574b2","log","1735571088039844"
+"Normalized config: {
+  "os": "ios",
+  "os_version": "17"
+}
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","74c9b128-e660-482a-8e76-4f3f87daab2d","log","1735571088039709"
+"Normalizing OS config: {
+  input: {
+    id: "458f35f3-e9c2-487c-9b92-8d967156fe3c",
+    user_id: "00000000-0000-0000-0000-000000000000",
+    name: "iPhone 15 Safari",
+    device_type: "mobile",
+    os: "ios",
+    os_version: "17",
+    browser: null,
+    browser_version: null,
+    device: "iPhone 15",
+    is_active: true,
+    created_at: "2024-12-30T07:25:36.838274+00:00",
+    updated_at: "2024-12-30T07:25:36.838274+00:00",
+    is_predefined: true
+  },
+  normalizedOs: "ios",
+  normalizedVersion: "17"
+}
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","48b12c22-9fdf-446c-95fe-f273c1257dfd","log","1735571088039550"
 "Processing config: {
-  "id": "57491eeb-b712-4883-9474-70cebdd87080",
+  "id": "458f35f3-e9c2-487c-9b92-8d967156fe3c",
   "user_id": "00000000-0000-0000-0000-000000000000",
-  "name": "Galaxy S24 Chrome",
+  "name": "iPhone 15 Safari",
   "device_type": "mobile",
-  "os": "android",
-  "os_version": "14",
+  "os": "ios",
+  "os_version": "17",
   "browser": null,
   "browser_version": null,
-  "device": "Galaxy S24",
+  "device": "iPhone 15",
   "is_active": true,
   "created_at": "2024-12-30T07:25:36.838274+00:00",
   "updated_at": "2024-12-30T07:25:36.838274+00:00",
   "is_predefined": true
 }
-","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","179b952e-a849-4d50-9f01-6d6b7af9c90c","log","1735564461966597"
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","ae16dc4c-5aa3-4037-bcc0-19b8013c9c0d","log","1735571088039394"
 "Available BrowserStack configurations: [
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "opera",
     browser_version: "11.6",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "opera",
     browser_version: "12.1",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "opera",
     browser_version: "12.14",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "opera",
     browser_version: "12.15",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "opera",
     browser_version: "12.16",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "14.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "15.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "16.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "17.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "18.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "19.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "20.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "21.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "22.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "23.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "24.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "25.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "26.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "27.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "28.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "29.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "30.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "31.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "32.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "33.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "34.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "35.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "36.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "37.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "38.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "39.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "40.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "41.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "42.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "43.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "44.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "45.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "46.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "47.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "48.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "chrome",
     browser_version: "49.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "ie",
     browser_version: "6.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "ie",
     browser_version: "7.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "3.6",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "4.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "5.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "6.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "7.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "8.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "9.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "10.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "11.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "12.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "13.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "14.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "15.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "16.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "17.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "18.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "19.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "20.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "21.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "22.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "23.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "24.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "25.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "26.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "27.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "28.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "29.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "30.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "31.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "32.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "33.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "34.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "35.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "36.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "37.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "38.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "40.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "41.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "42.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
     browser: "firefox",
     browser_version: "43.0",
     device: null
   },
   {
-    os: "windows",
+    os: "Windows",
     os_version: "XP",
-    browser: "fi ....[truncated]","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","4e1658a6-6567-4560-95cb-f35accccf31a","log","1735564461966432"
+    browser: "fi ....[truncated]","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","caddd251-a38a-4d28-890e-735dd395b58c","log","1735571088039166"
 "Available BrowserStack configurations: [
   {
     "os": "Windows",
@@ -1188,40 +1208,38 @@
     "os_version": "XP",
     "browser": "firefox",
     "device": null,
-    "b ....[truncated]","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","02705f18-428d-48ea-8af2-1bbf5b830207","log","1735564461966246"
+    "b ....[truncated]","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","32e44418-5f8b-41fe-8d90-4be1df90fa63","log","1735571088038951"
 "Fetching available browsers from BrowserStack...
-","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","51ff3fbe-ee2c-4205-a578-b5dcdd287b7c","log","1735564461966032"
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","12c8c74e-6b7d-4b4c-ba80-0b30467158e5","log","1735571088038447"
 "Selected configurations: [
   {
-    id: "57491eeb-b712-4883-9474-70cebdd87080",
+    id: "458f35f3-e9c2-487c-9b92-8d967156fe3c",
     user_id: "00000000-0000-0000-0000-000000000000",
-    name: "Galaxy S24 Chrome",
+    name: "iPhone 15 Safari",
     device_type: "mobile",
-    os: "android",
-    os_version: "14",
+    os: "ios",
+    os_version: "17",
     browser: null,
     browser_version: null,
-    device: "Galaxy S24",
+    device: "iPhone 15",
     is_active: true,
     created_at: "2024-12-30T07:25:36.838274+00:00",
     updated_at: "2024-12-30T07:25:36.838274+00:00",
     is_predefined: true
   }
 ]
-","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","dd9b24b2-47c8-4649-8458-beb326d3772d","log","1735564461965725"
-"Config IDs: [ "57491eeb-b712-4883-9474-70cebdd87080" ]
-","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","7f832e62-e102-4606-bc4a-bb06b2fba125","log","1735564461965468"
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","0554fa1e-8b35-43ea-b6bc-314e2a94cb51","log","1735571088038231"
+"Config IDs: [ "458f35f3-e9c2-487c-9b92-8d967156fe3c" ]
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","36483e64-44fe-44d4-a194-46b2a4e1bc92","log","1735571088038007"
 "New URL: https://drsisterskincare-dev.myshopify.com/products/dark-spot-vanish?selling_plan=690895847767&variant=49739596267863
-","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","e4e2fbc5-1939-4066-8b61-b9bcc09c564f","log","1735564461965154"
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","e7f86144-410d-4343-8913-0ef18001f69c","log","1735571088037766"
 "Baseline URL: https://drsisterskincare.com/products/dark-spot-vanish
-","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","fd0504b3-ee6e-485e-af39-812fcd6f19b8","log","1735564461964994"
-"Creating screenshots for test: 0479698c-5a6f-422c-ac46-2d850691f6ce
-","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","08490194-351b-4fa2-ae78-807e3b9cf86a","log","1735564461964773"
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","fdbcacc1-18fb-4b2a-a482-538be9e61356","log","1735571088037576"
+"Creating screenshots for test: 309fafe2-9dde-44f6-8570-62776f6a8e36
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","b03c9ffc-d255-4f7d-a105-7ba5fe89a0cf","log","1735571088037435"
 "Listening on http://localhost:9999/
-","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","02333949-f51b-4a00-8ea3-d2312cfbdbdc","log","1735564461964643"
-"booted (time: 32ms)","Boot","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","cc0e2d1f-578f-4264-a650-869c636da18e","log","1735564461964468"
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","0deeeb8e-8937-4c0b-abad-ab0917cb4ac9","log","1735571088037274"
+"booted (time: 26ms)","Boot","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","ba015f43-91c0-41cc-b0cd-14cbb7e551cf","log","1735571088035729"
 "Listening on http://localhost:9999/
-","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","a37b6b04-30bb-46dc-8d45-88af9638fb4f","log","1735564457432336"
-"booted (time: 23ms)","Boot","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","18853688-a8b9-4fa3-906e-9ea03069b11a","log","1735564457432072"
-"shutdown","Shutdown","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","0b29663b-3a71-4f34-b2a5-84596cab0ed5","log","1735564421471833"
-"shutdown","Shutdown","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","3f38e64e-2afb-4d7b-93e3-828bbe42c38d","log","1735564416625344"
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","4e97cbdf-392e-4404-9d75-37fca194d4b5","log","1735571085549894"
+"booted (time: 25ms)","Boot","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","d8892729-aeae-449c-9c94-a2442efd0fef","log","1735571085549581"

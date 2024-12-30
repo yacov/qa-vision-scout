@@ -8,6 +8,36 @@ const WINDOW_SIZE_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
 const MAX_RETRIES = 3;
 const INITIAL_RETRY_DELAY = 1000; // 1 second
 
+// Add supported iOS versions
+const SUPPORTED_IOS_VERSIONS = ['12', '13', '14', '15', '16', '17'] as const;
+type iOSVersion = typeof SUPPORTED_IOS_VERSIONS[number];
+
+// Add supported iOS devices
+const SUPPORTED_IOS_DEVICES = {
+  'iPhone 15': '17',
+  'iPhone 14': '16',
+  'iPhone 13': '15',
+  'iPhone 12': '14',
+  'iPhone 11': '13',
+  'iPhone X': '11'
+} as const;
+
+type iOSDevice = keyof typeof SUPPORTED_IOS_DEVICES;
+
+function validateIOSDevice(device: string, version: string): void {
+  const supportedVersion = SUPPORTED_IOS_DEVICES[device as iOSDevice];
+  if (!supportedVersion) {
+    throw new Error(
+      `Invalid iOS device: ${device}. Valid devices are: ${Object.keys(SUPPORTED_IOS_DEVICES).join(', ')}`
+    );
+  }
+  if (version !== supportedVersion) {
+    throw new Error(
+      `Invalid iOS version for ${device}. Expected version: ${supportedVersion}, got: ${version}`
+    );
+  }
+}
+
 class RateLimiter {
   private tokens: number;
   private lastRefill: number;
@@ -180,6 +210,14 @@ async function withRetry<T>(
   }
 }
 
+function validateIOSVersion(version: string): void {
+  if (!SUPPORTED_IOS_VERSIONS.includes(version as iOSVersion)) {
+    throw new Error(
+      `Invalid iOS version: ${version}. Valid versions are: ${SUPPORTED_IOS_VERSIONS.join(', ')}`
+    );
+  }
+}
+
 export const getAvailableBrowsers = async (authHeader: HeadersInit): Promise<BrowserConfig[]> => {
   return withRetry(async () => {
     await rateLimiter.acquireToken();
@@ -289,11 +327,15 @@ export const generateScreenshots = async (settings: ScreenshotSettings, authHead
     // Transform browser configurations to match BrowserStack API format
     const browsers = settings.browsers.map((browser: any) => {
       const config: any = {
-        os: browser.os.charAt(0).toUpperCase() + browser.os.slice(1).toLowerCase(), 
+        os: browser.os.toLowerCase() === 'ios' ? 'ios' : browser.os.charAt(0).toUpperCase() + browser.os.slice(1).toLowerCase(),
         os_version: browser.os_version
       };
 
       if (browser.device) {
+        // Validate iOS device and version if the OS is iOS
+        if (config.os === 'ios') {
+          validateIOSDevice(browser.device, browser.os_version);
+        }
         config.device = browser.device;
       } else {
         if (!browser.browser || !browser.browser_version) {
