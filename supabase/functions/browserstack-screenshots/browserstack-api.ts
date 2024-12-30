@@ -255,9 +255,10 @@ async function pollJobStatus(jobId: string, authHeader: HeadersInit): Promise<Jo
       }
     } catch (error) {
       console.warn(`Polling attempt ${attempts} failed:`, error);
-      if (error.message.includes('Authentication failed') || 
+      if (error instanceof Error && (
+          error.message.includes('Authentication failed') || 
           error.message.includes('Invalid job ID') ||
-          error.message.includes('Screenshot generation failed')) {
+          error.message.includes('Screenshot generation failed'))) {
         throw error;
       }
     }
