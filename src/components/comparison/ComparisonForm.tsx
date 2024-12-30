@@ -86,14 +86,6 @@ export const ComparisonForm = ({
     }
   });
 
-  const toggleConfig = (configId: string) => {
-    setSelectedConfigs(prev => 
-      prev.includes(configId) 
-        ? prev.filter(id => id !== configId)
-        : [...prev, configId]
-    );
-  };
-
   const handleCompare = () => {
     if (!baselineUrl || !newUrl) {
       toast({
