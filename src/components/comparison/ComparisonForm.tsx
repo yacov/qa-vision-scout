@@ -37,22 +37,18 @@ export const ComparisonForm = ({ onTestCreated }: ComparisonFormProps) => {
         throw new Error(testError.message);
       }
 
-      // Trigger screenshot generation
-      const response = await fetch('/api/browserstack-screenshots', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          testId: test.id,
-          baselineUrl,
-          newUrl,
-        }),
-      });
+      // Trigger screenshot generation using Supabase Edge Function
+      const { data: screenshotData, error: screenshotError } = await supabase.functions
+        .invoke('browserstack-screenshots', {
+          body: {
+            testId: test.id,
+            baselineUrl,
+            newUrl,
+          },
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("Screenshot generation error:", errorData);
+      if (screenshotError) {
+        console.error("Screenshot generation error:", screenshotError);
         throw new Error('Failed to generate screenshots');
       }
 
