@@ -1,6 +1,16 @@
+// @ts-ignore: Deno imports
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+// @ts-ignore: Deno imports
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import BrowserStack from 'npm:browserstack'
+// @ts-ignore: Deno imports
+import browserstack from 'npm:browserstack'
+
+// Declare Deno types
+declare const Deno: {
+  env: {
+    get(key: string): string | undefined;
+  };
+};
 
 interface BrowserStackConfig {
   id: string
@@ -17,7 +27,7 @@ serve(async (req) => {
     const { configId } = await req.json()
     
     // Create BrowserStack client
-    const client = BrowserStack.createClient({
+    const client = browserstack.createClient({
       username: Deno.env.get('BROWSERSTACK_USERNAME') || '',
       password: Deno.env.get('BROWSERSTACK_ACCESS_KEY') || ''
     })

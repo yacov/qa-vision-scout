@@ -1,4 +1,6 @@
+// @ts-ignore: Deno imports
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+// @ts-ignore: Deno imports
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 // Types for Browserstack API
@@ -20,6 +22,13 @@ interface ScreenshotRequest {
   local?: boolean;
   orientation?: 'portrait' | 'landscape';
 }
+
+// Declare Deno types
+declare const Deno: {
+  env: {
+    get(key: string): string | undefined;
+  };
+};
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -49,7 +58,7 @@ const getAvailableBrowsers = async (): Promise<BrowserstackBrowser[]> => {
   if (!response.ok) {
     const error = await response.text();
     console.error('Failed to fetch browsers:', error);
-    throw new Error(`Failed to fetch browsers: ${error}`);
+    throw new Error(`Failed to fetch browsers: ${error}`)
   }
   
   const browsers = await response.json();
@@ -109,6 +118,10 @@ const validateBrowserConfig = (config: BrowserstackBrowser, availableBrowsers: B
 
     if (browserMatches.length === 0) {
       console.log(`No matching browser found for ${normalizedConfig.browser}`);
+      console.log('Available browsers for this OS:', JSON.stringify(
+        osMatches.map(b => ({ browser: b.browser, version: b.browser_version })),
+        null, 2
+      ));
       return false;
     }
 
@@ -116,7 +129,17 @@ const validateBrowserConfig = (config: BrowserstackBrowser, availableBrowsers: B
     if (!normalizedConfig.browser_version || 
         normalizedConfig.browser_version === 'latest' || 
         normalizedConfig.browser_version === 'Latest') {
-      console.log('Using latest browser version');
+      // Get the highest version number for this browser
+      const versions = browserMatches
+        .map(b => b.browser_version)
+        .filter(v => v) // Remove null/undefined
+        .sort((a, b) => {
+          const [aMajor = 0, aMinor = 0] = a!.split('.').map(Number);
+          const [bMajor = 0, bMinor = 0] = b!.split('.').map(Number);
+          return bMajor - aMajor || bMinor - aMinor;
+        });
+      
+      console.log(`Using latest version (${versions[0]}) for ${normalizedConfig.browser}`);
       return true;
     }
 
@@ -127,6 +150,13 @@ const validateBrowserConfig = (config: BrowserstackBrowser, availableBrowsers: B
       return availableVersion === normalizedConfig.browser_version ||
              availableVersion?.startsWith(normalizedConfig.browser_version!);
     });
+    
+    if (!hasVersion) {
+      console.log('Available versions for this browser:', JSON.stringify(
+        browserMatches.map(b => b.browser_version),
+        null, 2
+      ));
+    }
     
     console.log(`Version validation result for ${normalizedConfig.browser_version}:`, hasVersion);
     return hasVersion;
@@ -145,7 +175,7 @@ const generateScreenshots = async (settings: ScreenshotRequest): Promise<any> =>
   if (!response.ok) {
     const error = await response.text();
     console.error('Screenshot generation failed:', error);
-    throw new Error(`Failed to generate screenshots: ${error}`);
+    throw new Error(`Failed to generate screenshots: ${error}`)
   }
 
   const result = await response.json();
@@ -208,16 +238,26 @@ serve(async (req) => {
         browserConfig.device = config.device;
       } else {
         browserConfig.browser = config.browser;
-        browserConfig.browser_version = config.browser_version === 'latest' ? 'Latest' : config.browser_version;
+        // Handle browser version with proper casing
+        browserConfig.browser_version = config.browser_version?.toLowerCase() === 'latest' ? 'Latest' : config.browser_version;
       }
 
       console.log('Created browser config:', JSON.stringify(browserConfig, null, 2));
 
       // Validate the configuration against available browsers
       if (!validateBrowserConfig(browserConfig, availableBrowsers)) {
+        const availableConfigs = availableBrowsers
+          .filter(b => b.os?.toLowerCase() === browserConfig.os?.toLowerCase())
+          .map(b => ({
+            browser: b.browser,
+            version: b.browser_version,
+            os_version: b.os_version
+          }));
+
         const errorMsg = `Invalid browser configuration for: ${config.name}. ` +
           `Requested: ${browserConfig.browser || browserConfig.device} ` +
-          `on ${browserConfig.os} ${browserConfig.os_version}`;
+          `on ${browserConfig.os} ${browserConfig.os_version}. ` +
+          `Available configurations: ${JSON.stringify(availableConfigs, null, 2)}`;
         console.error(errorMsg);
         throw new Error(errorMsg);
       }
@@ -228,7 +268,7 @@ serve(async (req) => {
 
     // Configure screenshot settings
     const commonSettings: ScreenshotRequest = {
-      quality: 'compressed',
+      quality: 'compressed' as const,
       wait_time: 5,
       local: false,
       mac_res: '1024x768',
