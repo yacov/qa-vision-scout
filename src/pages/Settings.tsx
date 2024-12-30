@@ -1,7 +1,7 @@
-import { useState } from "react";
 import { Layout, BarChart3, Smartphone, Settings as SettingsIcon } from "lucide-react";
 import { BrowserstackConfigForm } from "@/components/settings/BrowserstackConfigForm";
 import { ConfigurationsList } from "@/components/settings/ConfigurationsList";
+import { PredefinedConfigs } from "@/components/settings/PredefinedConfigs";
 
 const Settings = () => {
   return (
@@ -39,7 +39,8 @@ const Settings = () => {
           <h2 className="text-2xl font-semibold">Settings</h2>
         </header>
 
-        <div className="p-6">
+        <div className="p-6 space-y-6 overflow-auto h-[calc(100vh-73px)]">
+          <PredefinedConfigs />
           <BrowserstackConfigForm />
           <ConfigurationsList />
         </div>

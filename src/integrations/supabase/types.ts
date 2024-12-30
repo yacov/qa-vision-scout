@@ -18,6 +18,7 @@ export type Database = {
           device_type: Database["public"]["Enums"]["device_type"]
           id: string
           is_active: boolean | null
+          is_predefined: boolean | null
           name: string
           os: string
           os_version: string
@@ -32,6 +33,7 @@ export type Database = {
           device_type: Database["public"]["Enums"]["device_type"]
           id?: string
           is_active?: boolean | null
+          is_predefined?: boolean | null
           name: string
           os: string
           os_version: string
@@ -46,6 +48,7 @@ export type Database = {
           device_type?: Database["public"]["Enums"]["device_type"]
           id?: string
           is_active?: boolean | null
+          is_predefined?: boolean | null
           name?: string
           os?: string
           os_version?: string
