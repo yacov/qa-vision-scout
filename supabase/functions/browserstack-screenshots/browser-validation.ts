@@ -9,23 +9,25 @@ export const validateBrowserConfig = (config: any, availableBrowsers: any[]): bo
   };
 
   console.log('Validating config:', JSON.stringify(normalizedConfig, null, 2));
+  console.log('Available browsers:', JSON.stringify(availableBrowsers, null, 2));
   
   const osMatches = availableBrowsers.filter(b => 
-    b.os?.toLowerCase() === normalizedConfig.os &&
-    b.os_version === normalizedConfig.os_version
+    b.os?.toLowerCase() === normalizedConfig.os
   );
 
   if (osMatches.length === 0) {
-    console.log(`No matching OS found for ${normalizedConfig.os} ${normalizedConfig.os_version}`);
+    console.log(`No matching OS found for ${normalizedConfig.os}`);
     return false;
   }
 
+  // For mobile devices
   if (config.device) {
     const isValid = osMatches.some(b => b.device === normalizedConfig.device);
     console.log(`Mobile device validation result for ${normalizedConfig.device}:`, isValid);
     return isValid;
   }
 
+  // For desktop browsers
   if (!normalizedConfig.browser) {
     console.log('Missing browser information for desktop configuration');
     return false;
@@ -40,20 +42,11 @@ export const validateBrowserConfig = (config: any, availableBrowsers: any[]): bo
     return false;
   }
 
+  // Handle 'latest' version specially
   if (!normalizedConfig.browser_version || 
-      normalizedConfig.browser_version === 'latest' || 
-      normalizedConfig.browser_version === 'Latest') {
-    const versions = browserMatches
-      .map(b => b.browser_version)
-      .filter(v => v)
-      .sort((a, b) => {
-        const [aMajor = 0, aMinor = 0] = a!.split('.').map(Number);
-        const [bMajor = 0, bMinor = 0] = b!.split('.').map(Number);
-        return bMajor - aMajor || bMinor - aMinor;
-      });
-    
-    console.log(`Using latest version (${versions[0]}) for ${normalizedConfig.browser}`);
-    return versions.length > 0;
+      normalizedConfig.browser_version === 'latest') {
+    console.log(`Using latest version for ${normalizedConfig.browser}`);
+    return true; // Accept 'latest' as valid
   }
 
   const hasVersion = browserMatches.some(b => {

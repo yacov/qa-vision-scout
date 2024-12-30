@@ -12,7 +12,7 @@ export const getAvailableBrowsers = async (authHeader: HeadersInit): Promise<any
   }
   
   const browsers = await response.json();
-  console.log('Raw browsers response:', JSON.stringify(browsers, null, 2));
+  console.log('Available BrowserStack configurations:', JSON.stringify(browsers, null, 2));
   
   return browsers.map((b: any) => ({
     os: b.os?.toLowerCase(),
@@ -25,10 +25,23 @@ export const getAvailableBrowsers = async (authHeader: HeadersInit): Promise<any
 
 export const generateScreenshots = async (settings: any, authHeader: HeadersInit): Promise<any> => {
   console.log('Generating screenshots with settings:', JSON.stringify(settings, null, 2));
+
+  // Transform browser_version: 'latest' to 'Latest' as expected by BrowserStack API
+  const browsers = settings.browsers.map((browser: any) => ({
+    ...browser,
+    browser_version: browser.browser_version?.toLowerCase() === 'latest' ? 'Latest' : browser.browser_version
+  }));
+
   const response = await fetch('https://www.browserstack.com/screenshots', {
     method: 'POST',
-    headers: authHeader,
-    body: JSON.stringify(settings)
+    headers: {
+      ...authHeader,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      ...settings,
+      browsers
+    })
   });
 
   if (!response.ok) {
