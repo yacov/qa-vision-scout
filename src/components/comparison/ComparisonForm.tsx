@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -20,10 +20,15 @@ export const ComparisonForm = ({ onTestCreated }: ComparisonFormProps) => {
 
   const createTest = useMutation({
     mutationFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
       
-      if (!user) {
-        throw new Error("User not authenticated");
+      if (authError || !user) {
+        toast({
+          title: "Authentication Error",
+          description: "Please sign in to create comparison tests.",
+          variant: "destructive",
+        });
+        throw new Error("Authentication required");
       }
 
       // Create the test record
@@ -38,7 +43,10 @@ export const ComparisonForm = ({ onTestCreated }: ComparisonFormProps) => {
         .select()
         .single();
 
-      if (testError) throw testError;
+      if (testError) {
+        console.error("Error creating test:", testError);
+        throw new Error(testError.message);
+      }
 
       // Trigger screenshot generation
       const response = await fetch('/api/browserstack-screenshots', {
@@ -55,6 +63,8 @@ export const ComparisonForm = ({ onTestCreated }: ComparisonFormProps) => {
       });
 
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Screenshot generation error:", errorData);
         throw new Error('Failed to generate screenshots');
       }
 
@@ -70,10 +80,10 @@ export const ComparisonForm = ({ onTestCreated }: ComparisonFormProps) => {
       setBaselineUrl("");
       setNewUrl("");
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Failed to create comparison test. Please try again.",
+        description: error.message || "Failed to create comparison test. Please try again.",
         variant: "destructive",
       });
       console.error("Error creating test:", error);
@@ -81,15 +91,15 @@ export const ComparisonForm = ({ onTestCreated }: ComparisonFormProps) => {
   });
 
   const handleCompare = () => {
-    if (baselineUrl && newUrl) {
-      createTest.mutate();
-    } else {
+    if (!baselineUrl || !newUrl) {
       toast({
         title: "Validation Error",
         description: "Please provide both baseline and new URLs.",
         variant: "destructive",
       });
+      return;
     }
+    createTest.mutate();
   };
 
   return (
