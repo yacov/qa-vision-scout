@@ -1,11 +1,19 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders } from "../_shared/cors.js";
-import { BrowserstackBrowser, generateScreenshots, getAvailableBrowsers } from "./browserstack-api.js";
-import { normalizeOsConfig } from "./os-config.js";
-import { createSupabaseClient } from "./database.js";
+import { corsHeaders } from "../_shared/cors.ts";
+import { generateScreenshots } from "./browserstack-api.ts";
+import { normalizeOsConfig } from "./os-config.ts";
+import { createSupabaseClient } from "./database.ts";
 
 interface BrowserstackConfig {
   device_type: 'desktop' | 'mobile';
+  os: string;
+  os_version: string;
+  browser?: string;
+  browser_version?: string;
+  device?: string;
+}
+
+interface BrowserstackBrowser {
   os: string;
   os_version: string;
   browser?: string;
@@ -54,7 +62,7 @@ serve(async (req: Request) => {
     const screenshotSettings = {
       url: baseline_url,
       browsers,
-      wait_time: 5,
+      wait_time: 5 as const,
       quality: "compressed" as const,
     };
 
