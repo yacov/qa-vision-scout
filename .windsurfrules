@@ -1,0 +1,91 @@
+## Windsurf File for Project
+
+## Project Overview
+
+**Project Name:** TestHub
+
+**Description:** TestHub is an internal web-based tool created for the QA department. It is designed to rigorously test new copies of websites by comparing them against a baseline version. It assesses responsiveness across various operating systems and devices using the Browserstack API and offers an intuitive dashboard with data visualization using Three.js, D3.js, and P5.js.
+
+**Tech Stack:**
+
+*   Frontend: Next.js 14 (app router), TypeScript, Tailwind CSS, shadcn/UI, Radix UI, Lucide Icons
+*   Backend & Storage: Supabase
+*   Additional Libraries: Three.js, D3.js, P5.js
+*   API Integration: Browserstack API
+*   AI Tools: Optional integration using LLM with visual capabilities
+
+**Key Features:**
+
+*   Automated layout and functional comparison of webpages
+*   Real-time responsiveness evaluation across devices and OS
+*   Enhanced dashboard visualizations
+*   Exportable detailed reports (PDF, CSV)
+*   User role management (QA Tester, Manager, Support Staff)
+
+## Project Structure
+
+**Root Directory:**
+
+*   Contains main configuration files and documentation like README.md, .env.example, etc.
+
+**/frontend:**
+
+*   **/components:** Includes components such as `ComparisonModule`, `DeviceTester`, `Dashboard`.
+*   **/assets:** Stores images, icons, and potential static content.
+*   **/styles:** Includes stylesheets leveraging Tailwind CSS for styling.
+
+**/backend:**
+
+*   **/controllers:** Various logic handlers possibly including `ComparisonController`, `ResponsivenessController`.
+*   **/models:** Data models associated with `TestResults`, `UserProfiles`.
+*   **/routes:** Route handlers for API endpoints like `compare`, `test`, `user`.
+
+**/config:**
+
+*   Configuration files for environment variables and application settings, e.g., `database.js`, `api.js`.
+
+**/tests:**
+
+*   Contains unit and integration tests for both frontend and backend, likely structured by feature such as `dashboard.test.js`, `api.test.js`.
+
+## Development Guidelines
+
+**Coding Standards:**
+
+*   Use TypeScript for type safety.
+*   Adhere to naming conventions and code commenting standards.
+*   Maintain clean and organized code by leveraging available UI libraries.
+
+**Component Organization:**
+
+*   Group components by feature to enhance discoverability.
+*   Reuse common components across different modules to maintain consistency.
+
+## Windsurf IDE Integration
+
+**Setup Instructions:**
+
+*   Clone the repository.
+*   Run `npm install` to set up dependencies.
+*   Use `supabase login` for backend authentication setup.
+*   Configure `.env` based on the `.env.example`.
+
+**Key Commands:**
+
+*   `npm run dev`: For local development
+*   `npm run build`: To build the application
+*   `npm run test`: To run tests
+
+## Additional Context
+
+**User Roles:** Define permissions for roles:
+
+*   **QA Tester:** Can run tests and view results.
+*   **Departmental Manager:** Can manage schedules, generate reports.
+*   **Customer Support Staff:** Read-only access to reports.
+*   **Administrator:** Full access and control.
+
+**Accessibility Considerations:**
+
+*   Ensure dashboard accessibility following industry standards for both visually and hearing-impaired users.
+*   Potential inclusion of dark mode as an enhancement to improve user comfort.

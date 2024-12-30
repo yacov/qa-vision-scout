@@ -7,6 +7,48 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Function to fetch available browsers from BrowserStack
+const getAvailableBrowsers = async (client: any): Promise<any[]> => {
+  return new Promise((resolve, reject) => {
+    client.getBrowsers((error: any, browsers: any[]) => {
+      if (error) {
+        console.error('Error fetching available browsers:', error)
+        reject(error)
+      } else {
+        resolve(browsers)
+      }
+    })
+  })
+}
+
+// Function to validate browser configuration
+const validateBrowserConfig = (config: any, availableBrowsers: any[]): boolean => {
+  if (config.device) {
+    // For mobile devices
+    return availableBrowsers.some(b => 
+      b.os === config.os &&
+      b.os_version === config.os_version &&
+      b.device === config.device
+    )
+  } else {
+    // For desktop browsers
+    const matchingBrowser = availableBrowsers.find(b => 
+      b.os === config.os &&
+      b.os_version === config.os_version &&
+      b.browser === config.browser
+    )
+
+    if (!matchingBrowser) return false
+
+    // If browser_version is specified, validate it
+    if (config.browser_version && config.browser_version !== 'latest') {
+      return matchingBrowser.browser_version === config.browser_version
+    }
+
+    return true
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -49,56 +91,54 @@ serve(async (req) => {
       password: Deno.env.get('BROWSERSTACK_ACCESS_KEY'),
     })
 
+    // Fetch available browsers from BrowserStack
+    const availableBrowsers = await getAvailableBrowsers(client)
+    console.log('Available BrowserStack configurations:', availableBrowsers)
+
     // Map configurations to BrowserStack format
-    const browsers = selectedConfigs.map(config => {
+    const browsers = []
+    for (const config of selectedConfigs) {
       // Validate and format os_version
       if (!config.os_version || config.os_version.trim() === '' || config.os_version === 'null') {
         console.error('Invalid os_version for config:', config)
         throw new Error(`Invalid os_version for configuration: ${config.name}`)
       }
 
+      let browserConfig
       if (config.device_type === 'mobile') {
         // For mobile devices
-        const mobileConfig = {
+        browserConfig = {
           os: config.os,
           os_version: config.os_version.trim(),
           device: config.device
         }
-        console.log('Mobile device configuration:', mobileConfig)
-        return mobileConfig
       } else {
         // For desktop browsers
-        const desktopConfig: any = {
+        browserConfig = {
           os: config.os,
           os_version: config.os_version.trim(),
           browser: config.browser
         }
 
-        // Only add browser_version if it exists, is not null/empty, and after proper validation
+        // Only add browser_version if it exists and is valid
         if (config.browser_version && 
             config.browser_version !== 'null' && 
             config.browser_version.trim() !== '') {
           
           const version = config.browser_version.trim()
-          
-          // Handle 'latest' as a special case
-          if (version.toLowerCase() === 'latest') {
-            desktopConfig.browser_version = 'latest'
-          } else {
-            // Validate version format (should be a number or number.number)
-            const versionRegex = /^\d+(\.\d+)?$/
-            if (!versionRegex.test(version)) {
-              console.error('Invalid browser_version format:', version)
-              throw new Error(`Invalid browser_version format for configuration: ${config.name}. Version should be 'latest' or a valid version number (e.g., '121' or '121.0')`)
-            }
-            desktopConfig.browser_version = version
-          }
+          browserConfig.browser_version = version.toLowerCase() === 'latest' ? 'latest' : version
         }
-
-        console.log('Desktop browser configuration:', desktopConfig)
-        return desktopConfig
       }
-    })
+
+      // Validate the configuration against available browsers
+      if (!validateBrowserConfig(browserConfig, availableBrowsers)) {
+        console.error('Invalid browser configuration:', browserConfig)
+        throw new Error(`Invalid browser configuration for: ${config.name}. Please check available browsers and versions.`)
+      }
+
+      console.log(`Valid ${config.device_type} configuration:`, browserConfig)
+      browsers.push(browserConfig)
+    }
 
     console.log('Mapped browser configurations:', browsers)
 
