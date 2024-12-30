@@ -37,6 +37,10 @@ serve(async (req) => {
       throw new Error('Failed to fetch configurations')
     }
 
+    if (!selectedConfigs || selectedConfigs.length === 0) {
+      throw new Error('No configurations selected')
+    }
+
     console.log('Selected configurations:', selectedConfigs)
 
     // Create BrowserStack Screenshots client
@@ -47,21 +51,22 @@ serve(async (req) => {
 
     // Map configurations to BrowserStack format
     const browsers = selectedConfigs.map(config => {
-      const browser = {
-        os: config.os,
-        os_version: config.os_version,
-        browser: config.browser,
-        device: config.device,
-        browser_version: config.browser_version === 'latest' ? 'latest' : config.browser_version || null
-      }
-
-      // Remove browser and browser_version for mobile devices
       if (config.device_type === 'mobile') {
-        delete browser.browser
-        delete browser.browser_version
+        // For mobile devices, only include necessary fields
+        return {
+          os: config.os,
+          os_version: config.os_version,
+          device: config.device
+        }
+      } else {
+        // For desktop browsers
+        return {
+          os: config.os,
+          os_version: config.os_version,
+          browser: config.browser,
+          browser_version: config.browser_version === 'latest' ? 'latest' : config.browser_version
+        }
       }
-
-      return browser
     })
 
     console.log('Mapped browser configurations:', browsers)
