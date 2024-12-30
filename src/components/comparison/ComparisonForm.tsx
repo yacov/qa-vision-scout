@@ -20,15 +20,22 @@ export const ComparisonForm = ({ onTestCreated }: ComparisonFormProps) => {
 
   const createTest = useMutation({
     mutationFn: async () => {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      const { data: session } = await supabase.auth.getSession();
       
-      if (authError || !user) {
-        toast({
-          title: "Authentication Error",
-          description: "Please sign in to create comparison tests.",
-          variant: "destructive",
+      if (!session?.session?.user) {
+        // Trigger Supabase auth
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'github',
+          options: {
+            redirectTo: window.location.origin + '/comparison'
+          }
         });
-        throw new Error("Authentication required");
+        
+        if (error) {
+          console.error("Auth error:", error);
+          throw new Error("Please sign in to create comparison tests");
+        }
+        return;
       }
 
       // Create the test record
@@ -37,7 +44,7 @@ export const ComparisonForm = ({ onTestCreated }: ComparisonFormProps) => {
         .insert({
           baseline_url: baselineUrl,
           new_url: newUrl,
-          user_id: user.id,
+          user_id: session.session.user.id,
           status: 'pending'
         })
         .select()
@@ -53,7 +60,7 @@ export const ComparisonForm = ({ onTestCreated }: ComparisonFormProps) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+          'Authorization': `Bearer ${session.session.access_token}`
         },
         body: JSON.stringify({
           testId: test.id,
