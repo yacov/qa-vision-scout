@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Check, Edit2 } from "lucide-react";
+import { Check, Edit2, Shield } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const PredefinedConfigs = () => {
   const [selectedConfigs, setSelectedConfigs] = useState<string[]>([]);
   const [editingConfig, setEditingConfig] = useState<any>(null);
+  const [verifyingConfig, setVerifyingConfig] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -82,6 +83,31 @@ export const PredefinedConfigs = () => {
     },
   });
 
+  const verifyConfig = async (config: any) => {
+    setVerifyingConfig(config.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('validate-browserstack-config', {
+        body: { config }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: data.valid ? "Configuration Valid" : "Configuration Invalid",
+        description: data.message,
+        variant: data.valid ? "default" : "destructive",
+      });
+    } catch (error) {
+      toast({
+        title: "Verification Error",
+        description: "Failed to verify configuration with BrowserStack",
+        variant: "destructive",
+      });
+    } finally {
+      setVerifyingConfig(null);
+    }
+  };
+
   const toggleConfig = (configId: string) => {
     setSelectedConfigs(prev => 
       prev.includes(configId) 
@@ -129,17 +155,31 @@ export const PredefinedConfigs = () => {
                 {selectedConfigs.includes(config.id) && (
                   <Check className="h-4 w-4 absolute top-2 right-2" />
                 )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEdit(config);
-                  }}
-                >
-                  <Edit2 className="h-4 w-4" />
-                </Button>
+                <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      verifyConfig(config);
+                    }}
+                    disabled={verifyingConfig === config.id}
+                  >
+                    <Shield className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEdit(config);
+                    }}
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                </div>
                 <div className="font-medium">{config.name}</div>
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="secondary">
