@@ -40,6 +40,7 @@ export const ComparisonForm = ({
 
   const createTest = useMutation({
     mutationFn: async () => {
+      // First create the test record
       const { data: test, error: testError } = await supabase
         .from('comparison_tests')
         .insert({
@@ -56,13 +57,24 @@ export const ComparisonForm = ({
         throw new Error(testError.message);
       }
 
+      // Get the selected configurations
+      const { data: configs, error: configError } = await supabase
+        .from('browserstack_configs')
+        .select('*')
+        .in('id', selectedConfigs);
+
+      if (configError) {
+        console.error("Error fetching configs:", configError);
+        throw new Error('Failed to fetch configurations');
+      }
+
+      // Generate screenshots
       const { error: screenshotError } = await supabase.functions
         .invoke('browserstack-screenshots', {
           body: {
             testId: test.id,
-            baselineUrl,
-            newUrl,
-            configIds: selectedConfigs,
+            url: baselineUrl,
+            selected_configs: configs
           },
         });
 
