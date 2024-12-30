@@ -21,6 +21,27 @@ const getAvailableBrowsers = async (client: any): Promise<any[]> => {
   })
 }
 
+// Function to validate and format browser version
+const validateBrowserVersion = (version: string | null | undefined): string | null => {
+  if (!version || version === 'null' || version.trim() === '') {
+    return null
+  }
+  
+  const trimmedVersion = version.trim()
+  if (trimmedVersion.toLowerCase() === 'latest') {
+    return 'latest'
+  }
+
+  // Check if version is in valid format (e.g., "121.0" or "11")
+  const versionRegex = /^\d+(\.\d+)?$/
+  if (!versionRegex.test(trimmedVersion)) {
+    console.error('Invalid browser version format:', trimmedVersion)
+    throw new Error(`Invalid browser version format: ${trimmedVersion}`)
+  }
+
+  return trimmedVersion
+}
+
 // Function to validate browser configuration
 const validateBrowserConfig = (config: any, availableBrowsers: any[]): boolean => {
   if (config.device) {
@@ -40,7 +61,7 @@ const validateBrowserConfig = (config: any, availableBrowsers: any[]): boolean =
 
     if (!matchingBrowser) return false
 
-    // If browser_version is specified, validate it
+    // If browser_version is specified and not 'latest', validate it
     if (config.browser_version && config.browser_version !== 'latest') {
       return matchingBrowser.browser_version === config.browser_version
     }
@@ -62,7 +83,7 @@ serve(async (req) => {
     console.log('New URL:', newUrl)
     console.log('Config IDs:', configIds)
 
-    // Create Supabase client to fetch configurations
+    // Create Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -104,29 +125,22 @@ serve(async (req) => {
         throw new Error(`Invalid os_version for configuration: ${config.name}`)
       }
 
-      let browserConfig
+      let browserConfig: any = {
+        os: config.os,
+        os_version: config.os_version.trim()
+      }
+
       if (config.device_type === 'mobile') {
         // For mobile devices
-        browserConfig = {
-          os: config.os,
-          os_version: config.os_version.trim(),
-          device: config.device
-        }
+        browserConfig.device = config.device
       } else {
         // For desktop browsers
-        browserConfig = {
-          os: config.os,
-          os_version: config.os_version.trim(),
-          browser: config.browser
-        }
-
-        // Only add browser_version if it exists and is valid
-        if (config.browser_version && 
-            config.browser_version !== 'null' && 
-            config.browser_version.trim() !== '') {
-          
-          const version = config.browser_version.trim()
-          browserConfig.browser_version = version.toLowerCase() === 'latest' ? 'latest' : version
+        browserConfig.browser = config.browser
+        
+        // Validate and format browser_version
+        const validatedVersion = validateBrowserVersion(config.browser_version)
+        if (validatedVersion) {
+          browserConfig.browser_version = validatedVersion
         }
       }
 
@@ -157,7 +171,7 @@ serve(async (req) => {
       client.generateScreenshots({
         ...commonSettings,
         url: baselineUrl,
-      }, (error, job) => {
+      }, (error: any, job: any) => {
         if (error) {
           console.error('Error generating baseline screenshots:', error)
           reject(error)
@@ -173,7 +187,7 @@ serve(async (req) => {
       client.generateScreenshots({
         ...commonSettings,
         url: newUrl,
-      }, (error, job) => {
+      }, (error: any, job: any) => {
         if (error) {
           console.error('Error generating new screenshots:', error)
           reject(error)
@@ -184,7 +198,7 @@ serve(async (req) => {
       })
     })
 
-    // Update test status to in_progress
+    // Update test status
     await supabaseClient
       .from('comparison_tests')
       .update({ status: 'in_progress' })
