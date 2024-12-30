@@ -20,12 +20,13 @@ export const ComparisonForm = ({ onTestCreated }: ComparisonFormProps) => {
 
   const createTest = useMutation({
     mutationFn: async () => {
-      // Create the test record
+      // Create the test record with a default user ID
       const { data: test, error: testError } = await supabase
         .from('comparison_tests')
         .insert({
           baseline_url: baselineUrl,
           new_url: newUrl,
+          user_id: '00000000-0000-0000-0000-000000000000', // Default system user UUID
           status: 'pending'
         })
         .select()
