@@ -13,11 +13,31 @@ serve(async (req) => {
   }
 
   try {
-    const { testId, baselineUrl, newUrl } = await req.json()
+    const { testId, baselineUrl, newUrl, configIds } = await req.json()
 
     console.log('Creating screenshots for test:', testId)
     console.log('Baseline URL:', baselineUrl)
     console.log('New URL:', newUrl)
+    console.log('Config IDs:', configIds)
+
+    // Create Supabase client to fetch configurations
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    // Fetch selected configurations
+    const { data: selectedConfigs, error: configError } = await supabaseClient
+      .from('browserstack_configs')
+      .select('*')
+      .in('id', configIds)
+
+    if (configError) {
+      console.error('Error fetching configurations:', configError)
+      throw new Error('Failed to fetch configurations')
+    }
+
+    console.log('Selected configurations:', selectedConfigs)
 
     // Create BrowserStack Screenshots client
     const client = BrowserStack.createScreenshotClient({
@@ -25,38 +45,35 @@ serve(async (req) => {
       password: Deno.env.get('BROWSERSTACK_ACCESS_KEY'),
     })
 
-    // Configure screenshot settings with proper browser objects
+    // Map configurations to BrowserStack format
+    const browsers = selectedConfigs.map(config => {
+      const browser = {
+        os: config.os,
+        os_version: config.os_version,
+        browser: config.browser,
+        device: config.device,
+        browser_version: config.browser_version === 'latest' ? 'latest' : config.browser_version || null
+      }
+
+      // Remove browser and browser_version for mobile devices
+      if (config.device_type === 'mobile') {
+        delete browser.browser
+        delete browser.browser_version
+      }
+
+      return browser
+    })
+
+    console.log('Mapped browser configurations:', browsers)
+
+    // Configure screenshot settings
     const commonSettings = {
       quality: 'compressed',
       wait_time: 5,
       local: false,
       mac_res: '1024x768',
       win_res: '1024x768',
-      browsers: [
-        // Desktop browsers
-        {
-          os: 'Windows',
-          os_version: '11',
-          browser: 'chrome',
-          browser_version: '121.0',
-          device: null
-        },
-        {
-          os: 'OS X',
-          os_version: 'Sonoma',
-          browser: 'safari',
-          browser_version: '17.0',
-          device: null
-        },
-        // Mobile device
-        {
-          os: 'ios',
-          os_version: '15',
-          device: 'iPhone 13',
-          browser: null,
-          browser_version: null
-        }
-      ],
+      browsers: browsers,
     }
 
     // Generate screenshots for baseline URL
@@ -91,12 +108,6 @@ serve(async (req) => {
       })
     })
 
-    // Initialize Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
     // Update test status to in_progress
     await supabaseClient
       .from('comparison_tests')
@@ -104,7 +115,7 @@ serve(async (req) => {
       .eq('id', testId)
 
     // Create screenshot records
-    const screenshots = commonSettings.browsers.map(browser => ({
+    const screenshots = browsers.map(browser => ({
       test_id: testId,
       device_name: browser.device || `${browser.browser} on ${browser.os}`,
       os_version: browser.os_version,
