@@ -26,7 +26,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Browserstack API configuration
 const BROWSERSTACK_USERNAME = Deno.env.get('BROWSERSTACK_USERNAME')
 const BROWSERSTACK_ACCESS_KEY = Deno.env.get('BROWSERSTACK_ACCESS_KEY')
 const BROWSERSTACK_API_BASE = 'https://www.browserstack.com/screenshots'
@@ -42,6 +41,7 @@ const authHeader = {
 
 // Function to fetch available browsers from BrowserStack
 const getAvailableBrowsers = async (): Promise<BrowserstackBrowser[]> => {
+  console.log('Fetching available browsers from BrowserStack...');
   const response = await fetch(`${BROWSERSTACK_API_BASE}/browsers.json`, {
     headers: authHeader
   });
@@ -78,59 +78,54 @@ const validateBrowserConfig = (config: BrowserstackBrowser, availableBrowsers: B
     device: config.device
   };
 
-  console.log('Validating normalized config:', JSON.stringify(normalizedConfig, null, 2));
+  console.log('Validating config:', JSON.stringify(normalizedConfig, null, 2));
   
-  if (!normalizedConfig.os || !normalizedConfig.os_version) {
-    console.error('Missing required OS information');
+  // Find matching OS configurations
+  const osMatches = availableBrowsers.filter(b => 
+    b.os?.toLowerCase() === normalizedConfig.os &&
+    b.os_version === normalizedConfig.os_version
+  );
+
+  if (osMatches.length === 0) {
+    console.log(`No matching OS found for ${normalizedConfig.os} ${normalizedConfig.os_version}`);
     return false;
   }
 
-  // Log all available combinations for this OS
-  const osMatches = availableBrowsers.filter(b => b.os === normalizedConfig.os);
-  console.log(`Available configurations for ${normalizedConfig.os}:`, JSON.stringify(osMatches, null, 2));
-
   if (config.device) {
     // For mobile devices
-    const isValid = availableBrowsers.some(b => 
-      b.os === normalizedConfig.os &&
-      b.os_version === normalizedConfig.os_version &&
-      b.device === normalizedConfig.device
-    );
-    console.log('Mobile device validation result:', isValid);
+    const isValid = osMatches.some(b => b.device === normalizedConfig.device);
+    console.log(`Mobile device validation result for ${normalizedConfig.device}:`, isValid);
     return isValid;
   } else {
     // For desktop browsers
     if (!normalizedConfig.browser) {
-      console.error('Missing browser information for desktop configuration');
+      console.log('Missing browser information for desktop configuration');
       return false;
     }
 
-    // Log all available browsers for this OS version
-    const osVersionMatches = osMatches.filter(b => b.os_version === normalizedConfig.os_version);
-    console.log(`Available browsers for ${normalizedConfig.os} ${normalizedConfig.os_version}:`, 
-      JSON.stringify(osVersionMatches, null, 2));
+    const browserMatches = osMatches.filter(b => 
+      b.browser?.toLowerCase() === normalizedConfig.browser
+    );
 
-    const matchingBrowsers = osVersionMatches.filter(b => b.browser === normalizedConfig.browser);
-    console.log(`Matching browsers for ${normalizedConfig.browser}:`, 
-      JSON.stringify(matchingBrowsers, null, 2));
-
-    if (matchingBrowsers.length === 0) {
-      console.log('No matching browsers found');
+    if (browserMatches.length === 0) {
+      console.log(`No matching browser found for ${normalizedConfig.browser}`);
       return false;
     }
 
-    // If browser_version is 'latest' or not specified, consider it valid
-    if (!normalizedConfig.browser_version || normalizedConfig.browser_version === 'latest') {
+    // Special handling for 'latest' version
+    if (!normalizedConfig.browser_version || 
+        normalizedConfig.browser_version === 'latest' || 
+        normalizedConfig.browser_version === 'Latest') {
       console.log('Using latest browser version');
       return true;
     }
 
     // For specific versions, check if the version exists
-    const hasVersion = matchingBrowsers.some(b => {
-      const normalizedAvailableVersion = b.browser_version?.toLowerCase();
-      console.log(`Comparing requested version ${normalizedConfig.browser_version} with available version ${normalizedAvailableVersion}`);
-      return normalizedAvailableVersion === normalizedConfig.browser_version ||
-             normalizedAvailableVersion?.startsWith(normalizedConfig.browser_version!);
+    const hasVersion = browserMatches.some(b => {
+      const availableVersion = b.browser_version?.toLowerCase();
+      console.log(`Comparing requested version ${normalizedConfig.browser_version} with available version ${availableVersion}`);
+      return availableVersion === normalizedConfig.browser_version ||
+             availableVersion?.startsWith(normalizedConfig.browser_version!);
     });
     
     console.log(`Version validation result for ${normalizedConfig.browser_version}:`, hasVersion);
@@ -140,6 +135,7 @@ const validateBrowserConfig = (config: BrowserstackBrowser, availableBrowsers: B
 
 // Function to generate screenshots
 const generateScreenshots = async (settings: ScreenshotRequest): Promise<any> => {
+  console.log('Generating screenshots with settings:', JSON.stringify(settings, null, 2));
   const response = await fetch(BROWSERSTACK_API_BASE, {
     method: 'POST',
     headers: authHeader,
@@ -148,13 +144,17 @@ const generateScreenshots = async (settings: ScreenshotRequest): Promise<any> =>
 
   if (!response.ok) {
     const error = await response.text();
+    console.error('Screenshot generation failed:', error);
     throw new Error(`Failed to generate screenshots: ${error}`);
   }
 
-  return response.json();
+  const result = await response.json();
+  console.log('Screenshot generation successful:', JSON.stringify(result, null, 2));
+  return result;
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -208,21 +208,13 @@ serve(async (req) => {
         browserConfig.device = config.device;
       } else {
         browserConfig.browser = config.browser;
-        // Handle 'latest' version
-        browserConfig.browser_version = config.browser_version === 'latest' ? 'latest' : config.browser_version;
+        browserConfig.browser_version = config.browser_version === 'latest' ? 'Latest' : config.browser_version;
       }
 
       console.log('Created browser config:', JSON.stringify(browserConfig, null, 2));
 
       // Validate the configuration against available browsers
       if (!validateBrowserConfig(browserConfig, availableBrowsers)) {
-        // Log available configurations for debugging
-        console.log('Available configurations for this OS:', 
-          JSON.stringify(availableBrowsers.filter(b => 
-            b.os?.toLowerCase() === browserConfig.os?.toLowerCase()
-          ), null, 2)
-        );
-
         const errorMsg = `Invalid browser configuration for: ${config.name}. ` +
           `Requested: ${browserConfig.browser || browserConfig.device} ` +
           `on ${browserConfig.os} ${browserConfig.os_version}`;
@@ -245,12 +237,14 @@ serve(async (req) => {
     }
 
     // Generate screenshots for baseline URL
+    console.log('Generating baseline screenshots...');
     const baselineJob = await generateScreenshots({
       ...commonSettings,
       url: baselineUrl
     });
 
     // Generate screenshots for new URL
+    console.log('Generating new version screenshots...');
     const newJob = await generateScreenshots({
       ...commonSettings,
       url: newUrl
@@ -276,6 +270,7 @@ serve(async (req) => {
       .from('test_screenshots')
       .insert(screenshots);
 
+    console.log('Screenshot generation completed successfully');
     return new Response(
       JSON.stringify({
         baselineJob,
