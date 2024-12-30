@@ -1,88 +1,11 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Layout, BarChart3, Smartphone, Settings, Loader2 } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Layout, BarChart3, Smartphone, Settings } from "lucide-react";
+import { ComparisonForm } from "@/components/comparison/ComparisonForm";
+import { TestResultsTable } from "@/components/comparison/TestResultsTable";
+import { ResultsDialog } from "@/components/comparison/ResultsDialog";
 
 const Comparison = () => {
-  const [baselineUrl, setBaselineUrl] = useState("");
-  const [newUrl, setNewUrl] = useState("");
   const [showResults, setShowResults] = useState(false);
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  const [selectedDevices] = useState([
-    { name: "iPhone 12", os: "iOS 14" },
-    { name: "Pixel 5", os: "Android 12" },
-    { name: "Desktop Chrome", os: "Windows 10" }
-  ]);
-
-  // Fetch user's comparison tests
-  const { data: tests, isLoading: testsLoading } = useQuery({
-    queryKey: ['comparison-tests'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('comparison_tests')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  // Create new comparison test
-  const createTest = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase
-        .from('comparison_tests')
-        .insert([
-          {
-            baseline_url: baselineUrl,
-            new_url: newUrl,
-          }
-        ])
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comparison-tests'] });
-      toast({
-        title: "Test created",
-        description: "Your comparison test has been created successfully.",
-      });
-      setShowResults(true);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to create comparison test. Please try again.",
-        variant: "destructive",
-      });
-      console.error("Error creating test:", error);
-    }
-  });
-
-  const handleCompare = () => {
-    if (baselineUrl && newUrl) {
-      createTest.mutate();
-    } else {
-      toast({
-        title: "Validation Error",
-        description: "Please provide both baseline and new URLs.",
-        variant: "destructive",
-      });
-    }
-  };
 
   return (
     <div className="flex h-screen bg-background">
@@ -120,103 +43,10 @@ const Comparison = () => {
         </header>
 
         <div className="p-6">
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>URL Configuration</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="baseline">Baseline URL</Label>
-                <Input
-                  id="baseline"
-                  placeholder="Enter baseline URL"
-                  value={baselineUrl}
-                  onChange={(e) => setBaselineUrl(e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="new">New Version URL</Label>
-                <Input
-                  id="new"
-                  placeholder="Enter new version URL"
-                  value={newUrl}
-                  onChange={(e) => setNewUrl(e.target.value)}
-                />
-              </div>
-              <Button 
-                onClick={handleCompare}
-                disabled={createTest.isPending}
-              >
-                {createTest.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating Test...
-                  </>
-                ) : (
-                  'Start Comparison'
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Tests</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {testsLoading ? (
-                <div className="flex justify-center p-4">
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                </div>
-              ) : tests?.length ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Baseline URL</TableHead>
-                      <TableHead>New URL</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Created At</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {tests.map((test) => (
-                      <TableRow key={test.id}>
-                        <TableCell className="truncate max-w-xs">{test.baseline_url}</TableCell>
-                        <TableCell className="truncate max-w-xs">{test.new_url}</TableCell>
-                        <TableCell>{test.status}</TableCell>
-                        <TableCell>{new Date(test.created_at).toLocaleDateString()}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <p className="text-center text-muted-foreground">No tests found</p>
-              )}
-            </CardContent>
-          </Card>
+          <ComparisonForm onTestCreated={() => setShowResults(true)} />
+          <TestResultsTable />
+          <ResultsDialog open={showResults} onOpenChange={setShowResults} />
         </div>
-
-        <Dialog open={showResults} onOpenChange={setShowResults}>
-          <DialogContent className="max-w-4xl">
-            <DialogHeader>
-              <DialogTitle>Comparison Results</DialogTitle>
-            </DialogHeader>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <h3 className="font-semibold mb-2">Baseline Version</h3>
-                <div className="bg-gray-100 h-64 rounded flex items-center justify-center">
-                  Screenshot placeholder
-                </div>
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">New Version</h3>
-                <div className="bg-gray-100 h-64 rounded flex items-center justify-center">
-                  Screenshot placeholder
-                </div>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   );
