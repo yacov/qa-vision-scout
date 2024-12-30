@@ -9,6 +9,51 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      browserstack_configs: {
+        Row: {
+          browser: string | null
+          browser_version: string | null
+          created_at: string | null
+          device: string | null
+          device_type: Database["public"]["Enums"]["device_type"]
+          id: string
+          is_active: boolean | null
+          name: string
+          os: string
+          os_version: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          browser?: string | null
+          browser_version?: string | null
+          created_at?: string | null
+          device?: string | null
+          device_type: Database["public"]["Enums"]["device_type"]
+          id?: string
+          is_active?: boolean | null
+          name: string
+          os: string
+          os_version: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          browser?: string | null
+          browser_version?: string | null
+          created_at?: string | null
+          device?: string | null
+          device_type?: Database["public"]["Enums"]["device_type"]
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          os?: string
+          os_version?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       comparison_tests: {
         Row: {
           baseline_url: string
@@ -88,6 +133,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      device_type: "desktop" | "mobile"
       test_status: "pending" | "in_progress" | "completed" | "failed"
     }
     CompositeTypes: {
