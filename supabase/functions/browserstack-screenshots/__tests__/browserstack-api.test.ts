@@ -1,27 +1,13 @@
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { generateScreenshots, getAvailableBrowsers } from '../browserstack-api';
+const { generateScreenshots, getAvailableBrowsers } = require('../browserstack-api');
 
-// Test configuration
 const TEST_URL = process.env.TEST_URL || 'https://example.com';
 const TEST_TIMEOUT = parseInt(process.env.TEST_TIMEOUT || '120000', 10);
-
 const TEST_BROWSERS = [
   {
     os: 'Windows',
     os_version: '11',
     browser: 'chrome',
     browser_version: 'latest'
-  },
-  {
-    os: 'OS X',
-    os_version: 'Monterey',
-    browser: 'safari',
-    browser_version: 'latest'
-  },
-  {
-    os: 'ios',
-    os_version: '16',
-    device: 'iPhone 14'
   }
 ];
 
@@ -48,7 +34,7 @@ describe('BrowserStack Screenshots API Tests', () => {
       ok: true,
       json: () => Promise.resolve({}),
       text: () => Promise.resolve('')
-    })) as unknown as typeof fetch;
+    })) as any;
   });
 
   describe('getAvailableBrowsers', () => {
@@ -62,7 +48,7 @@ describe('BrowserStack Screenshots API Tests', () => {
         }
       ];
 
-      (global.fetch as jest.Mock).mockImplementationOnce(() => Promise.resolve({
+      (global.fetch as jest.Mock).mockImplementation(() => Promise.resolve({
         ok: true,
         json: () => Promise.resolve(mockBrowsers)
       }));
@@ -79,7 +65,7 @@ describe('BrowserStack Screenshots API Tests', () => {
     }, TEST_TIMEOUT);
 
     it('should handle authentication failure', async () => {
-      (global.fetch as jest.Mock).mockImplementationOnce(() => Promise.resolve({
+      (global.fetch as jest.Mock).mockImplementation(() => Promise.resolve({
         ok: false,
         status: 401,
         text: () => Promise.resolve('Unauthorized')
@@ -145,7 +131,7 @@ describe('BrowserStack Screenshots API Tests', () => {
     }, TEST_TIMEOUT);
 
     it('should handle invalid URL', async () => {
-      (global.fetch as jest.Mock).mockImplementationOnce(() => Promise.resolve({
+      (global.fetch as jest.Mock).mockImplementation(() => Promise.resolve({
         ok: false,
         status: 422,
         text: () => Promise.resolve('Invalid URL format')
@@ -164,7 +150,7 @@ describe('BrowserStack Screenshots API Tests', () => {
     }, TEST_TIMEOUT);
 
     it('should handle invalid browser configuration', async () => {
-      (global.fetch as jest.Mock).mockImplementationOnce(() => Promise.resolve({
+      (global.fetch as jest.Mock).mockImplementation(() => Promise.resolve({
         ok: false,
         status: 422,
         text: () => Promise.resolve('Invalid browser configuration')

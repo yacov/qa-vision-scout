@@ -1,6 +1,5 @@
-import type { Config } from '@jest/types';
-
-const config: Config.InitialOptions = {
+/** @type {import('@jest/types').Config.InitialOptions} */
+module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   moduleNameMapper: {
@@ -8,13 +7,15 @@ const config: Config.InitialOptions = {
   },
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
-      useESM: true,
+      tsconfig: 'tsconfig.test.json'
     }],
   },
-  extensionsToTreatAsEsm: ['.ts', '.tsx'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   testMatch: ['**/__tests__/**/*.test.ts'],
   setupFiles: ['<rootDir>/jest.setup.ts'],
-};
-
-export default config; 
+  globals: {
+    'ts-jest': {
+      isolatedModules: true
+    }
+  }
+}; 

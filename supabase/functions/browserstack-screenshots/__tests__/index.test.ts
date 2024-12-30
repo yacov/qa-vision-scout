@@ -1,5 +1,5 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-import { handler } from '../index';
+const { handler } = require('../index');
 
 describe('BrowserStack Screenshots Endpoint', () => {
   let mockRequest: Request;

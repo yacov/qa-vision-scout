@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "verbatimModuleSyntax": false,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["**/__tests__/**/*.ts", "jest.config.ts", "jest.setup.ts"],
+  "exclude": ["node_modules"]
+} 

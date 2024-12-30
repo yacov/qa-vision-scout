@@ -356,26 +356,23 @@ export const generateScreenshots = async (settings: ScreenshotSettings, authHead
     const rateLimiter = new RateLimiter(requestId);
     await rateLimiter.acquireToken();
     
+    // Validate required parameters
+    if (!settings.url) {
+      logger.warn('Missing URL parameter', { requestId });
+      throw new Error('Missing required parameter: url');
+    }
+
+    if (!settings.browsers || !Array.isArray(settings.browsers) || settings.browsers.length === 0) {
+      logger.warn('Missing or invalid browsers array', { requestId });
+      throw new Error('Missing required parameter: browsers must be a non-empty array');
+    }
+
     logger.info('Generating screenshots', {
       requestId,
       url: settings.url,
       browserCount: settings.browsers.length,
       settings
     });
-
-    // Validate required fields
-    if (!settings.url) {
-      logger.warn('Missing URL parameter', { requestId });
-      throw new Error('Missing required parameter: url');
-    }
-    if (!Array.isArray(settings.browsers) || settings.browsers.length === 0) {
-      logger.warn('Invalid browsers configuration', {
-        requestId,
-        isArray: Array.isArray(settings.browsers),
-        length: settings.browsers?.length
-      });
-      throw new Error('Missing required parameter: browsers must be a non-empty array');
-    }
 
     // Validate resolutions and wait time
     validateResolution(settings.win_res, VALID_WIN_RESOLUTIONS, 'Windows', requestId);
