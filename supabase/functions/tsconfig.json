@@ -2,10 +2,10 @@
   "compilerOptions": {
     "target": "ES2020",
     "module": "ES2020",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "esModuleInterop": true,
     "strict": true,
-    "lib": ["ES2020", "DOM"],
+    "lib": ["ES2020", "DOM", "deno.ns"],
     "types": ["@types/node"],
     "jsx": "react",
     "allowJs": true,

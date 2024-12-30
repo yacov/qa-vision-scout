@@ -17,9 +17,14 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-    },
+    }
   },
   optimizeDeps: {
     exclude: ['lovable-tagger']
+  },
+  build: {
+    rollupOptions: {
+      external: ['react/jsx-runtime']
+    }
   }
 }));
