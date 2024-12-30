@@ -1,13 +1,8 @@
-// Main edge function handler
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { getAvailableBrowsers, generateScreenshots } from "./browserstack-api.ts";
-import { createSupabaseClient, updateTestStatus, createScreenshotRecords } from "./database.ts";
-import { normalizeOsConfig } from "./os-config.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { getAvailableBrowsers, generateScreenshots } from "./browserstack-api.js";
+import { createSupabaseClient, updateTestStatus, createScreenshotRecords } from "./database.js";
+import { normalizeOsConfig } from "./os-config.js";
 
-// @ts-ignore: Deno imports
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
-
-// Types for Browserstack API
 interface BrowserstackBrowser {
   os: string;
   os_version: string;
@@ -17,14 +12,10 @@ interface BrowserstackBrowser {
 }
 
 interface ScreenshotRequest {
-  url: string;
-  browsers: BrowserstackBrowser[];
-  win_res?: string;
-  mac_res?: string;
-  quality?: 'compressed' | 'original';
-  wait_time?: number;
-  local?: boolean;
-  orientation?: 'portrait' | 'landscape';
+  testId: string;
+  baselineUrl: string;
+  newUrl: string;
+  configIds: string[];
 }
 
 const corsHeaders = {
@@ -32,27 +23,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
-  // Handle CORS preflight requests
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { testId, baselineUrl, newUrl, configIds } = await req.json();
+    const { testId, baselineUrl, newUrl, configIds }: ScreenshotRequest = await req.json();
 
     console.log('Creating screenshots for test:', testId);
     console.log('Baseline URL:', baselineUrl);
     console.log('New URL:', newUrl);
     console.log('Config IDs:', configIds);
 
-    // Create Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    const supabaseClient = createSupabaseClient();
 
-    // Fetch selected configurations
     const { data: selectedConfigs, error: configError } = await supabaseClient
       .from('browserstack_configs')
       .select('*')
@@ -69,17 +54,15 @@ serve(async (req) => {
 
     console.log('Selected configurations:', selectedConfigs);
 
-    // Fetch available browsers from BrowserStack
-    const availableBrowsers = await getAvailableBrowsers({
+    const authHeader = {
       'Authorization': `Basic ${btoa(`${Deno.env.get('BROWSERSTACK_USERNAME')}:${Deno.env.get('BROWSERSTACK_ACCESS_KEY')}`)}`,
       'Content-Type': 'application/json'
-    });
-    
+    };
+
+    const availableBrowsers = await getAvailableBrowsers(authHeader);
     console.log('Available BrowserStack configurations:', availableBrowsers);
 
-    // Map configurations to BrowserStack format
-    const browsers: BrowserstackBrowser[] = [];
-    for (const config of selectedConfigs) {
+    const browsers: BrowserstackBrowser[] = selectedConfigs.map(config => {
       console.log('Processing config:', JSON.stringify(config, null, 2));
       
       const normalizedConfig = normalizeOsConfig(config);
@@ -88,9 +71,6 @@ serve(async (req) => {
       const browserConfig: BrowserstackBrowser = {
         os: normalizedConfig.os,
         os_version: normalizedConfig.os_version,
-        browser: undefined,
-        browser_version: undefined,
-        device: undefined
       };
 
       if (config.device_type === 'mobile') {
@@ -100,48 +80,30 @@ serve(async (req) => {
         browserConfig.browser_version = config.browser_version?.toLowerCase() === 'latest' ? null : config.browser_version;
       }
 
-      console.log('Created browser config:', JSON.stringify(browserConfig, null, 2));
-      browsers.push(browserConfig);
-    }
+      return browserConfig;
+    });
 
-    // Configure screenshot settings
-    const screenshotSettings: ScreenshotRequest = {
-      url: baselineUrl,
+    const screenshotSettings = {
       browsers,
-      quality: 'original',
-      wait_time: 5,
-      orientation: 'portrait'
+      quality: 'original' as const,
+      wait_time: 5 as const,
+      orientation: 'portrait' as const,
+      win_res: '1920x1080' as const,
+      mac_res: '1920x1080' as const
     };
 
-    // Add resolution settings based on device type
-    if (browsers.some(b => !b.device)) {
-      screenshotSettings.win_res = '1920x1080';
-      screenshotSettings.mac_res = '1920x1080';
-    }
-
-    console.log('Sending screenshot request with settings:', JSON.stringify(screenshotSettings, null, 2));
-
-    // Generate screenshots for baseline URL
     console.log('Generating baseline screenshots...');
     const baselineJob = await generateScreenshots({
       ...screenshotSettings,
       url: baselineUrl
-    }, {
-      'Authorization': `Basic ${btoa(`${Deno.env.get('BROWSERSTACK_USERNAME')}:${Deno.env.get('BROWSERSTACK_ACCESS_KEY')}`)}`,
-      'Content-Type': 'application/json'
-    });
+    }, authHeader);
 
-    // Generate screenshots for new URL
     console.log('Generating new version screenshots...');
     const newJob = await generateScreenshots({
       ...screenshotSettings,
       url: newUrl
-    }, {
-      'Authorization': `Basic ${btoa(`${Deno.env.get('BROWSERSTACK_USERNAME')}:${Deno.env.get('BROWSERSTACK_ACCESS_KEY')}`)}`,
-      'Content-Type': 'application/json'
-    });
+    }, authHeader);
 
-    // Update test status and create screenshot records
     await updateTestStatus(supabaseClient, testId, 'in_progress');
     await createScreenshotRecords(supabaseClient, testId, browsers);
 
@@ -155,15 +117,16 @@ serve(async (req) => {
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       },
-    )
+    );
   } catch (error) {
     console.error('Error in browserstack-screenshots function:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       },
-    )
+    );
   }
 });

@@ -1,5 +1,4 @@
-// Database operations
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { createClient } from '@supabase/supabase-js';
 
 export const createSupabaseClient = () => {
   return createClient(
