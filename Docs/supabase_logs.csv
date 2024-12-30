@@ -1,0 +1,1227 @@
+﻿"event_message","event_type","function_id","id","level","timestamp"
+"Error in browserstack-screenshots function: Error: Failed to generate screenshots: {"message":"Validation Failed","errors":[{"field":"os_version","code":"invalid"}]}
+    at generateScreenshots (file:///dev-server/supabase/functions/browserstack-screenshots/browserstack-api.ts:58:11)
+    at eventLoopTick (ext:core/01_core.js:168:7)
+    at async Server.<anonymous> (file:///dev-server/supabase/functions/browserstack-screenshots/index.ts:126:25)
+    at async #respond (https://deno.land/std@0.168.0/http/server.ts:221:18)
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","96368c4b-1af3-4768-96c9-628a3b504d69","error","1735564461968744"
+"Screenshot generation failed: {"message":"Validation Failed","errors":[{"field":"os_version","code":"invalid"}]}
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","671692bf-2aca-4db1-b07d-81e8db82556b","error","1735564461968596"
+"Sending request to BrowserStack: {
+  "url": "https://drsisterskincare.com/products/dark-spot-vanish",
+  "browsers": [
+    {
+      "os": "android",
+      "os_version": "14.0",
+      "device": "Galaxy S24"
+    }
+  ],
+  "quality": "compressed",
+  "wait_time": 5,
+  "orientation": "portrait"
+}
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","4ec57f55-5d74-40b6-bc21-6db73e6a6c49","log","1735564461967756"
+"Transformed browser config: {
+  "os": "android",
+  "os_version": "14.0",
+  "device": "Galaxy S24"
+}
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","88cfb68b-cf78-4299-a00c-5afbf15a79c6","log","1735564461967528"
+"Generating screenshots with settings: {
+  "url": "https://drsisterskincare.com/products/dark-spot-vanish",
+  "browsers": [
+    {
+      "os": "android",
+      "os_version": "14.0",
+      "device": "Galaxy S24"
+    }
+  ],
+  "quality": "original",
+  "wait_time": 5,
+  "orientation": "portrait"
+}
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","966d396b-0bb5-44a4-b850-d561d000dd50","log","1735564461967325"
+"Generating baseline screenshots...
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","7b782b94-5623-4a45-9d00-424df5427fb0","log","1735564461967194"
+"Sending screenshot request with settings: {
+  "browsers": [
+    {
+      "os": "android",
+      "os_version": "14.0",
+      "device": "Galaxy S24"
+    }
+  ],
+  "quality": "original",
+  "wait_time": 5,
+  "orientation": "portrait"
+}
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","a229c675-f5c0-49ed-b62b-5b8d9293c127","log","1735564461967068"
+"Processing mobile configuration: {
+  "os": "android",
+  "os_version": "14.0",
+  "device": "Galaxy S24"
+}
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","45ed6ec4-31ef-4306-b67e-c67d844b9fc8","log","1735564461966919"
+"Created browser config: {
+  "os": "android",
+  "os_version": "14.0",
+  "device": "Galaxy S24"
+}
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","d5a992ca-fb69-47c8-961b-93d8fb0f9cba","log","1735564461966764"
+"Processing config: {
+  "id": "57491eeb-b712-4883-9474-70cebdd87080",
+  "user_id": "00000000-0000-0000-0000-000000000000",
+  "name": "Galaxy S24 Chrome",
+  "device_type": "mobile",
+  "os": "android",
+  "os_version": "14",
+  "browser": null,
+  "browser_version": null,
+  "device": "Galaxy S24",
+  "is_active": true,
+  "created_at": "2024-12-30T07:25:36.838274+00:00",
+  "updated_at": "2024-12-30T07:25:36.838274+00:00",
+  "is_predefined": true
+}
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","179b952e-a849-4d50-9f01-6d6b7af9c90c","log","1735564461966597"
+"Available BrowserStack configurations: [
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "opera",
+    browser_version: "11.6",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "opera",
+    browser_version: "12.1",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "opera",
+    browser_version: "12.14",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "opera",
+    browser_version: "12.15",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "opera",
+    browser_version: "12.16",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "14.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "15.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "16.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "17.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "18.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "19.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "20.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "21.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "22.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "23.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "24.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "25.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "26.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "27.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "28.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "29.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "30.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "31.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "32.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "33.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "34.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "35.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "36.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "37.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "38.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "39.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "40.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "41.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "42.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "43.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "44.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "45.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "46.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "47.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "48.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "chrome",
+    browser_version: "49.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "ie",
+    browser_version: "6.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "ie",
+    browser_version: "7.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "3.6",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "4.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "5.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "6.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "7.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "8.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "9.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "10.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "11.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "12.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "13.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "14.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "15.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "16.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "17.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "18.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "19.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "20.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "21.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "22.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "23.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "24.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "25.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "26.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "27.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "28.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "29.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "30.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "31.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "32.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "33.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "34.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "35.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "36.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "37.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "38.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "40.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "41.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "42.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "firefox",
+    browser_version: "43.0",
+    device: null
+  },
+  {
+    os: "windows",
+    os_version: "XP",
+    browser: "fi ....[truncated]","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","4e1658a6-6567-4560-95cb-f35accccf31a","log","1735564461966432"
+"Available BrowserStack configurations: [
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "opera",
+    "device": null,
+    "browser_version": "11.6",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "opera",
+    "device": null,
+    "browser_version": "12.1",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "opera",
+    "device": null,
+    "browser_version": "12.14",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "opera",
+    "device": null,
+    "browser_version": "12.15",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "opera",
+    "device": null,
+    "browser_version": "12.16",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "14.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "15.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "16.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "17.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "18.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "19.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "20.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "21.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "22.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "23.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "24.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "25.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "26.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "27.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "28.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "29.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "30.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "31.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "32.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "33.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "34.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "35.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "36.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "37.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "38.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "39.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "40.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "41.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "42.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "43.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "44.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "45.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "46.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "47.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "48.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "chrome",
+    "device": null,
+    "browser_version": "49.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "ie",
+    "device": null,
+    "browser_version": "6.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "ie",
+    "device": null,
+    "browser_version": "7.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "firefox",
+    "device": null,
+    "browser_version": "3.6",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "firefox",
+    "device": null,
+    "browser_version": "4.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "firefox",
+    "device": null,
+    "browser_version": "5.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "firefox",
+    "device": null,
+    "browser_version": "6.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "firefox",
+    "device": null,
+    "browser_version": "7.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "firefox",
+    "device": null,
+    "browser_version": "8.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "firefox",
+    "device": null,
+    "browser_version": "9.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "firefox",
+    "device": null,
+    "browser_version": "10.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "firefox",
+    "device": null,
+    "browser_version": "11.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "firefox",
+    "device": null,
+    "browser_version": "12.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "firefox",
+    "device": null,
+    "browser_version": "13.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "firefox",
+    "device": null,
+    "browser_version": "14.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "firefox",
+    "device": null,
+    "browser_version": "15.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "firefox",
+    "device": null,
+    "browser_version": "16.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "firefox",
+    "device": null,
+    "browser_version": "17.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "firefox",
+    "device": null,
+    "browser_version": "18.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "firefox",
+    "device": null,
+    "browser_version": "19.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "firefox",
+    "device": null,
+    "browser_version": "20.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "firefox",
+    "device": null,
+    "browser_version": "21.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "firefox",
+    "device": null,
+    "browser_version": "22.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "firefox",
+    "device": null,
+    "browser_version": "23.0",
+    "real_mobile": null
+  },
+  {
+    "os": "Windows",
+    "os_version": "XP",
+    "browser": "firefox",
+    "device": null,
+    "b ....[truncated]","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","02705f18-428d-48ea-8af2-1bbf5b830207","log","1735564461966246"
+"Fetching available browsers from BrowserStack...
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","51ff3fbe-ee2c-4205-a578-b5dcdd287b7c","log","1735564461966032"
+"Selected configurations: [
+  {
+    id: "57491eeb-b712-4883-9474-70cebdd87080",
+    user_id: "00000000-0000-0000-0000-000000000000",
+    name: "Galaxy S24 Chrome",
+    device_type: "mobile",
+    os: "android",
+    os_version: "14",
+    browser: null,
+    browser_version: null,
+    device: "Galaxy S24",
+    is_active: true,
+    created_at: "2024-12-30T07:25:36.838274+00:00",
+    updated_at: "2024-12-30T07:25:36.838274+00:00",
+    is_predefined: true
+  }
+]
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","dd9b24b2-47c8-4649-8458-beb326d3772d","log","1735564461965725"
+"Config IDs: [ "57491eeb-b712-4883-9474-70cebdd87080" ]
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","7f832e62-e102-4606-bc4a-bb06b2fba125","log","1735564461965468"
+"New URL: https://drsisterskincare-dev.myshopify.com/products/dark-spot-vanish?selling_plan=690895847767&variant=49739596267863
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","e4e2fbc5-1939-4066-8b61-b9bcc09c564f","log","1735564461965154"
+"Baseline URL: https://drsisterskincare.com/products/dark-spot-vanish
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","fd0504b3-ee6e-485e-af39-812fcd6f19b8","log","1735564461964994"
+"Creating screenshots for test: 0479698c-5a6f-422c-ac46-2d850691f6ce
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","08490194-351b-4fa2-ae78-807e3b9cf86a","log","1735564461964773"
+"Listening on http://localhost:9999/
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","02333949-f51b-4a00-8ea3-d2312cfbdbdc","log","1735564461964643"
+"booted (time: 32ms)","Boot","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","cc0e2d1f-578f-4264-a650-869c636da18e","log","1735564461964468"
+"Listening on http://localhost:9999/
+","Log","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","a37b6b04-30bb-46dc-8d45-88af9638fb4f","log","1735564457432336"
+"booted (time: 23ms)","Boot","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","18853688-a8b9-4fa3-906e-9ea03069b11a","log","1735564457432072"
+"shutdown","Shutdown","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","0b29663b-3a71-4f34-b2a5-84596cab0ed5","log","1735564421471833"
+"shutdown","Shutdown","5b212bb5-afb4-4d10-9ebb-411cff77a0e8","3f38e64e-2afb-4d7b-93e3-828bbe42c38d","log","1735564416625344"
