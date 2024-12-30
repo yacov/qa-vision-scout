@@ -15,7 +15,7 @@ export const getAvailableBrowsers = async (authHeader: HeadersInit): Promise<any
   console.log('Available BrowserStack configurations:', JSON.stringify(browsers, null, 2));
   
   return browsers.map((b: any) => ({
-    os: b.os?.toLowerCase(),
+    os: b.os,  
     os_version: b.os_version,
     browser: b.browser?.toLowerCase(),
     browser_version: b.browser_version,
@@ -39,7 +39,7 @@ export const generateScreenshots = async (settings: any, authHeader: HeadersInit
   // Transform browser configurations to match BrowserStack API format
   const browsers = settings.browsers.map((browser: any) => {
     const config: any = {
-      os: browser.os,
+      os: browser.os.charAt(0).toUpperCase() + browser.os.slice(1).toLowerCase(), 
       os_version: browser.os_version
     };
 
