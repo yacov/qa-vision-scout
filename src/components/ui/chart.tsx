@@ -1,22 +1,161 @@
 import * as React from "react"
 import * as RechartsPrimitive from "recharts"
+import type { Payload, ValueType, NameType } from "recharts/types/component/DefaultTooltipContent"
+import type { LegendType } from "recharts/types/util/types"
 
 import { cn } from "@/lib/utils"
 
-// TODO: Fix type issues with Recharts
-// Current issues:
-// 1. ChartPayloadItem type doesn't fully match Recharts Payload type
-// 2. Type mismatch between our payload type and Recharts expected types
-// 3. Need to properly type the formatter function
-// This needs to be addressed in a separate task to ensure proper type safety
-interface ChartPayloadItem {
-  value?: string | number;
+/**
+ * Type System Documentation and Known Issues
+ * ----------------------------------------
+ * Current challenges with Recharts type integration:
+ * 
+ * 1. Type Mismatches:
+ *    - NameType can be string | number, but our component primarily handles strings
+ *    - DataKey can be string | number | function, but we expect string | number
+ *    - LegendType has more variants than we currently support
+ * 
+ * 2. Payload Type Complexity:
+ *    - Recharts Payload type is generic and more complex than our usage
+ *    - We need to handle both tooltip and legend payload types
+ *    - Custom properties like 'color' need to be properly typed
+ * 
+ * 3. Formatter Function Types:
+ *    - Different components expect different formatter signatures
+ *    - Need to handle both simple and complex formatting cases
+ * 
+ * TODO: This needs to be addressed in a separate task (CHART-001):
+ * 1. Create proper type hierarchy for chart payloads
+ * 2. Implement type guards for all payload variations
+ * 3. Add proper generic constraints
+ * 4. Create adapter layer for Recharts integration
+ * 5. Add comprehensive test suite for type safety
+ */
+
+// Base type for chart payloads
+type BasePayload = {
+  value?: ValueType;
   color?: string;
-  name?: string;
-  dataKey?: string;
+  name?: NameType;
+  dataKey?: string | number;
   payload?: {
     fill?: string;
+    [key: string]: any;
   };
+};
+
+// Temporary type solution with runtime checks
+type ChartPayloadItem = BasePayload & {
+  type?: LegendType;
+};
+
+// Runtime type guards
+const isValidValue = (value: unknown): value is ValueType => {
+  return typeof value === 'string' || typeof value === 'number';
+};
+
+const isValidName = (name: unknown): name is NameType => {
+  return typeof name === 'string' || typeof name === 'number';
+};
+
+const isValidDataKey = (key: unknown): key is string | number => {
+  return typeof key === 'string' || typeof key === 'number';
+};
+
+const isValidColor = (color: unknown): color is string => {
+  return typeof color === 'string' && (
+    color.startsWith('#') || 
+    color.startsWith('rgb') || 
+    color.startsWith('hsl')
+  );
+};
+
+const isValidLegendType = (type: unknown): type is LegendType => {
+  return typeof type === 'string' && [
+    'plainline',
+    'line',
+    'square',
+    'rect',
+    'circle',
+    'cross',
+    'diamond',
+    'star',
+    'triangle',
+    'wye',
+    'none'
+  ].includes(type);
+};
+
+// Type guard for payload items
+function isValidPayloadItem(item: unknown): item is ChartPayloadItem {
+  if (!item || typeof item !== 'object') return false;
+
+  const payload = item as Record<string, unknown>;
+  
+  // Check required properties
+  if ('value' in payload && !isValidValue(payload.value)) return false;
+  if ('name' in payload && !isValidName(payload.name)) return false;
+  if ('dataKey' in payload && !isValidDataKey(payload.dataKey)) return false;
+  if ('color' in payload && !isValidColor(payload.color)) return false;
+  if ('type' in payload && !isValidLegendType(payload.type)) return false;
+
+  return true;
+}
+
+function isValidPayload(
+  payload: unknown
+): payload is ChartPayloadItem[] {
+  return Boolean(
+    payload &&
+    Array.isArray(payload) &&
+    payload.length > 0 &&
+    payload.every(isValidPayloadItem)
+  );
+}
+
+// Adapter function to safely convert payload data
+function adaptPayloadItem(item: unknown): ChartPayloadItem | null {
+  const payload = item as Payload<ValueType, NameType>;
+  
+  if (!payload) return null;
+
+  // Handle function dataKey
+  const dataKey = typeof payload.dataKey === 'function' 
+    ? 'value' 
+    : payload.dataKey as string | number | undefined;
+
+  // Validate type
+  const type = isValidLegendType(payload.type) ? payload.type : undefined;
+
+  return {
+    value: payload.value,
+    name: payload.name,
+    dataKey,
+    color: payload.color,
+    payload: payload.payload,
+    type
+  };
+}
+
+type ChartFormatter = (
+  value: ValueType,
+  name: NameType,
+  item: ChartPayloadItem,
+  index: number,
+  payload?: ChartPayloadItem['payload']
+) => React.ReactNode;
+
+function getPayloadConfigFromPayload(
+  config: ChartConfig,
+  item: ChartPayloadItem,
+  key: string
+) {
+  // Runtime validation
+  if (!isValidPayloadItem(item)) {
+    console.warn('Invalid payload item:', item);
+    return undefined;
+  }
+  return config[key as keyof typeof config];
 }
 
 // Format: { THEME_NAME: CSS_SELECTOR }
@@ -286,7 +425,8 @@ const ChartLegendContent = React.forwardRef<
   ) => {
     const { config } = useChart()
 
-    if (!payload?.length) {
+    if (!isValidPayload(payload)) {
+      console.warn('Invalid chart payload:', payload);
       return null
     }
 
@@ -299,9 +439,15 @@ const ChartLegendContent = React.forwardRef<
           className
         )}
       >
-        {payload.map((item: ChartPayloadItem) => {
-          const key = `${nameKey || item.dataKey || "value"}`
-          const itemConfig = getPayloadConfigFromPayload(config, item, key)
+        {(payload as unknown as ChartPayloadItem[]).map((item) => {
+          const adaptedItem = adaptPayloadItem(item);
+          if (!adaptedItem) {
+            console.warn('Failed to adapt payload item:', item);
+            return null;
+          }
+
+          const key = `${nameKey || adaptedItem.dataKey || "value"}`
+          const itemConfig = getPayloadConfigFromPayload(config, adaptedItem, key)
 
           return (
             <div
@@ -316,7 +462,7 @@ const ChartLegendContent = React.forwardRef<
                 <div
                   className="h-2 w-2 shrink-0 rounded-[2px]"
                   style={{
-                    backgroundColor: item.color || '',
+                    backgroundColor: adaptedItem.color || '',
                   }}
                 />
               )}
@@ -329,45 +475,6 @@ const ChartLegendContent = React.forwardRef<
   }
 )
 ChartLegendContent.displayName = "ChartLegend"
-
-// Helper to extract item config from a payload.
-function getPayloadConfigFromPayload(
-  config: ChartConfig,
-  payload: unknown,
-  key: string
-) {
-  if (typeof payload !== "object" || payload === null) {
-    return undefined
-  }
-
-  const payloadPayload =
-    "payload" in payload &&
-    typeof payload.payload === "object" &&
-    payload.payload !== null
-      ? payload.payload
-      : undefined
-
-  let configLabelKey: string = key
-
-  if (
-    key in payload &&
-    typeof payload[key as keyof typeof payload] === "string"
-  ) {
-    configLabelKey = payload[key as keyof typeof payload] as string
-  } else if (
-    payloadPayload &&
-    key in payloadPayload &&
-    typeof payloadPayload[key as keyof typeof payloadPayload] === "string"
-  ) {
-    configLabelKey = payloadPayload[
-      key as keyof typeof payloadPayload
-    ] as string
-  }
-
-  return configLabelKey in config
-    ? config[configLabelKey]
-    : config[key as keyof typeof config]
-}
 
 export {
   ChartContainer,
