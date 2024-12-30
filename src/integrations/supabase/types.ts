@@ -9,7 +9,77 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      comparison_tests: {
+        Row: {
+          baseline_url: string
+          created_at: string | null
+          id: string
+          new_url: string
+          status: Database["public"]["Enums"]["test_status"] | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          baseline_url: string
+          created_at?: string | null
+          id?: string
+          new_url: string
+          status?: Database["public"]["Enums"]["test_status"] | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          baseline_url?: string
+          created_at?: string | null
+          id?: string
+          new_url?: string
+          status?: Database["public"]["Enums"]["test_status"] | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      test_screenshots: {
+        Row: {
+          baseline_screenshot_url: string | null
+          created_at: string | null
+          device_name: string
+          diff_percentage: number | null
+          id: string
+          new_screenshot_url: string | null
+          os_version: string
+          test_id: string | null
+        }
+        Insert: {
+          baseline_screenshot_url?: string | null
+          created_at?: string | null
+          device_name: string
+          diff_percentage?: number | null
+          id?: string
+          new_screenshot_url?: string | null
+          os_version: string
+          test_id?: string | null
+        }
+        Update: {
+          baseline_screenshot_url?: string | null
+          created_at?: string | null
+          device_name?: string
+          diff_percentage?: number | null
+          id?: string
+          new_screenshot_url?: string | null
+          os_version?: string
+          test_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_screenshots_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "comparison_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +88,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      test_status: "pending" | "in_progress" | "completed" | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
