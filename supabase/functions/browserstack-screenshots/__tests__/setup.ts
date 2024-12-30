@@ -1,4 +1,4 @@
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 import { resolve } from 'path';
 
 // Load environment variables from .env.test file
