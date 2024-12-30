@@ -1,8 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders } from "../_shared/cors.ts";
-import { generateScreenshots } from "./browserstack-api.ts";
-import { normalizeOsConfig } from "./os-config.ts";
-import { createSupabaseClient } from "./database.ts";
+import { corsHeaders } from "../_shared/cors.js";
+import { generateScreenshots } from "./browserstack-api.js";
+import { normalizeOsConfig } from "./os-config.js";
+import { createSupabaseClient } from "./database.js";
 
 interface BrowserstackConfig {
   device_type: 'desktop' | 'mobile';
@@ -66,7 +66,7 @@ serve(async (req: Request) => {
       quality: "compressed" as const,
     };
 
-    const screenshotResponse = await generateScreenshots(screenshotSettings, authHeader);
+    const screenshotResponse = await generateScreenshots(screenshotSettings, { Authorization: authHeader });
     return new Response(JSON.stringify(screenshotResponse), {
       headers: responseHeaders,
     });

@@ -1,8 +1,8 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders } from '../_shared/cors.ts';
-import { validateBrowserConfig } from '../browserstack-screenshots/browser-validation.ts';
-import { getAvailableBrowsers } from '../browserstack-screenshots/browserstack-api.ts';
+import { corsHeaders } from '../_shared/cors.js';
+import { validateBrowserConfig } from '../browserstack-screenshots/browser-validation.js';
+import { getAvailableBrowsers } from '../browserstack-screenshots/browserstack-api.js';
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
