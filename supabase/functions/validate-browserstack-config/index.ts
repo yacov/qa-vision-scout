@@ -60,7 +60,7 @@ serve(async (req: Request) => {
       });
     }
 
-    const availableBrowsers = await getAvailableBrowsers({ Authorization: authHeader });
+    const availableBrowsers = await getAvailableBrowsers({ Authorization: authHeader }, 'validate-config');
     const isValid = validateBrowserConfig(data, availableBrowsers);
 
     const response: ValidationResponse = {

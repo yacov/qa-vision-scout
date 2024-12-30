@@ -67,7 +67,7 @@ describe('BrowserStack Screenshots API Tests', () => {
         json: () => Promise.resolve(mockBrowsers)
       }));
 
-      const browsers = await getAvailableBrowsers(authHeader);
+      const browsers = await getAvailableBrowsers(authHeader, 'test-request-id');
       expect(Array.isArray(browsers)).toBe(true);
       expect(browsers.length).toBeGreaterThan(0);
       
@@ -90,7 +90,7 @@ describe('BrowserStack Screenshots API Tests', () => {
         'Content-Type': 'application/json'
       };
 
-      await expect(getAvailableBrowsers(invalidAuthHeader))
+      await expect(getAvailableBrowsers(invalidAuthHeader, 'test-auth-failure'))
         .rejects
         .toThrow('Authentication failed');
     }, TEST_TIMEOUT);
@@ -132,7 +132,7 @@ describe('BrowserStack Screenshots API Tests', () => {
         orientation: 'portrait' as const
       };
 
-      const result = await generateScreenshots(settings, authHeader);
+      const result = await generateScreenshots(settings, authHeader, 'test-screenshot-gen');
       
       expect(result).toHaveProperty('job_id');
       expect(result).toHaveProperty('screenshots');
@@ -158,7 +158,7 @@ describe('BrowserStack Screenshots API Tests', () => {
         wait_time: 5 as const
       };
 
-      await expect(generateScreenshots(settings, authHeader))
+      await expect(generateScreenshots(settings, authHeader, 'test-invalid-url'))
         .rejects
         .toThrow('Invalid request parameters');
     }, TEST_TIMEOUT);
@@ -182,7 +182,7 @@ describe('BrowserStack Screenshots API Tests', () => {
         wait_time: 5 as const
       };
 
-      await expect(generateScreenshots(settings, authHeader))
+      await expect(generateScreenshots(settings, authHeader, 'test-invalid-browser'))
         .rejects
         .toThrow('Invalid request parameters');
     }, TEST_TIMEOUT);
@@ -202,9 +202,42 @@ describe('BrowserStack Screenshots API Tests', () => {
         text: () => Promise.resolve('Rate limit exceeded')
       }));
 
-      await expect(generateScreenshots(settings, authHeader))
+      await expect(generateScreenshots(settings, authHeader, 'test-rate-limit'))
         .rejects
         .toThrow('API rate limit exceeded');
+    }, TEST_TIMEOUT);
+
+    it('should validate required parameters', async () => {
+      // Test missing URL
+      const settingsNoUrl = {
+        browsers: TEST_BROWSERS,
+        quality: 'compressed' as const,
+        wait_time: 5 as const
+      };
+      await expect(generateScreenshots(settingsNoUrl as any, authHeader, 'test-no-url'))
+        .rejects
+        .toThrow('Missing required parameter: url');
+
+      // Test missing browsers
+      const settingsNoBrowsers = {
+        url: TEST_URL,
+        quality: 'compressed' as const,
+        wait_time: 5 as const
+      };
+      await expect(generateScreenshots(settingsNoBrowsers as any, authHeader, 'test-no-browsers'))
+        .rejects
+        .toThrow('Missing required parameter: browsers must be a non-empty array');
+
+      // Test empty browsers array
+      const settingsEmptyBrowsers = {
+        url: TEST_URL,
+        browsers: [],
+        quality: 'compressed' as const,
+        wait_time: 5 as const
+      };
+      await expect(generateScreenshots(settingsEmptyBrowsers, authHeader, 'test-empty-browsers'))
+        .rejects
+        .toThrow('Missing required parameter: browsers must be a non-empty array');
     }, TEST_TIMEOUT);
   });
 }); 

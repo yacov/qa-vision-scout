@@ -1,74 +1,68 @@
-import * as dotenv from 'dotenv';
-import { resolve } from 'path';
+import { jest } from '@jest/globals';
+import type { ScreenshotSettings, BrowserConfig } from '../types';
 
-// Load environment variables from .env.test file
-dotenv.config({
-  path: resolve(__dirname, '../../../../.env.test')
+// Mock the database client
+jest.mock('../database', () => ({
+  createSupabaseClient: jest.fn().mockReturnValue({
+    // Add any required mock methods here
+  })
+}));
+
+// Mock the browserstack-api
+type GenerateScreenshotsType = (settings: ScreenshotSettings, authHeader: HeadersInit) => Promise<{
+  job_id: string;
+  screenshots: Array<{
+    id: string;
+    state: 'done';
+    url: string;
+  } & BrowserConfig>;
+}>;
+
+const mockGenerateScreenshots = jest.fn((settings: ScreenshotSettings, authHeader: HeadersInit) => {
+  // Validate required parameters
+  if (!settings.url) {
+    throw new Error('Missing required parameter: url');
+  }
+  if (!Array.isArray(settings.browsers) || settings.browsers.length === 0) {
+    throw new Error('Missing required parameter: browsers must be a non-empty array');
+  }
+
+  return Promise.resolve({
+    job_id: 'test-job-id',
+    screenshots: settings.browsers.map((browser: BrowserConfig, index: number) => ({
+      id: `screenshot-${index}`,
+      state: 'done' as const,
+      url: settings.url,
+      ...browser
+    }))
+  });
+}) as unknown as jest.MockedFunction<GenerateScreenshotsType>;
+
+jest.mock('../browserstack-api', () => ({
+  generateScreenshots: mockGenerateScreenshots
+}));
+
+// Mock the os-config
+type NormalizeConfigType = (config: BrowserConfig) => { os: string; os_version: string };
+
+const mockNormalizeOsConfig = jest.fn((config: BrowserConfig) => ({
+  os: config.os,
+  os_version: config.os_version
+})) as unknown as jest.MockedFunction<NormalizeConfigType>;
+
+jest.mock('../os-config', () => ({
+  normalizeOsConfig: mockNormalizeOsConfig
+}));
+
+// Mock fetch
+const mockResponse = new Response(JSON.stringify({ message: 'Mocked response' }), {
+  status: 200,
+  headers: { 'Content-Type': 'application/json' }
 });
 
-// Define required environment variables
-const requiredEnvVars = [
-  'BROWSERSTACK_USERNAME',
-  'BROWSERSTACK_ACCESS_KEY',
-  'SUPABASE_URL',
-  'SUPABASE_SERVICE_ROLE_KEY'
-] as const;
+type FetchType = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
-// Type for environment variable names
-type RequiredEnvVar = typeof requiredEnvVars[number];
-
-// Custom error for missing environment variables
-class MissingEnvVarError extends Error {
-  constructor(envVar: RequiredEnvVar) {
-    super(`Missing required environment variable: ${envVar}`);
-    this.name = 'MissingEnvVarError';
-  }
-}
-
-// Validate required environment variables
-for (const envVar of requiredEnvVars) {
-  if (!process.env[envVar]) {
-    console.error(new MissingEnvVarError(envVar));
-    console.error('Please create a .env.test file based on .env.example');
-    process.exit(1);
-  }
-}
-
-// Create mock headers
-const mockHeaders = {
-  append: jest.fn(),
-  delete: jest.fn(),
-  get: jest.fn(),
-  has: jest.fn(),
-  set: jest.fn(),
-  forEach: jest.fn(),
-  getSetCookie: jest.fn().mockReturnValue([]),
-  entries: jest.fn().mockReturnValue([][Symbol.iterator]()),
-  keys: jest.fn().mockReturnValue([][Symbol.iterator]()),
-  values: jest.fn().mockReturnValue([][Symbol.iterator]()),
-  [Symbol.iterator]: jest.fn().mockReturnValue([][Symbol.iterator]())
-} as unknown as Headers;
-
-// Mock fetch implementation
-const mockFetch = jest.fn().mockImplementation((): Promise<Response> => 
-  Promise.resolve({
-    ok: true,
-    status: 200,
-    json: () => Promise.resolve({}),
-    text: () => Promise.resolve(''),
-    headers: mockHeaders,
-    redirected: false,
-    statusText: 'OK',
-    type: 'basic',
-    url: 'https://api.example.com',
-    body: null,
-    bodyUsed: false,
-    clone: () => ({} as Response),
-    arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
-    blob: () => Promise.resolve(new Blob()),
-    formData: () => Promise.resolve(new FormData())
-  } as Response)
-);
+const mockFetch = jest.fn(async () => mockResponse) as unknown as jest.MockedFunction<FetchType>;
 
 // Set up global fetch mock
 global.fetch = mockFetch; 
