@@ -48,31 +48,36 @@ const getAvailableBrowsers = async (): Promise<BrowserstackBrowser[]> => {
   
   if (!response.ok) {
     const error = await response.text();
+    console.error('Failed to fetch browsers:', error);
     throw new Error(`Failed to fetch browsers: ${error}`);
   }
   
-  return response.json();
+  const browsers = await response.json();
+  console.log('Available browsers from BrowserStack:', browsers);
+  return browsers;
 }
 
 // Function to validate and format browser version
 const validateBrowserVersion = (version: string | null | undefined): string | null => {
   if (!version || version === 'null' || version.trim() === '') {
-    return null
+    return null;
   }
   
-  const trimmedVersion = version.trim().toLowerCase()
+  const trimmedVersion = version.trim().toLowerCase();
+  
+  // Special handling for 'latest'
   if (trimmedVersion === 'latest') {
-    return 'latest'
+    return 'latest';
   }
 
   // Check if version is in valid format (e.g., "121.0" or "11")
-  const versionRegex = /^\d+(\.\d+)?$/
+  const versionRegex = /^\d+(\.\d+)?$/;
   if (!versionRegex.test(trimmedVersion)) {
-    console.error('Invalid browser version format:', trimmedVersion)
-    throw new Error(`Invalid browser version format: ${trimmedVersion}`)
+    console.error('Invalid browser version format:', trimmedVersion);
+    throw new Error(`Invalid browser version format: ${trimmedVersion}`);
   }
 
-  return trimmedVersion
+  return trimmedVersion;
 }
 
 // Function to validate browser configuration
@@ -82,30 +87,44 @@ const validateBrowserConfig = (config: BrowserstackBrowser, availableBrowsers: B
 
   if (config.device) {
     // For mobile devices
-    return availableBrowsers.some(b => 
+    const isValid = availableBrowsers.some(b => 
       b.os === config.os &&
       b.os_version === config.os_version &&
       b.device === config.device
-    )
+    );
+    console.log('Mobile device validation result:', isValid);
+    return isValid;
   } else {
     // For desktop browsers
     const matchingBrowsers = availableBrowsers.filter(b => 
       b.os === config.os &&
       b.os_version === config.os_version &&
       b.browser === config.browser
-    )
+    );
 
-    console.log('Matching browsers:', matchingBrowsers);
+    console.log('Matching browsers found:', matchingBrowsers);
 
-    if (matchingBrowsers.length === 0) return false
-
-    // If browser_version is 'latest' or not specified, it's valid
-    if (!config.browser_version || config.browser_version === 'latest') {
-      return true
+    if (matchingBrowsers.length === 0) {
+      console.log('No matching browsers found');
+      return false;
     }
 
-    // Otherwise, check for exact version match
-    return matchingBrowsers.some(b => b.browser_version === config.browser_version)
+    // If browser_version is 'latest', it's valid as long as we found matching browsers
+    if (config.browser_version === 'latest') {
+      console.log('Latest version requested, configuration is valid');
+      return true;
+    }
+
+    // If no browser_version specified, it's valid
+    if (!config.browser_version) {
+      console.log('No browser version specified, configuration is valid');
+      return true;
+    }
+
+    // Check for exact version match
+    const hasExactVersion = matchingBrowsers.some(b => b.browser_version === config.browser_version);
+    console.log('Exact version match result:', hasExactVersion);
+    return hasExactVersion;
   }
 }
 
@@ -127,77 +146,70 @@ const generateScreenshots = async (settings: ScreenshotRequest): Promise<any> =>
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const { testId, baselineUrl, newUrl, configIds } = await req.json()
+    const { testId, baselineUrl, newUrl, configIds } = await req.json();
 
-    console.log('Creating screenshots for test:', testId)
-    console.log('Baseline URL:', baselineUrl)
-    console.log('New URL:', newUrl)
-    console.log('Config IDs:', configIds)
+    console.log('Creating screenshots for test:', testId);
+    console.log('Baseline URL:', baselineUrl);
+    console.log('New URL:', newUrl);
+    console.log('Config IDs:', configIds);
 
     // Create Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    );
 
     // Fetch selected configurations
     const { data: selectedConfigs, error: configError } = await supabaseClient
       .from('browserstack_configs')
       .select('*')
-      .in('id', configIds)
+      .in('id', configIds);
 
     if (configError) {
-      console.error('Error fetching configurations:', configError)
-      throw new Error('Failed to fetch configurations')
+      console.error('Error fetching configurations:', configError);
+      throw new Error('Failed to fetch configurations');
     }
 
     if (!selectedConfigs || selectedConfigs.length === 0) {
-      throw new Error('No configurations selected')
+      throw new Error('No configurations selected');
     }
 
-    console.log('Selected configurations:', selectedConfigs)
+    console.log('Selected configurations:', selectedConfigs);
 
     // Fetch available browsers from BrowserStack
-    const availableBrowsers = await getAvailableBrowsers()
-    console.log('Available BrowserStack configurations:', availableBrowsers)
+    const availableBrowsers = await getAvailableBrowsers();
+    console.log('Available BrowserStack configurations:', availableBrowsers);
 
     // Map configurations to BrowserStack format
-    const browsers: BrowserstackBrowser[] = []
+    const browsers: BrowserstackBrowser[] = [];
     for (const config of selectedConfigs) {
-      // Validate and format os_version
-      if (!config.os_version || config.os_version.trim() === '' || config.os_version === 'null') {
-        console.error('Invalid os_version for config:', config)
-        throw new Error(`Invalid os_version for configuration: ${config.name}`)
-      }
+      console.log('Processing config:', config);
 
       const browserConfig: BrowserstackBrowser = {
         os: config.os,
         os_version: config.os_version.trim()
-      }
+      };
 
       if (config.device_type === 'mobile') {
-        browserConfig.device = config.device
+        browserConfig.device = config.device;
       } else {
-        browserConfig.browser = config.browser
-        // Handle 'latest' version specially
-        browserConfig.browser_version = config.browser_version === 'latest' ? 'latest' : validateBrowserVersion(config.browser_version)
+        browserConfig.browser = config.browser;
+        browserConfig.browser_version = config.browser_version === 'latest' ? 'latest' : validateBrowserVersion(config.browser_version);
       }
 
       // Validate the configuration against available browsers
       if (!validateBrowserConfig(browserConfig, availableBrowsers)) {
-        console.error('Invalid browser configuration:', browserConfig)
-        throw new Error(`Invalid browser configuration for: ${config.name}. Please check available browsers and versions.`)
+        console.error('Invalid browser configuration:', browserConfig);
+        throw new Error(`Invalid browser configuration for: ${config.name}. Please check available browsers and versions.`);
       }
 
-      console.log(`Valid ${config.device_type} configuration:`, browserConfig)
-      browsers.push(browserConfig)
+      console.log(`Valid ${config.device_type} configuration:`, browserConfig);
+      browsers.push(browserConfig);
     }
-
-    console.log('Mapped browser configurations:', browsers)
 
     // Configure screenshot settings
     const commonSettings: ScreenshotRequest = {
@@ -213,19 +225,19 @@ serve(async (req) => {
     const baselineJob = await generateScreenshots({
       ...commonSettings,
       url: baselineUrl
-    })
+    });
 
     // Generate screenshots for new URL
     const newJob = await generateScreenshots({
       ...commonSettings,
       url: newUrl
-    })
+    });
 
     // Update test status
     await supabaseClient
       .from('comparison_tests')
       .update({ status: 'in_progress' })
-      .eq('id', testId)
+      .eq('id', testId);
 
     // Create screenshot records
     const screenshots = browsers.map(browser => ({
@@ -235,11 +247,11 @@ serve(async (req) => {
       baseline_screenshot_url: null,
       new_screenshot_url: null,
       diff_percentage: null,
-    }))
+    }));
 
     await supabaseClient
       .from('test_screenshots')
-      .insert(screenshots)
+      .insert(screenshots);
 
     return new Response(
       JSON.stringify({
@@ -252,7 +264,7 @@ serve(async (req) => {
       },
     )
   } catch (error) {
-    console.error('Error in browserstack-screenshots function:', error)
+    console.error('Error in browserstack-screenshots function:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {
