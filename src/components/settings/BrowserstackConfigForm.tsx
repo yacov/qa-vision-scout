@@ -2,48 +2,54 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
+import { Loader2 } from "lucide-react";
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { BrowserStackConfigFormData, browserStackConfigSchema } from "./types";
+import { browserStackConfigSchema, BrowserStackConfigFormData } from "./types";
 import { DesktopFields } from "./DesktopFields";
 import { MobileFields } from "./MobileFields";
 
 export const BrowserstackConfigForm = () => {
+  const [deviceType, setDeviceType] = useState<"desktop" | "mobile">("desktop");
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [deviceType, setDeviceType] = useState<'desktop' | 'mobile'>('desktop');
 
   const form = useForm<BrowserStackConfigFormData>({
     resolver: zodResolver(browserStackConfigSchema),
     defaultValues: {
-      deviceType: 'desktop'
-    }
+      deviceType: "desktop",
+      name: "",
+      os: "",
+      osVersion: "",
+      browser: "",
+      browserVersion: "",
+      device: "",
+    },
   });
 
   const createConfig = useMutation({
     mutationFn: async (data: BrowserStackConfigFormData) => {
-      const { error } = await supabase
-        .from('browserstack_configs')
-        .insert({
-          name: data.name,
-          device_type: deviceType,
-          os: data.os,
-          os_version: data.osVersion,
-          browser: deviceType === 'desktop' ? data.browser : null,
-          browser_version: deviceType === 'desktop' ? data.browserVersion : null,
-          device: deviceType === 'mobile' ? data.device : null,
-          user_id: '00000000-0000-0000-0000-000000000000', // Default system user UUID
-        });
+      const { error } = await supabase.from("browserstack_configs").insert({
+        name: data.name,
+        device_type: data.deviceType,
+        os: data.os,
+        os_version: data.osVersion,
+        browser: data.deviceType === "desktop" ? data.browser : null,
+        browser_version: data.deviceType === "desktop" ? data.browserVersion : null,
+        device: data.deviceType === "mobile" ? data.device : null,
+        user_id: "00000000-0000-0000-0000-000000000000", // Default system user UUID
+      });
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['browserstack-configs'] });
+      queryClient.invalidateQueries({ queryKey: ["browserstack-configs"] });
+      queryClient.invalidateQueries({ queryKey: ["predefined-configs"] });
       toast({
         title: "Configuration created",
         description: "Your BrowserStack configuration has been saved.",
@@ -51,24 +57,21 @@ export const BrowserstackConfigForm = () => {
       form.reset();
     },
     onError: (error: Error) => {
-      console.error('Error creating config:', error);
       toast({
         title: "Error",
         description: "Failed to create configuration. Please try again.",
         variant: "destructive",
       });
+      console.error("Error creating configuration:", error);
     },
   });
 
   const onSubmit = (data: BrowserStackConfigFormData) => {
-    createConfig.mutate({
-      ...data,
-      deviceType
-    });
+    createConfig.mutate(data);
   };
 
   return (
-    <Card className="mb-6">
+    <Card>
       <CardHeader>
         <CardTitle>Add New Configuration</CardTitle>
       </CardHeader>
@@ -82,27 +85,44 @@ export const BrowserstackConfigForm = () => {
                 <FormItem>
                   <FormLabel>Configuration Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Windows Chrome Latest" {...field} />
+                    <Input placeholder="e.g., Chrome Latest Windows" {...field} />
                   </FormControl>
                 </FormItem>
               )}
             />
 
-            <FormItem>
-              <FormLabel>Device Type</FormLabel>
-              <Select
-                value={deviceType}
-                onValueChange={(value: 'desktop' | 'mobile') => setDeviceType(value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select device type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="desktop">Desktop</SelectItem>
-                  <SelectItem value="mobile">Mobile</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormItem>
+            <FormField
+              control={form.control}
+              name="deviceType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Device Type</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={(value: "desktop" | "mobile") => {
+                        field.onChange(value);
+                        setDeviceType(value);
+                      }}
+                      defaultValue={field.value}
+                      className="flex gap-4"
+                    >
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl>
+                          <RadioGroupItem value="desktop" />
+                        </FormControl>
+                        <FormLabel className="font-normal">Desktop</FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl>
+                          <RadioGroupItem value="mobile" />
+                        </FormControl>
+                        <FormLabel className="font-normal">Mobile</FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
@@ -112,7 +132,11 @@ export const BrowserstackConfigForm = () => {
                   <FormLabel>Operating System</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder={deviceType === 'desktop' ? "e.g., Windows, OS X" : "e.g., ios, android"}
+                      placeholder={
+                        deviceType === "desktop"
+                          ? "e.g., Windows, OS X"
+                          : "e.g., ios, android"
+                      }
                       {...field}
                     />
                   </FormControl>
@@ -128,7 +152,11 @@ export const BrowserstackConfigForm = () => {
                   <FormLabel>OS Version</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder={deviceType === 'desktop' ? "e.g., 11, Sonoma" : "e.g., 15"}
+                      placeholder={
+                        deviceType === "desktop"
+                          ? "e.g., 11, Ventura"
+                          : "e.g., 14, 13"
+                      }
                       {...field}
                     />
                   </FormControl>
@@ -136,14 +164,25 @@ export const BrowserstackConfigForm = () => {
               )}
             />
 
-            {deviceType === 'desktop' ? (
+            {deviceType === "desktop" ? (
               <DesktopFields form={form} />
             ) : (
               <MobileFields form={form} />
             )}
 
-            <Button type="submit" disabled={createConfig.isPending}>
-              {createConfig.isPending ? "Creating..." : "Create Configuration"}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={createConfig.isPending}
+            >
+              {createConfig.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Configuration"
+              )}
             </Button>
           </form>
         </Form>
