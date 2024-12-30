@@ -18,7 +18,11 @@ const getStatusBadgeVariant = (status: string) => {
   }
 };
 
-export const TestResultsTable = () => {
+interface TestResultsTableProps {
+  onTestSelect?: (baselineUrl: string, newUrl: string) => void;
+}
+
+export const TestResultsTable = ({ onTestSelect }: TestResultsTableProps) => {
   const { data: tests, isLoading: testsLoading } = useQuery({
     queryKey: ['comparison-tests'],
     queryFn: async () => {
@@ -54,7 +58,11 @@ export const TestResultsTable = () => {
             </TableHeader>
             <TableBody>
               {tests.map((test) => (
-                <TableRow key={test.id}>
+                <TableRow 
+                  key={test.id}
+                  className="cursor-pointer hover:bg-muted"
+                  onClick={() => onTestSelect?.(test.baseline_url, test.new_url)}
+                >
                   <TableCell className="truncate max-w-xs">{test.baseline_url}</TableCell>
                   <TableCell className="truncate max-w-xs">{test.new_url}</TableCell>
                   <TableCell>

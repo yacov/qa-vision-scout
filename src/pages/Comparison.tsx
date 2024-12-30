@@ -6,6 +6,14 @@ import { ResultsDialog } from "@/components/comparison/ResultsDialog";
 
 const Comparison = () => {
   const [showResults, setShowResults] = useState(false);
+  const [selectedUrls, setSelectedUrls] = useState({
+    baselineUrl: "",
+    newUrl: ""
+  });
+
+  const handleTestSelect = (baselineUrl: string, newUrl: string) => {
+    setSelectedUrls({ baselineUrl, newUrl });
+  };
 
   return (
     <div className="flex h-screen bg-background">
@@ -43,8 +51,12 @@ const Comparison = () => {
         </header>
 
         <div className="p-6">
-          <ComparisonForm onTestCreated={() => setShowResults(true)} />
-          <TestResultsTable />
+          <ComparisonForm 
+            onTestCreated={() => setShowResults(true)}
+            initialBaselineUrl={selectedUrls.baselineUrl}
+            initialNewUrl={selectedUrls.newUrl}
+          />
+          <TestResultsTable onTestSelect={handleTestSelect} />
           <ResultsDialog open={showResults} onOpenChange={setShowResults} />
         </div>
       </div>
