@@ -3,13 +3,28 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useState } from "react";
 
 export const ConfigurationsList = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [validationDialog, setValidationDialog] = useState<{
+    isOpen: boolean;
+    data: any;
+  }>({
+    isOpen: false,
+    data: null,
+  });
 
   const { data: configs, isLoading } = useQuery({
     queryKey: ['browserstack-configs'],
@@ -49,65 +64,178 @@ export const ConfigurationsList = () => {
     },
   });
 
+  const validateConfig = useMutation({
+    mutationFn: async (configId: string) => {
+      const response = await fetch('/api/validate-browserstack-config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ configId }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to validate configuration');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setValidationDialog({
+        isOpen: true,
+        data,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: "Failed to validate configuration. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateConfig = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const { error } = await supabase
+        .from('browserstack_configs')
+        .update({
+          os_version: data.os_version,
+          browser_version: data.browser_version,
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['browserstack-configs'] });
+      setValidationDialog({ isOpen: false, data: null });
+      toast({
+        title: "Configuration updated",
+        description: "The configuration has been updated with the suggested values.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update configuration. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Saved Configurations</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="flex justify-center p-4">
-            <Loader2 className="h-6 w-6 animate-spin" />
-          </div>
-        ) : configs?.length ? (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>OS</TableHead>
-                <TableHead>Browser/Device</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {configs.map((config) => (
-                <TableRow key={config.id}>
-                  <TableCell>{config.name}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">
-                      {config.device_type}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{`${config.os} ${config.os_version}`}</TableCell>
-                  <TableCell>
-                    {config.device_type === 'desktop' 
-                      ? `${config.browser} ${config.browser_version}`
-                      : config.device}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={config.is_active ? "default" : "secondary"}>
-                      {config.is_active ? "Active" : "Inactive"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => deleteConfig.mutate(config.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>Saved Configurations</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center p-4">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          ) : configs?.length ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>OS</TableHead>
+                  <TableHead>Browser/Device</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        ) : (
-          <p className="text-center text-muted-foreground">No configurations found</p>
-        )}
-      </CardContent>
-    </Card>
+              </TableHeader>
+              <TableBody>
+                {configs.map((config) => (
+                  <TableRow key={config.id}>
+                    <TableCell>{config.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {config.device_type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{`${config.os} ${config.os_version}`}</TableCell>
+                    <TableCell>
+                      {config.device_type === 'desktop' 
+                        ? `${config.browser} ${config.browser_version}`
+                        : config.device}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={config.is_active ? "default" : "secondary"}>
+                        {config.is_active ? "Active" : "Inactive"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="space-x-2">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => validateConfig.mutate(config.id)}
+                        disabled={validateConfig.isPending}
+                      >
+                        {validateConfig.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <CheckCircle className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => deleteConfig.mutate(config.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-center text-muted-foreground">No configurations found</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog 
+        open={validationDialog.isOpen} 
+        onOpenChange={(open) => !open && setValidationDialog({ isOpen: false, data: null })}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {validationDialog.data?.valid ? 'Configuration Valid' : 'Configuration Invalid'}
+            </DialogTitle>
+            <DialogDescription>
+              {validationDialog.data?.message}
+              {validationDialog.data?.suggestion && (
+                <div className="mt-4">
+                  <p className="font-medium">Would you like to update to the suggested configuration?</p>
+                  <div className="mt-2 space-x-2">
+                    <Button
+                      onClick={() => 
+                        updateConfig.mutate({
+                          id: configs?.find(c => c.id === validationDialog.data?.configId)?.id,
+                          data: validationDialog.data.suggestion
+                        })
+                      }
+                    >
+                      Update Configuration
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setValidationDialog({ isOpen: false, data: null })}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
