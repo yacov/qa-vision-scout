@@ -1,5 +1,21 @@
+interface BrowserConfig {
+  os: string;
+  os_version: string;
+  browser?: string;
+  browser_version?: string;
+  device?: string;
+}
+
+interface AvailableBrowser {
+  os: string;
+  os_version: string;
+  browser?: string;
+  browser_version?: string;
+  device?: string;
+}
+
 // Browser configuration validation logic
-export const validateBrowserConfig = (config: any, availableBrowsers: any[]): boolean => {
+export const validateBrowserConfig = (config: BrowserConfig, availableBrowsers: AvailableBrowser[]): boolean => {
   const normalizedConfig = {
     os: config.os?.toLowerCase(),
     os_version: config.os_version,

@@ -55,10 +55,10 @@ export const ConfigurationsList = () => {
         description: "The configuration has been removed.",
       });
     },
-    onError: (error: Error) => {
+    onError: () => {
       toast({
         title: "Error",
-        description: "Failed to delete configuration. Please try again.",
+        description: "Failed to delete configuration",
         variant: "destructive",
       });
     },
@@ -86,10 +86,10 @@ export const ConfigurationsList = () => {
         data,
       });
     },
-    onError: (error: Error) => {
+    onError: () => {
       toast({
         title: "Error",
-        description: "Failed to validate configuration. Please try again.",
+        description: "Failed to validate configuration",
         variant: "destructive",
       });
     },
@@ -115,10 +115,10 @@ export const ConfigurationsList = () => {
         description: "The configuration has been updated with the suggested values.",
       });
     },
-    onError: (error: Error) => {
+    onError: () => {
       toast({
         title: "Error",
-        description: "Failed to update configuration. Please try again.",
+        description: "Failed to update configuration",
         variant: "destructive",
       });
     },
@@ -214,12 +214,14 @@ export const ConfigurationsList = () => {
                   <p className="font-medium">Would you like to update to the suggested configuration?</p>
                   <div className="mt-2 space-x-2">
                     <Button
-                      onClick={() => 
+                      onClick={() => {
+                        const configId = configs?.find(c => c.id === validationDialog.data?.configId)?.id;
+                        if (!configId) return;
                         updateConfig.mutate({
-                          id: configs?.find(c => c.id === validationDialog.data?.configId)?.id,
+                          id: configId,
                           data: validationDialog.data.suggestion
-                        })
-                      }
+                        });
+                      }}
                     >
                       Update Configuration
                     </Button>

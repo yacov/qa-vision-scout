@@ -56,7 +56,7 @@ export const ComparisonForm = ({
         throw new Error(testError.message);
       }
 
-      const { data: screenshotData, error: screenshotError } = await supabase.functions
+      const { error: screenshotError } = await supabase.functions
         .invoke('browserstack-screenshots', {
           body: {
             testId: test.id,

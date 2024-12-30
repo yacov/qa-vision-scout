@@ -1,7 +1,7 @@
 import { FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { UseFormReturn } from "react-hook-form";
-import { BrowserStackConfigFormData } from "./types";
+import type { UseFormReturn } from "react-hook-form";
+import type { BrowserStackConfigFormData } from "./types";
 
 interface DesktopFieldsProps {
   form: UseFormReturn<BrowserStackConfigFormData>;

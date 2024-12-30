@@ -66,7 +66,7 @@ export const TestResultsTable = ({ onTestSelect }: TestResultsTableProps) => {
                   <TableCell className="truncate max-w-xs">{test.baseline_url}</TableCell>
                   <TableCell className="truncate max-w-xs">{test.new_url}</TableCell>
                   <TableCell>
-                    <Badge variant={getStatusBadgeVariant(test.status)}>
+                    <Badge variant={getStatusBadgeVariant(test.status || 'unknown')}>
                       {test.status}
                     </Badge>
                   </TableCell>

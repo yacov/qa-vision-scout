@@ -10,7 +10,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { browserStackConfigSchema, BrowserStackConfigFormData } from "./types";
+import { browserStackConfigSchema } from "./types";
+import type { BrowserStackConfigFormData } from "./types";
 import { DesktopFields } from "./DesktopFields";
 import { MobileFields } from "./MobileFields";
 

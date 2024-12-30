@@ -74,7 +74,7 @@ export const PredefinedConfigs = () => {
       setEditingConfig(null);
       form.reset();
     },
-    onError: (error: Error) => {
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to update configuration. Please try again.",
