@@ -32,9 +32,16 @@ serve(async (req: Request) => {
       throw new Error('No authorization header');
     }
 
-    const { baseline_url, new_url, selected_configs } = await req.json();
-    if (!baseline_url || !new_url || !selected_configs) {
-      throw new Error('Missing required parameters');
+    const requestData = await req.json();
+    console.log('Received request data:', JSON.stringify(requestData, null, 2));
+
+    // Validate required parameters
+    const { url, selected_configs } = requestData;
+    if (!url) {
+      throw new Error('Missing required parameter: url');
+    }
+    if (!Array.isArray(selected_configs) || selected_configs.length === 0) {
+      throw new Error('Missing required parameter: selected_configs must be a non-empty array');
     }
 
     const supabase = createSupabaseClient();
@@ -45,22 +52,37 @@ serve(async (req: Request) => {
     };
 
     const browsers: BrowserstackBrowser[] = selected_configs.map((config: BrowserstackConfig) => {
+      if (!config.os || !config.os_version || !config.device_type) {
+        throw new Error('Invalid browser configuration: missing required fields (os, os_version, device_type)');
+      }
+
       const normalizedConfig = normalizeOsConfig(config);
-      return {
+      const browserConfig: BrowserstackBrowser = {
         os: normalizedConfig.os,
-        os_version: normalizedConfig.os_version,
-        ...(config.device_type === 'mobile' 
-          ? { device: config.device }
-          : { 
-              browser: config.browser?.toLowerCase(),
-              browser_version: config.browser_version?.toLowerCase() === 'latest' ? null : config.browser_version
-            }
-        )
+        os_version: normalizedConfig.os_version
       };
+
+      if (config.device_type === 'mobile') {
+        if (!config.device) {
+          throw new Error('Device name is required for mobile configurations');
+        }
+        browserConfig.device = config.device;
+      } else {
+        if (!config.browser) {
+          throw new Error('Browser name is required for desktop configurations');
+        }
+        if (!config.browser_version) {
+          throw new Error('Browser version is required for desktop configurations');
+        }
+        browserConfig.browser = config.browser.toLowerCase();
+        browserConfig.browser_version = config.browser_version.toLowerCase() === 'latest' ? 'latest' : config.browser_version;
+      }
+
+      return browserConfig;
     });
 
     const screenshotSettings = {
-      url: baseline_url,
+      url,
       browsers,
       wait_time: 5 as const,
       quality: "compressed" as const,
@@ -76,7 +98,7 @@ serve(async (req: Request) => {
     return new Response(
       JSON.stringify({ error: errorMessage }),
       {
-        status: 500,
+        status: 400, // Changed to 400 for validation errors
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       },
     );
