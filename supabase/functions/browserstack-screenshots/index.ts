@@ -1,6 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import BrowserStack from 'npm:browserstack'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,17 +7,22 @@ const corsHeaders = {
 }
 
 // Function to fetch available browsers from BrowserStack
-const getAvailableBrowsers = async (client: any): Promise<any[]> => {
-  return new Promise((resolve, reject) => {
-    client.getBrowsers((error: any, browsers: any[]) => {
-      if (error) {
-        console.error('Error fetching available browsers:', error)
-        reject(error)
-      } else {
-        resolve(browsers)
-      }
-    })
-  })
+const BROWSERSTACK_USERNAME = Deno.env.get('BROWSERSTACK_USERNAME')
+const BROWSERSTACK_ACCESS_KEY = Deno.env.get('BROWSERSTACK_ACCESS_KEY')
+const BROWSERSTACK_API_BASE = 'https://api.browserstack.com/automate'
+
+const getAvailableBrowsers = async (): Promise<any[]> => {
+  const response = await fetch(`${BROWSERSTACK_API_BASE}/browsers.json`, {
+    headers: {
+      'Authorization': `Basic ${btoa(`${BROWSERSTACK_USERNAME}:${BROWSERSTACK_ACCESS_KEY}`)}`
+    }
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Failed to fetch browsers: ${response.statusText}`);
+  }
+  
+  return response.json();
 }
 
 // Function to validate and format browser version
@@ -106,14 +110,8 @@ serve(async (req) => {
 
     console.log('Selected configurations:', selectedConfigs)
 
-    // Create BrowserStack Screenshots client
-    const client = BrowserStack.createScreenshotClient({
-      username: Deno.env.get('BROWSERSTACK_USERNAME'),
-      password: Deno.env.get('BROWSERSTACK_ACCESS_KEY'),
-    })
-
     // Fetch available browsers from BrowserStack
-    const availableBrowsers = await getAvailableBrowsers(client)
+    const availableBrowsers = await getAvailableBrowsers()
     console.log('Available BrowserStack configurations:', availableBrowsers)
 
     // Map configurations to BrowserStack format
@@ -168,33 +166,51 @@ serve(async (req) => {
 
     // Generate screenshots for baseline URL
     const baselineJob = await new Promise((resolve, reject) => {
-      client.generateScreenshots({
-        ...commonSettings,
-        url: baselineUrl,
-      }, (error: any, job: any) => {
-        if (error) {
-          console.error('Error generating baseline screenshots:', error)
-          reject(error)
+      fetch(`${BROWSERSTACK_API_BASE}/screenshots`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${btoa(`${BROWSERSTACK_USERNAME}:${BROWSERSTACK_ACCESS_KEY}`)}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ...commonSettings,
+          url: baselineUrl,
+        })
+      })
+      .then(response => {
+        if (!response.ok) {
+          reject(new Error(`Failed to generate baseline screenshots: ${response.statusText}`))
         } else {
-          console.log('Baseline screenshots job created:', job)
-          resolve(job)
+          resolve(response.json())
         }
+      })
+      .catch(error => {
+        reject(error)
       })
     })
 
     // Generate screenshots for new URL
     const newJob = await new Promise((resolve, reject) => {
-      client.generateScreenshots({
-        ...commonSettings,
-        url: newUrl,
-      }, (error: any, job: any) => {
-        if (error) {
-          console.error('Error generating new screenshots:', error)
-          reject(error)
+      fetch(`${BROWSERSTACK_API_BASE}/screenshots`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${btoa(`${BROWSERSTACK_USERNAME}:${BROWSERSTACK_ACCESS_KEY}`)}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          ...commonSettings,
+          url: newUrl,
+        })
+      })
+      .then(response => {
+        if (!response.ok) {
+          reject(new Error(`Failed to generate new screenshots: ${response.statusText}`))
         } else {
-          console.log('New screenshots job created:', job)
-          resolve(job)
+          resolve(response.json())
         }
+      })
+      .catch(error => {
+        reject(error)
       })
     })
 
