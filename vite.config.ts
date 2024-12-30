@@ -13,7 +13,9 @@ export default defineConfig(({ mode }) => ({
     }
   },
   plugins: [
-    react(),
+    react({
+      plugins: mode === 'development' ? [] : [['swc-plugin-coverage-instrument', {}]]
+    }),
     mode === 'development' && componentTagger()
   ].filter(Boolean),
   resolve: {
@@ -30,19 +32,37 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: mode === 'development',
+    minify: mode === 'production',
     rollupOptions: {
       external: [],
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          ui: ['@radix-ui/react-icons', '@radix-ui/react-dialog']
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('@radix-ui')) return 'vendor-radix';
+            if (id.includes('react')) return 'vendor-react';
+            return 'vendor';
+          }
         }
       }
     },
-    chunkSizeWarningLimit: 1000
+    chunkSizeWarningLimit: 1000,
+    target: 'esnext',
+    assetsInlineLimit: 4096
   },
   optimizeDeps: {
-    include: ['react', 'react-dom']
+    include: [
+      'react',
+      'react-dom',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-icons',
+      '@hookform/resolvers',
+      'react-hook-form',
+      'zod'
+    ],
+    exclude: ['@supabase/supabase-js']
+  },
+  esbuild: {
+    logOverride: { 'this-is-undefined-in-esm': 'silent' }
   }
 }));

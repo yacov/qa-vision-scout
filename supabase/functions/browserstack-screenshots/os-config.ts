@@ -1,63 +1,33 @@
-interface Config {
+export interface Config {
   os: string;
   os_version: string;
-  device_type: string;
+  browser?: string;
+  browser_version?: string;
+  device?: string;
 }
 
-interface NormalizedConfig {
-  os: string;
-  os_version: string;
+export function normalizeOsConfig(config: Config): Config {
+  const normalizedConfig = { ...config };
+
+  // Normalize OS name
+  normalizedConfig.os = normalizeOsName(config.os);
+
+  // Normalize OS version
+  normalizedConfig.os_version = normalizeOsVersion(config.os, config.os_version);
+
+  return normalizedConfig;
 }
 
-const OS_MAP: Record<string, string> = {
-  'windows': 'Windows',
-  'macos': 'OS X',
-  'ios': 'ios',
-  'android': 'android'
-};
+function normalizeOsName(os: string): string {
+  const osLower = os.toLowerCase();
+  if (osLower === 'ios') return 'ios';
+  return os.charAt(0).toUpperCase() + os.slice(1).toLowerCase();
+}
 
-const VERSION_MAP: Record<string, Record<string, string>> = {
-  'Windows': {
-    '11': '11',
-    '10': '10',
-    'windows 11': '11',
-    'windows 10': '10'
-  },
-  'OS X': {
-    'sonoma': 'Sonoma',
-    'ventura': 'Ventura',
-    'monterey': 'Monterey',
-    'big sur': 'Big Sur',
-    'catalina': 'Catalina'
-  },
-  'ios': {
-    '17': '17',
-    '16': '16',
-    '15': '15'
-  },
-  'android': {
-    '14.0': '14.0',
-    '14': '14.0',
-    '13.0': '13.0',
-    '13': '13.0',
-    '12.0': '12.0',
-    '12': '12.0'
+function normalizeOsVersion(os: string, version: string): string {
+  const osLower = os.toLowerCase();
+  if (osLower === 'ios' || osLower === 'android') {
+    return version.toString();
   }
-};
-
-export function normalizeOsConfig(config: Config): NormalizedConfig {
-  const normalizedOs = OS_MAP[config.os.toLowerCase()] || config.os;
-  const osVersions = VERSION_MAP[normalizedOs] || {};
-  const normalizedVersion = osVersions[config.os_version.toLowerCase()] || config.os_version;
-
-  console.log('Normalizing OS config:', {
-    input: config,
-    normalizedOs,
-    normalizedVersion
-  });
-
-  return {
-    os: normalizedOs,
-    os_version: normalizedVersion
-  };
+  return version;
 }

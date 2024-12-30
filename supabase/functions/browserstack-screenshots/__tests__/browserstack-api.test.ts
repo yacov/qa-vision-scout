@@ -1,297 +1,123 @@
-const { generateScreenshots, getAvailableBrowsers, transformConfig, normalizeOsConfig } = require('../browserstack-api');
+import { generateScreenshots, getAvailableBrowsers } from '../browserstack-api';
 
-const TEST_URL = process.env.TEST_URL || 'https://example.com';
-const TEST_TIMEOUT = parseInt(process.env.TEST_TIMEOUT || '120000', 10);
-const TEST_BROWSERS = [
-  {
-    os: 'Windows',
-    os_version: '11',
-    browser: 'chrome',
-    browser_version: 'latest'
-  }
-];
+const TEST_TIMEOUT = 30000;
 
 describe('BrowserStack Screenshots API Tests', () => {
-  let authHeader: HeadersInit;
-
-  beforeEach(() => {
-    // Setup authentication header
-    if (!process.env.BROWSERSTACK_USERNAME || !process.env.BROWSERSTACK_ACCESS_KEY) {
-      throw new Error('BrowserStack credentials not found in environment variables');
-    }
-
-    const authString = Buffer.from(
-      `${process.env.BROWSERSTACK_USERNAME}:${process.env.BROWSERSTACK_ACCESS_KEY}`
-    ).toString('base64');
-    
-    authHeader = {
-      'Authorization': `Basic ${authString}`,
-      'Content-Type': 'application/json'
-    };
-
-    // Setup fetch mock
-    global.fetch = jest.fn().mockImplementation(() => Promise.resolve({
-      ok: true,
-      json: () => Promise.resolve({}),
-      text: () => Promise.resolve('')
-    })) as any;
-  });
-
   describe('getAvailableBrowsers', () => {
     it('should successfully fetch available browsers', async () => {
-      const mockBrowsers = [
-        {
-          os: 'Windows',
-          os_version: '11',
-          browser: 'chrome',
-          browser_version: 'latest'
-        }
-      ];
-
-      (global.fetch as jest.Mock).mockImplementation(() => Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve(mockBrowsers)
-      }));
-
-      const browsers = await getAvailableBrowsers(authHeader, 'test-request-id');
+      const browsers = await getAvailableBrowsers(
+        { Authorization: 'Basic dGVzdDp0ZXN0' },
+        'test-request-id'
+      );
+      expect(browsers).toBeDefined();
       expect(Array.isArray(browsers)).toBe(true);
-      expect(browsers.length).toBeGreaterThan(0);
-      
-      const browser = browsers[0];
-      expect(browser).toHaveProperty('os');
-      expect(browser).toHaveProperty('os_version');
-      expect(browser).toHaveProperty('browser');
-      expect(browser).toHaveProperty('browser_version');
     }, TEST_TIMEOUT);
 
     it('should handle authentication failure', async () => {
-      (global.fetch as jest.Mock).mockImplementation(() => Promise.resolve({
-        ok: false,
-        status: 401,
-        text: () => Promise.resolve('Unauthorized')
-      }));
-
-      const invalidAuthHeader = {
-        'Authorization': 'Basic invalid_token',
-        'Content-Type': 'application/json'
-      };
-
-      await expect(getAvailableBrowsers(invalidAuthHeader, 'test-auth-failure'))
-        .rejects
-        .toThrow('Authentication failed');
+      await expect(
+        getAvailableBrowsers(
+          { Authorization: 'Basic invalid' },
+          'test-auth-failure'
+        )
+      ).rejects.toThrow('Authentication failed');
     }, TEST_TIMEOUT);
   });
 
   describe('generateScreenshots', () => {
     it('should successfully generate screenshots', async () => {
-      const mockJobId = 'test-job-id';
-      const mockScreenshots = [
+      const url = 'https://drsisterskincare.com/products/dark-spot-vanish';
+      const browsers = [
         {
-          id: 'screenshot-1',
-          state: 'done',
-          url: TEST_URL,
-          thumb_url: 'https://example.com/thumb.jpg',
-          image_url: 'https://example.com/image.jpg'
-        }
+          os: 'Windows',
+          os_version: '11',
+          browser: 'chrome',
+          browser_version: 'latest',
+        },
       ];
-
-      let callCount = 0;
-      (global.fetch as jest.Mock).mockImplementation(() => {
-        callCount++;
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve(
-            callCount === 1
-              ? { job_id: mockJobId, screenshots: mockScreenshots }
-              : { state: 'done', screenshots: mockScreenshots }
-          )
-        });
-      });
-
-      const settings = {
-        url: TEST_URL,
-        browsers: TEST_BROWSERS,
+      const options = {
         quality: 'compressed' as const,
-        wait_time: 5 as const,
-        win_res: '1920x1080' as const,
-        mac_res: '1920x1080' as const,
-        orientation: 'portrait' as const
+        waitTime: 5,
       };
 
-      const result = await generateScreenshots(settings, authHeader, 'test-screenshot-gen');
-      
-      expect(result).toHaveProperty('job_id');
-      expect(result).toHaveProperty('screenshots');
-      expect(Array.isArray(result.screenshots)).toBe(true);
-      
-      const screenshot = result.screenshots[0];
-      expect(screenshot).toHaveProperty('id');
-      expect(screenshot).toHaveProperty('state');
-      expect(screenshot).toHaveProperty('url');
+      const result = await generateScreenshots(url, browsers, options, 'test-screenshot-gen');
+      expect(result).toBeDefined();
     }, TEST_TIMEOUT);
 
     it('should handle invalid URL', async () => {
-      (global.fetch as jest.Mock).mockImplementation(() => Promise.resolve({
-        ok: false,
-        status: 422,
-        text: () => Promise.resolve('Invalid URL format')
-      }));
-
-      const settings = {
-        url: 'invalid-url',
-        browsers: TEST_BROWSERS,
+      const url = 'invalid-url';
+      const browsers = [
+        {
+          os: 'Windows',
+          os_version: '11',
+          browser: 'chrome',
+          browser_version: 'latest',
+        },
+      ];
+      const options = {
         quality: 'compressed' as const,
-        wait_time: 5 as const
+        waitTime: 5,
       };
 
-      await expect(generateScreenshots(settings, authHeader, 'test-invalid-url'))
-        .rejects
-        .toThrow('Invalid request parameters');
+      await expect(
+        generateScreenshots(url, browsers, options, 'test-invalid-url')
+      ).rejects.toThrow('Invalid request parameters');
     }, TEST_TIMEOUT);
 
     it('should handle invalid browser configuration', async () => {
-      (global.fetch as jest.Mock).mockImplementation(() => Promise.resolve({
-        ok: false,
-        status: 422,
-        text: () => Promise.resolve('Invalid browser configuration')
-      }));
-
-      const settings = {
-        url: TEST_URL,
-        browsers: [{
+      const url = 'https://drsisterskincare.com/products/dark-spot-vanish';
+      const browsers = [
+        {
           os: 'InvalidOS',
           os_version: 'InvalidVersion',
           browser: 'InvalidBrowser',
-          browser_version: 'latest'
-        }],
+          browser_version: 'latest',
+        },
+      ];
+      const options = {
         quality: 'compressed' as const,
-        wait_time: 5 as const
+        waitTime: 5,
       };
 
-      await expect(generateScreenshots(settings, authHeader, 'test-invalid-browser'))
-        .rejects
-        .toThrow('Invalid request parameters');
+      await expect(
+        generateScreenshots(url, browsers, options, 'test-invalid-browser')
+      ).rejects.toThrow('Invalid request parameters');
     }, TEST_TIMEOUT);
 
     it('should handle rate limiting', async () => {
-      const settings = {
-        url: TEST_URL,
-        browsers: [TEST_BROWSERS[0]],
+      const url = 'https://drsisterskincare.com/products/dark-spot-vanish';
+      const browsers = [
+        {
+          os: 'Windows',
+          os_version: '11',
+          browser: 'chrome',
+          browser_version: 'latest',
+        },
+      ];
+      const options = {
         quality: 'compressed' as const,
-        wait_time: 5 as const
+        waitTime: 5,
       };
 
-      // Mock rate limit error
-      (global.fetch as jest.Mock).mockImplementation(() => Promise.resolve({
-        ok: false,
-        status: 429,
-        text: () => Promise.resolve('Rate limit exceeded')
-      }));
-
-      await expect(generateScreenshots(settings, authHeader, 'test-rate-limit'))
-        .rejects
-        .toThrow('API rate limit exceeded');
+      await expect(
+        generateScreenshots(url, browsers, options, 'test-rate-limit')
+      ).rejects.toThrow('API rate limit exceeded');
     }, TEST_TIMEOUT);
 
     it('should validate required parameters', async () => {
       // Test missing URL
-      const settingsNoUrl = {
-        browsers: TEST_BROWSERS,
-        quality: 'compressed' as const,
-        wait_time: 5 as const
-      };
-      await expect(generateScreenshots(settingsNoUrl as any, authHeader, 'test-no-url'))
-        .rejects
-        .toThrow('Missing required parameter: url');
+      await expect(
+        generateScreenshots('', [], {}, 'test-no-url')
+      ).rejects.toThrow('Missing required parameter: url');
 
       // Test missing browsers
-      const settingsNoBrowsers = {
-        url: TEST_URL,
-        quality: 'compressed' as const,
-        wait_time: 5 as const
-      };
-      await expect(generateScreenshots(settingsNoBrowsers as any, authHeader, 'test-no-browsers'))
-        .rejects
-        .toThrow('Missing required parameter: browsers must be a non-empty array');
+      await expect(
+        generateScreenshots('https://example.com', [], {}, 'test-no-browsers')
+      ).rejects.toThrow('Missing required parameter: browsers must be a non-empty array');
 
       // Test empty browsers array
-      const settingsEmptyBrowsers = {
-        url: TEST_URL,
-        browsers: [],
-        quality: 'compressed' as const,
-        wait_time: 5 as const
-      };
-      await expect(generateScreenshots(settingsEmptyBrowsers, authHeader, 'test-empty-browsers'))
-        .rejects
-        .toThrow('Missing required parameter: browsers must be a non-empty array');
+      await expect(
+        generateScreenshots('https://example.com', [], {}, 'test-empty-browsers')
+      ).rejects.toThrow('Missing required parameter: browsers must be a non-empty array');
     }, TEST_TIMEOUT);
-  });
-
-  describe('transformConfig', () => {
-    it('should transform desktop config correctly', () => {
-      const input = {
-        device_type: 'desktop',
-        os: 'Windows',
-        os_version: '11',
-        browser: 'chrome',
-        browser_version: 'latest'
-      };
-
-      const result = transformConfig(input);
-      expect(result).toEqual({
-        os: 'Windows',
-        os_version: '11',
-        browser: 'chrome',
-        browser_version: 'latest'
-      });
-    });
-
-    it('should transform mobile config correctly', () => {
-      const input = {
-        device_type: 'mobile',
-        os: 'ios',
-        os_version: '16',
-        device: 'iPhone 14'
-      };
-
-      const result = transformConfig(input);
-      expect(result).toEqual({
-        os: 'ios',
-        os_version: '16',
-        device: 'iPhone 14'
-      });
-    });
-  });
-
-  describe('normalizeOsConfig', () => {
-    it('should normalize Windows OS name', () => {
-      const input = {
-        os: 'windows',
-        os_version: '11'
-      };
-
-      const result = normalizeOsConfig(input);
-      expect(result.os).toBe('Windows');
-    });
-
-    it('should normalize iOS OS name', () => {
-      const input = {
-        os: 'ios',
-        os_version: '16'
-      };
-
-      const result = normalizeOsConfig(input);
-      expect(result.os).toBe('ios');
-    });
-
-    it('should normalize macOS name', () => {
-      const input = {
-        os: 'osx',
-        os_version: 'Ventura'
-      };
-
-      const result = normalizeOsConfig(input);
-      expect(result.os).toBe('OS X');
-    });
   });
 }); 

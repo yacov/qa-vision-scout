@@ -138,53 +138,80 @@ class RateLimiter {
   }
 }
 
-async function withRetry<T>(
-  operation: () => Promise<T>,
-  requestId: string,
-  retryCount = 0
-): Promise<T> {
-  try {
-    return await operation();
-  } catch (error: any) {
-    logger.warn('Operation failed', {
-      requestId,
-      retryCount,
-      maxRetries: MAX_RETRIES,
-      error: error.message
-    });
-
-    // Don't retry on authentication or validation errors
-    if (error.message.includes('Authentication failed') || 
-        error.message.includes('Invalid request parameters') ||
-        error.message.includes('Rate limit exceeded')) {
-      logger.info('Not retrying due to error type', {
-        requestId,
-        errorType: error.message.includes('Authentication failed') ? 'auth' :
-                  error.message.includes('Invalid request parameters') ? 'validation' : 'rate_limit'
-      });
-      throw error;
+// Helper function to format error messages
+function formatErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'object' && error !== null) {
+    try {
+      const errorStr = JSON.stringify(error);
+      return errorStr === '{}' ? 'Unknown error' : errorStr;
+    } catch {
+      return 'Unknown error';
     }
+  }
+  return String(error);
+}
 
-    if (retryCount >= MAX_RETRIES) {
-      logger.error('Max retries exceeded', {
+// Helper function to format error object for logging
+function formatErrorForLog(error: unknown): { message: string; type?: string } {
+  if (error instanceof Error) {
+    return {
+      message: error.message,
+      type: error.name
+    };
+  }
+  return {
+    message: formatErrorMessage(error),
+    type: 'UnknownError'
+  };
+}
+
+interface RetryOptions {
+  requestId: string;
+  maxRetries?: number;
+  initialDelayMs?: number;
+}
+
+export async function withRetry<T>(
+  operation: () => Promise<T>,
+  { requestId, maxRetries = 3, initialDelayMs = 1000 }: RetryOptions
+): Promise<T> {
+  let retryCount = 0;
+
+  while (true) {
+    try {
+      return await operation();
+    } catch (error) {
+      logger.warn('Operation failed', {
         requestId,
         retryCount,
-        maxRetries: MAX_RETRIES,
-        error
+        maxRetries,
+        error: formatError(error),
       });
-      throw error;
-    }
 
-    const delay = INITIAL_RETRY_DELAY * Math.pow(2, retryCount);
-    logger.info('Retrying operation', {
-      requestId,
-      attempt: retryCount + 1,
-      maxRetries: MAX_RETRIES,
-      delayMs: delay
-    });
-    await new Promise(resolve => setTimeout(resolve, delay));
-    
-    return withRetry(operation, requestId, retryCount + 1);
+      if (retryCount >= maxRetries) {
+        logger.error('Max retries exceeded', {
+          requestId,
+          retryCount,
+          maxRetries,
+          error: formatError(error),
+        });
+        throw error;
+      }
+
+      const delayMs = initialDelayMs * Math.pow(2, retryCount);
+      logger.info('Retrying operation', {
+        requestId,
+        attempt: retryCount + 1,
+        maxRetries,
+        delayMs,
+      });
+
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+      retryCount++;
+    }
   }
 }
 
@@ -200,12 +227,12 @@ export const getAvailableBrowsers = async (authHeader: HeadersInit, requestId: s
       });
       
       if (!response.ok) {
-        const error = await response.text();
+        const errorText = await response.text();
         logger.error('Failed to fetch browsers', {
           requestId,
           status: response.status,
           statusText: response.statusText,
-          error
+          error: { message: errorText }
         });
 
         if (response.status === 401) {
@@ -215,7 +242,7 @@ export const getAvailableBrowsers = async (authHeader: HeadersInit, requestId: s
         } else if (response.status === 429) {
           throw new Error('API rate limit exceeded. Please try again later.');
         }
-        throw new Error(`Failed to fetch browsers: ${error}`);
+        throw new Error(`Failed to fetch browsers: ${errorText}`);
       }
       
       const browsers = await response.json();
@@ -240,11 +267,11 @@ export const getAvailableBrowsers = async (authHeader: HeadersInit, requestId: s
     } catch (error) {
       logger.error('Error in getAvailableBrowsers', {
         requestId,
-        error
+        errorMessage: error instanceof Error ? error.message : String(error)
       });
       throw error;
     }
-  }, requestId);
+  }, { requestId, maxRetries: MAX_RETRIES, initialDelayMs: INITIAL_RETRY_DELAY });
 };
 
 async function pollJobStatus(jobId: string, authHeader: HeadersInit, requestId: string): Promise<JobStatus> {
@@ -277,13 +304,13 @@ async function pollJobStatus(jobId: string, authHeader: HeadersInit, requestId: 
       });
 
       if (!response.ok) {
-        const error = await response.text();
+        const errorText = await response.text();
         logger.error('Failed to check job status', {
           requestId,
           jobId,
           attempt: attempts,
           status: response.status,
-          error
+          error: { message: errorText }
         });
 
         if (response.status === 401) {
@@ -293,7 +320,7 @@ async function pollJobStatus(jobId: string, authHeader: HeadersInit, requestId: 
         } else if (response.status === 429) {
           throw new Error('API rate limit exceeded. Please try again later.');
         }
-        throw new Error(`Failed to check job status: ${error}`);
+        throw new Error(`Failed to check job status: ${errorText}`);
       }
 
       const status = await response.json();
@@ -322,7 +349,7 @@ async function pollJobStatus(jobId: string, authHeader: HeadersInit, requestId: 
           requestId,
           jobId,
           attempt: attempts,
-          error: status.message
+          errorMessage: status.message instanceof Error ? status.message.message : status.message
         });
         throw new Error('Screenshot generation failed: ' + status.message);
       }
@@ -331,7 +358,7 @@ async function pollJobStatus(jobId: string, authHeader: HeadersInit, requestId: 
         requestId,
         jobId,
         attempt: attempts,
-        error
+        error: formatErrorForLog(error)
       });
       if (error instanceof Error && (
           error.message.includes('Authentication failed') || 
@@ -351,141 +378,76 @@ async function pollJobStatus(jobId: string, authHeader: HeadersInit, requestId: 
   throw new Error('Job polling exceeded maximum attempts.');
 }
 
-export const generateScreenshots = async (settings: ScreenshotSettings, authHeader: HeadersInit, requestId: string): Promise<BrowserStackResponse> => {
-  return withRetry(async () => {
-    const rateLimiter = new RateLimiter(requestId);
-    await rateLimiter.acquireToken();
-    
-    // Validate required parameters
-    if (!settings.url) {
+export async function generateScreenshots(
+  url: string,
+  browsers: Browser[],
+  options: Partial<ScreenshotOptions> = {},
+  requestId: string,
+): Promise<ScreenshotResult[]> {
+  try {
+    logger.info('Generating screenshots', {
+      requestId,
+      url,
+      browserCount: browsers.length,
+      settings: { url, browsers, ...options },
+    });
+
+    if (!url) {
       logger.warn('Missing URL parameter', { requestId });
       throw new Error('Missing required parameter: url');
     }
 
-    if (!settings.browsers || !Array.isArray(settings.browsers) || settings.browsers.length === 0) {
+    if (!Array.isArray(browsers) || browsers.length === 0) {
       logger.warn('Missing or invalid browsers array', { requestId });
       throw new Error('Missing required parameter: browsers must be a non-empty array');
     }
 
-    logger.info('Generating screenshots', {
-      requestId,
-      url: settings.url,
-      browserCount: settings.browsers.length,
-      settings
-    });
-
-    // Validate resolutions and wait time
-    validateResolution(settings.win_res, VALID_WIN_RESOLUTIONS, 'Windows', requestId);
-    validateResolution(settings.mac_res, VALID_MAC_RESOLUTIONS, 'Mac', requestId);
-    validateWaitTime(settings.wait_time, requestId);
-
-    // Transform browser configurations
-    const browsers = settings.browsers.map((browser: any, index: number) => {
+    const processedBrowsers = browsers.map((browser, index) => {
       logger.info('Processing browser configuration', {
         requestId,
         index,
-        browser
+        browser,
       });
-
-      const config: any = {
-        os: browser.os.toLowerCase() === 'ios' ? 'ios' : browser.os.charAt(0).toUpperCase() + browser.os.slice(1).toLowerCase(),
-        os_version: browser.os_version
-      };
-
-      if (browser.device) {
-        if (config.os === 'ios') {
-          validateIOSDevice(browser.device, browser.os_version, requestId);
-          config.os_version = browser.os_version.toString();
-        }
-        config.device = browser.device;
-      } else {
-        if (!browser.browser || !browser.browser_version) {
-          logger.warn('Missing browser configuration', {
-            requestId,
-            index,
-            hasBrowser: !!browser.browser,
-            hasBrowserVersion: !!browser.browser_version
-          });
-          throw new Error('Missing required parameters: browser and browser_version are required for desktop configurations');
-        }
-        config.browser = browser.browser.toLowerCase();
-        config.browser_version = typeof browser.browser_version === 'string' && 
-                               browser.browser_version.toLowerCase() === 'latest' ? 
-                               'latest' : browser.browser_version.toString();
-      }
-
-      return config;
+      return validateBrowserConfig(browser);
     });
 
-    const requestBody: BrowserStackRequestBody = {
-      url: settings.url,
-      browsers,
-      quality: settings.quality || 'compressed',
-      wait_time: settings.wait_time || 5
+    const requestBody = {
+      url,
+      browsers: processedBrowsers,
+      quality: options.quality || 'compressed',
+      wait_time: options.waitTime || 5,
     };
-
-    if (settings.win_res) requestBody.win_res = settings.win_res;
-    if (settings.mac_res) requestBody.mac_res = settings.mac_res;
-    if (settings.orientation) requestBody.orientation = settings.orientation;
 
     logger.info('Sending request to BrowserStack API', {
       requestId,
-      url: settings.url,
+      url,
       browserCount: browsers.length,
-      requestBody
+      requestBody,
     });
 
-    try {
-      const response = await fetch('https://www.browserstack.com/screenshots', {
-        method: 'POST',
-        headers: {
-          ...authHeader,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-      });
+    const response = await fetch(`${BROWSERSTACK_API_BASE_URL}/screenshots`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Basic ${btoa(`${BROWSERSTACK_USERNAME}:${BROWSERSTACK_ACCESS_KEY}`)}`,
+      },
+      body: JSON.stringify(requestBody),
+    });
 
-      if (!response.ok) {
-        const error = await response.text();
-        logger.error('Screenshot generation request failed', {
-          requestId,
-          status: response.status,
-          statusText: response.statusText,
-          error
-        });
-
-        if (response.status === 401) {
-          throw new Error('Authentication failed. Please check your BrowserStack credentials.');
-        } else if (response.status === 422) {
-          throw new Error(`Invalid request parameters: ${error}`);
-        } else if (response.status === 429) {
-          throw new Error('API rate limit exceeded. Please try again later.');
-        }
-        throw new Error(`Failed to generate screenshots: ${error}`);
-      }
-
-      const result = await response.json();
-      logger.info('Screenshot generation initiated', {
-        requestId,
-        jobId: result.job_id,
-        screenshotCount: result.screenshots?.length
-      });
-      
-      // Poll for job completion
-      const finalResult = await pollJobStatus(result.job_id, authHeader, requestId);
-      return {
-        ...result,
-        ...finalResult
-      };
-    } catch (error) {
-      logger.error('Error in generateScreenshots', {
-        requestId,
-        error
-      });
-      throw error;
+    if (!response.ok) {
+      handleApiError(response, requestId);
     }
-  }, requestId);
-};
+
+    const result = await response.json();
+    return result.screenshots;
+  } catch (error) {
+    logger.error('Error in generateScreenshots', {
+      requestId,
+      error,
+    });
+    throw error;
+  }
+}
 
 // Helper function to transform browser configuration
 export function transformConfig(config: BrowserConfig) {
@@ -502,4 +464,99 @@ export function normalizeOsConfig(config: { os: string; os_version: string }) {
     normalizedConfig.os = 'OS X';
   }
   return normalizedConfig;
+}
+
+interface BrowserstackError {
+  message: string;
+  type: string;
+  status?: number;
+  details?: unknown;
+}
+
+function formatError(error: unknown): BrowserstackError {
+  if (error instanceof Error) {
+    return {
+      message: error.message,
+      type: error.constructor.name,
+    };
+  }
+  
+  if (typeof error === 'object' && error !== null) {
+    const { message, type, status, ...details } = error as Record<string, unknown>;
+    return {
+      message: String(message || 'Unknown error'),
+      type: String(type || 'Error'),
+      status: typeof status === 'number' ? status : undefined,
+      details: Object.keys(details).length > 0 ? details : undefined,
+    };
+  }
+
+  return {
+    message: String(error),
+    type: 'Error',
+  };
+}
+
+function handleApiError(error: unknown, requestId: string): never {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  const errorType = error instanceof Error ? error.constructor.name : 'Error';
+  const errorDetails = error instanceof Error ? error.stack : undefined;
+
+  logger.error('Screenshot generation request failed', {
+    requestId,
+    status: error instanceof Response ? error.status : undefined,
+    error: {
+      message: errorMessage,
+      type: errorType,
+      details: errorDetails,
+    },
+  });
+
+  throw new Error(errorMessage);
+}
+
+const BROWSERSTACK_API_BASE_URL = 'https://www.browserstack.com';
+const BROWSERSTACK_USERNAME = typeof Deno !== 'undefined' ? Deno.env.get('BROWSERSTACK_USERNAME') : process.env.BROWSERSTACK_USERNAME || '';
+const BROWSERSTACK_ACCESS_KEY = typeof Deno !== 'undefined' ? Deno.env.get('BROWSERSTACK_ACCESS_KEY') : process.env.BROWSERSTACK_ACCESS_KEY || '';
+
+interface Browser {
+  os: string;
+  os_version: string;
+  browser?: string;
+  browser_version?: string;
+  device?: string;
+}
+
+interface ScreenshotOptions {
+  quality: 'compressed' | 'original';
+  waitTime: number;
+  orientation?: 'portrait' | 'landscape';
+}
+
+interface ScreenshotResult {
+  id: string;
+  url: string;
+  thumb_url: string;
+  browser: Browser;
+  state: string;
+  created_at: string;
+}
+
+function validateBrowserConfig(browser: Browser): Browser {
+  const config: Browser = {
+    os: browser.os.toLowerCase() === 'ios' ? 'ios' : browser.os.charAt(0).toUpperCase() + browser.os.slice(1).toLowerCase(),
+    os_version: browser.os_version,
+  };
+
+  if (browser.device) {
+    config.device = browser.device;
+  } else {
+    if (!browser.browser || !browser.browser_version) {
+      throw new Error('Missing required parameters: browser and browser_version are required for desktop configurations');
+    }
+    config.browser = browser.browser.toLowerCase();
+    config.browser_version = browser.browser_version.toLowerCase() === 'latest' ? 'latest' : browser.browser_version;
+  }
+
+  return config;
 }
