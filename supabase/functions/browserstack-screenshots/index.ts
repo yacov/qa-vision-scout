@@ -19,17 +19,19 @@ serve(async (req) => {
     console.log('Baseline URL:', baselineUrl)
     console.log('New URL:', newUrl)
 
-    // Create BrowserStack client
+    // Create BrowserStack Screenshots client
     const client = BrowserStack.createScreenshotClient({
       username: Deno.env.get('BROWSERSTACK_USERNAME'),
       password: Deno.env.get('BROWSERSTACK_ACCESS_KEY'),
     })
 
-    // Configure screenshot settings with specific browser versions
+    // Configure screenshot settings
     const commonSettings = {
       quality: 'compressed',
       wait_time: 5,
       local: false,
+      mac_res: '1024x768',
+      win_res: '1024x768',
       browsers: [
         { 
           os: 'Windows', 
