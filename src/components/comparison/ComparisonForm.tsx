@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,13 +10,25 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface ComparisonFormProps {
   onTestCreated: () => void;
+  initialBaselineUrl?: string;
+  initialNewUrl?: string;
 }
 
-export const ComparisonForm = ({ onTestCreated }: ComparisonFormProps) => {
-  const [baselineUrl, setBaselineUrl] = useState("");
-  const [newUrl, setNewUrl] = useState("");
+export const ComparisonForm = ({ 
+  onTestCreated, 
+  initialBaselineUrl = "", 
+  initialNewUrl = "" 
+}: ComparisonFormProps) => {
+  const [baselineUrl, setBaselineUrl] = useState(initialBaselineUrl);
+  const [newUrl, setNewUrl] = useState(initialNewUrl);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Update form values when initial values change
+  useEffect(() => {
+    setBaselineUrl(initialBaselineUrl);
+    setNewUrl(initialNewUrl);
+  }, [initialBaselineUrl, initialNewUrl]);
 
   const createTest = useMutation({
     mutationFn: async () => {
