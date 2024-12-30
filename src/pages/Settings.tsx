@@ -34,12 +34,12 @@ const Settings = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
-        <header className="border-b p-4">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <header className="border-b p-4 flex-shrink-0">
           <h2 className="text-2xl font-semibold">Settings</h2>
         </header>
 
-        <div className="p-6 space-y-6 overflow-auto h-[calc(100vh-73px)]">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
           <PredefinedConfigs />
           <BrowserstackConfigForm />
           <ConfigurationsList />
