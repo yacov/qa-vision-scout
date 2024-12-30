@@ -51,27 +51,28 @@ serve(async (req) => {
 
     // Map configurations to BrowserStack format
     const browsers = selectedConfigs.map(config => {
-      const mappedConfig = {
-        os: config.os,
-        os_version: config.os_version,
-      }
-
       if (config.device_type === 'mobile') {
-        // For mobile devices, only include device name
+        // For mobile devices
         return {
-          ...mappedConfig,
+          os: config.os,
+          os_version: config.os_version,
           device: config.device
         }
       } else {
         // For desktop browsers
-        const desktopConfig = {
-          ...mappedConfig,
+        const desktopConfig: any = {
+          os: config.os,
+          os_version: config.os_version,
           browser: config.browser
         }
 
-        // Only add browser_version if it exists and is not null
-        if (config.browser_version && config.browser_version !== 'null') {
-          desktopConfig['browser_version'] = config.browser_version === 'latest' ? 'latest' : config.browser_version
+        // Only add browser_version if it exists and is not null/empty
+        if (config.browser_version && 
+            config.browser_version !== 'null' && 
+            config.browser_version.trim() !== '') {
+          desktopConfig.browser_version = config.browser_version === 'latest' 
+            ? 'latest' 
+            : config.browser_version
         }
 
         console.log('Desktop browser configuration:', desktopConfig)
