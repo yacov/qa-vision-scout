@@ -59,13 +59,19 @@ serve(async (req) => {
           device: config.device
         }
       } else {
-        // For desktop browsers
-        return {
+        // For desktop browsers, handle browser_version carefully
+        const browserConfig = {
           os: config.os,
           os_version: config.os_version,
-          browser: config.browser,
-          browser_version: config.browser_version === 'latest' ? 'latest' : config.browser_version
+          browser: config.browser
         }
+
+        // Only add browser_version if it's not null and handle 'latest' specially
+        if (config.browser_version) {
+          browserConfig['browser_version'] = config.browser_version === 'latest' ? 'latest' : config.browser_version
+        }
+
+        return browserConfig
       }
     })
 
