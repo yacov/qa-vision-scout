@@ -120,6 +120,23 @@ interface BrowserStackRequestBody {
   orientation?: string;
 }
 
+interface JobStatus {
+  state: 'pending' | 'done' | 'error';
+  screenshots: Array<{
+    os: string;
+    os_version: string;
+    browser?: string;
+    browser_version?: string;
+    device?: string;
+    id: string;
+    state: 'pending' | 'done' | 'error';
+    url: string;
+    thumb_url?: string;
+    image_url?: string;
+    created_at?: string;
+  }>;
+}
+
 function validateResolution(res: string | undefined, validResolutions: readonly string[], type: 'Windows' | 'Mac'): void {
   if (res && !validResolutions.includes(res)) {
     throw new Error(
@@ -203,6 +220,52 @@ export const getAvailableBrowsers = async (authHeader: HeadersInit): Promise<Bro
   });
 };
 
+async function pollJobStatus(jobId: string, authHeader: HeadersInit): Promise<JobStatus> {
+  const POLLING_INTERVAL = 5000; // 5 seconds
+  const MAX_ATTEMPTS = 20;
+  let attempts = 0;
+
+  while (attempts < MAX_ATTEMPTS) {
+    attempts++;
+    try {
+      await rateLimiter.acquireToken();
+      
+      const response = await fetch(`https://www.browserstack.com/screenshots/${jobId}.json`, {
+        headers: authHeader
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        if (response.status === 401) {
+          throw new Error('Authentication failed. Please check your BrowserStack credentials.');
+        } else if (response.status === 422) {
+          throw new Error('Invalid job ID.');
+        } else if (response.status === 429) {
+          throw new Error('API rate limit exceeded. Please try again later.');
+        }
+        throw new Error(`Failed to check job status: ${error}`);
+      }
+
+      const status = await response.json();
+      if (status.state === 'done') {
+        console.log('Screenshots generation complete.');
+        return status;
+      } else if (status.state === 'error') {
+        throw new Error('Screenshot generation failed: ' + status.message);
+      }
+    } catch (error) {
+      console.warn(`Polling attempt ${attempts} failed:`, error);
+      if (error.message.includes('Authentication failed') || 
+          error.message.includes('Invalid job ID') ||
+          error.message.includes('Screenshot generation failed')) {
+        throw error;
+      }
+    }
+    await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL));
+  }
+  throw new Error('Job polling exceeded maximum attempts.');
+}
+
 export const generateScreenshots = async (settings: ScreenshotSettings, authHeader: HeadersInit): Promise<BrowserStackResponse> => {
   return withRetry(async () => {
     await rateLimiter.acquireToken();
@@ -281,8 +344,14 @@ export const generateScreenshots = async (settings: ScreenshotSettings, authHead
       }
 
       const result = await response.json();
-      console.log('Screenshot generation successful:', JSON.stringify(result, null, 2));
-      return result;
+      console.log('Screenshot generation initiated:', JSON.stringify(result, null, 2));
+      
+      // Poll for job completion
+      const finalResult = await pollJobStatus(result.job_id, authHeader);
+      return {
+        ...result,
+        ...finalResult
+      };
     } catch (error) {
       console.error('Error in generateScreenshots:', error);
       throw error;

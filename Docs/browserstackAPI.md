@@ -13,25 +13,6 @@ author:
 ---
 The Screenshots API allows headless creation of screenshots for a URL. The API allows selection of OS and browsers, starting and stopping screenshot generation.
 
-**Note:** Screenshots API is only available in [Automate plans](https://www.browserstack.com/pricing?product=automate) that include browsers. If you are subscribed only to Live plans, you can use Screenshots through [webpage](https://www.browserstack.com/screenshots).
-
-### Language bindings
-
-| Language binding | Description |
-| --- | --- |
-| [Ruby](https://github.com/browserstack/ruby-screenshots/ "BrowserStack Screenshots API Ruby Library")  
-**API Version:** 1.0 | A ruby gem for working with the BrowserStack Screenshots API |
-
-### 3rd party tools
-
-| Tools | Description |
-| --- | --- |
-| [ScreenShooter](https://github.com/bennylope/screenshooter "ScreenShooter")  
-**Developed by:** Ben Lopatin | A tool for generating BrowserStack screenshots from the command-line interface. |
-| [pybrowserstack-screenshots](https://github.com/cmck/pybrowserstack-screenshots "pybrowserstack-screenshots")  
-**Developed by:** Clark Mckenzie | python api wrapper and client for Browserstack Screenshots API including PhantomCSS support. Starts screenshot jobs at Browserstack and downloads the screenshots when they are complete. Tests for visual regressions using PhantomCSS. |
-| [browserstack](https://www.npmjs.com/package/browserstack "browserstack")  
-**Developed by:** Scott Gonzalez | A node.js JavaScript client for working with BrowserStack through its REST API and Screenshots API. |
 
 ### Authentication
 
