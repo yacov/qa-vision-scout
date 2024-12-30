@@ -60,8 +60,8 @@ const validateBrowserVersion = (version: string | null | undefined): string | nu
     return null
   }
   
-  const trimmedVersion = version.trim()
-  if (trimmedVersion.toLowerCase() === 'latest') {
+  const trimmedVersion = version.trim().toLowerCase()
+  if (trimmedVersion === 'latest') {
     return 'latest'
   }
 
@@ -77,6 +77,9 @@ const validateBrowserVersion = (version: string | null | undefined): string | nu
 
 // Function to validate browser configuration
 const validateBrowserConfig = (config: BrowserstackBrowser, availableBrowsers: BrowserstackBrowser[]): boolean => {
+  console.log('Validating config:', config);
+  console.log('Available browsers:', availableBrowsers);
+
   if (config.device) {
     // For mobile devices
     return availableBrowsers.some(b => 
@@ -86,20 +89,23 @@ const validateBrowserConfig = (config: BrowserstackBrowser, availableBrowsers: B
     )
   } else {
     // For desktop browsers
-    const matchingBrowser = availableBrowsers.find(b => 
+    const matchingBrowsers = availableBrowsers.filter(b => 
       b.os === config.os &&
       b.os_version === config.os_version &&
       b.browser === config.browser
     )
 
-    if (!matchingBrowser) return false
+    console.log('Matching browsers:', matchingBrowsers);
 
-    // If browser_version is specified and not 'latest', validate it
-    if (config.browser_version && config.browser_version !== 'latest') {
-      return matchingBrowser.browser_version === config.browser_version
+    if (matchingBrowsers.length === 0) return false
+
+    // If browser_version is 'latest' or not specified, it's valid
+    if (!config.browser_version || config.browser_version === 'latest') {
+      return true
     }
 
-    return true
+    // Otherwise, check for exact version match
+    return matchingBrowsers.some(b => b.browser_version === config.browser_version)
   }
 }
 
@@ -177,10 +183,8 @@ serve(async (req) => {
         browserConfig.device = config.device
       } else {
         browserConfig.browser = config.browser
-        const validatedVersion = validateBrowserVersion(config.browser_version)
-        if (validatedVersion) {
-          browserConfig.browser_version = validatedVersion
-        }
+        // Handle 'latest' version specially
+        browserConfig.browser_version = config.browser_version === 'latest' ? 'latest' : validateBrowserVersion(config.browser_version)
       }
 
       // Validate the configuration against available browsers
