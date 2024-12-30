@@ -65,6 +65,7 @@ export const generateScreenshots = async (settings: any, authHeader: HeadersInit
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(requestBody)
+    body: JSON.stringify(requestBody)
   });
 
   if (!response.ok) {
