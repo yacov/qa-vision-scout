@@ -3,6 +3,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { BarChart3, Layout, Settings, Smartphone } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 const Index = () => {
   const [isOpen, setIsOpen] = useState(true);
@@ -17,14 +18,14 @@ const Index = () => {
         </div>
         
         <nav className="space-y-2">
-          <a href="#" className="flex items-center gap-2 p-2 rounded-lg bg-sidebar-accent text-sidebar-accent-foreground">
+          <Link to="/" className="flex items-center gap-2 p-2 rounded-lg bg-sidebar-accent text-sidebar-accent-foreground">
             <BarChart3 className="h-5 w-5" />
             Dashboard
-          </a>
-          <a href="#" className="flex items-center gap-2 p-2 rounded-lg hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
+          </Link>
+          <Link to="/comparison" className="flex items-center gap-2 p-2 rounded-lg hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
             <Layout className="h-5 w-5" />
             Comparison Module
-          </a>
+          </Link>
           <a href="#" className="flex items-center gap-2 p-2 rounded-lg hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
             <Smartphone className="h-5 w-5" />
             Device Testing
@@ -52,9 +53,9 @@ const Index = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <button className="w-full p-2 text-left rounded-lg hover:bg-accent">
+                  <Link to="/comparison" className="block w-full p-2 text-left rounded-lg hover:bg-accent">
                     New Comparison Test
-                  </button>
+                  </Link>
                   <button className="w-full p-2 text-left rounded-lg hover:bg-accent">
                     Device Responsiveness Test
                   </button>
