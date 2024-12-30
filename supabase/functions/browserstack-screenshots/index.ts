@@ -1,7 +1,7 @@
 // Main edge function handler
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { getAvailableBrowsers, generateScreenshots } from "./browserstack-api.ts";
-import { validateBrowserConfig } from "./browser-validation.ts";
+import { validateBrowserConfig as validateBrowserConfigExternal } from "./browser-validation.ts";
 import { createSupabaseClient, updateTestStatus, createScreenshotRecords } from "./database.ts";
 
 // @ts-ignore: Deno imports
@@ -127,7 +127,7 @@ serve(async (req) => {
       console.log('Created browser config:', JSON.stringify(browserConfig, null, 2));
 
       // Validate the configuration against available browsers
-      if (!validateBrowserConfig(browserConfig, availableBrowsers)) {
+      if (!validateBrowserConfigExternal(browserConfig, availableBrowsers)) {
         const availableConfigs = availableBrowsers
           .filter(b => b.os?.toLowerCase() === browserConfig.os?.toLowerCase())
           .map(b => ({
