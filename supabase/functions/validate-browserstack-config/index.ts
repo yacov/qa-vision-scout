@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from '../_shared/cors.ts';
 import { validateBrowserConfig } from '../browserstack-screenshots/browser-validation.ts';
@@ -20,7 +20,12 @@ serve(async (req: Request) => {
       throw error;
     }
 
-    const availableBrowsers = await getAvailableBrowsers();
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('No authorization header');
+    }
+
+    const availableBrowsers = await getAvailableBrowsers({ Authorization: authHeader });
     const isValid = validateBrowserConfig(data, availableBrowsers);
 
     return new Response(
