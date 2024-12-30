@@ -23,6 +23,16 @@ export const getAvailableBrowsers = async (authHeader: HeadersInit): Promise<any
   }));
 };
 
+interface BrowserStackRequestBody {
+  url: string;
+  browsers: any[];
+  quality: string;
+  wait_time: number;
+  win_res?: string;
+  mac_res?: string;
+  orientation?: string;
+}
+
 export const generateScreenshots = async (settings: any, authHeader: HeadersInit): Promise<any> => {
   console.log('Generating screenshots with settings:', JSON.stringify(settings, null, 2));
 
@@ -44,7 +54,7 @@ export const generateScreenshots = async (settings: any, authHeader: HeadersInit
   });
 
   // Prepare request body according to BrowserStack API format
-  const requestBody = {
+  const requestBody: BrowserStackRequestBody = {
     url: settings.url,
     browsers,
     quality: settings.quality || 'compressed',
@@ -64,7 +74,6 @@ export const generateScreenshots = async (settings: any, authHeader: HeadersInit
       ...authHeader,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify(requestBody)
     body: JSON.stringify(requestBody)
   });
 
