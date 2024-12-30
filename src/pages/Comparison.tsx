@@ -33,7 +33,7 @@ const Comparison = () => {
             <Layout className="h-5 w-5" />
             Comparison Module
           </a>
-          <a href="#" className="flex items-center gap-2 p-2 rounded-lg hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
+          <a href="/device-testing" className="flex items-center gap-2 p-2 rounded-lg hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
             <Smartphone className="h-5 w-5" />
             Device Testing
           </a>
