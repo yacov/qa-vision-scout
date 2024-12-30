@@ -44,8 +44,8 @@ serve(async (req) => {
           browser_version: '17.0' 
         },
         { 
-          device: 'iPhone 14',
-          os_version: '16',
+          device: 'iPhone 13',
+          os_version: '15',
           real_mobile: true
         }
       ],
