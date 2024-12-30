@@ -24,7 +24,11 @@ export const BrowserstackConfigForm = () => {
   const queryClient = useQueryClient();
   const [deviceType, setDeviceType] = useState<'desktop' | 'mobile'>('desktop');
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<ConfigFormData>();
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<ConfigFormData>({
+    defaultValues: {
+      deviceType: 'desktop'
+    }
+  });
 
   const createConfig = useMutation({
     mutationFn: async (data: ConfigFormData) => {
@@ -32,12 +36,12 @@ export const BrowserstackConfigForm = () => {
         .from('browserstack_configs')
         .insert({
           name: data.name,
-          device_type: data.deviceType,
+          device_type: deviceType, // Use the state value directly
           os: data.os,
           os_version: data.osVersion,
-          browser: data.deviceType === 'desktop' ? data.browser : null,
-          browser_version: data.deviceType === 'desktop' ? data.browserVersion : null,
-          device: data.deviceType === 'mobile' ? data.device : null,
+          browser: deviceType === 'desktop' ? data.browser : null,
+          browser_version: deviceType === 'desktop' ? data.browserVersion : null,
+          device: deviceType === 'mobile' ? data.device : null,
           user_id: '00000000-0000-0000-0000-000000000000', // Default system user UUID
         });
 
@@ -52,6 +56,7 @@ export const BrowserstackConfigForm = () => {
       reset();
     },
     onError: (error: Error) => {
+      console.error('Error creating config:', error);
       toast({
         title: "Error",
         description: "Failed to create configuration. Please try again.",
@@ -61,7 +66,10 @@ export const BrowserstackConfigForm = () => {
   });
 
   const onSubmit = (data: ConfigFormData) => {
-    createConfig.mutate(data);
+    createConfig.mutate({
+      ...data,
+      deviceType // Include deviceType in the mutation data
+    });
   };
 
   return (
