@@ -1,8 +1,8 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { corsHeaders } from '../_shared/cors.js';
-import { validateBrowserConfig } from '../browserstack-screenshots/browser-validation.js';
-import { getAvailableBrowsers } from '../browserstack-screenshots/browserstack-api.js';
+import { corsHeaders } from '../_shared/cors.ts';
+import { validateBrowserConfig } from '../browserstack-screenshots/browser-validation.ts';
+import { getAvailableBrowsers } from '../browserstack-screenshots/browserstack-api.ts';
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -10,40 +10,39 @@ serve(async (req: Request) => {
   }
 
   try {
-    const username = Deno.env.get('BROWSERSTACK_USERNAME');
-    const accessKey = Deno.env.get('BROWSERSTACK_ACCESS_KEY');
-
-    if (!username || !accessKey) {
-      throw new Error('BrowserStack credentials not configured');
-    }
-
-    const { config } = await req.json();
-    if (!config) {
-      throw new Error('No configuration provided');
-    }
-
-    const authHeaders = {
-      'Authorization': `Basic ${btoa(`${username}:${accessKey}`)}`
-    };
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     
-    const availableBrowsers = await getAvailableBrowsers(authHeaders);
-    const validationResult = validateBrowserConfig(config, availableBrowsers);
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    const { data, error } = await req.json();
+
+    if (error) {
+      throw error;
+    }
+
+    const availableBrowsers = await getAvailableBrowsers();
+    const isValid = validateBrowserConfig(data, availableBrowsers);
 
     return new Response(
-      JSON.stringify(validationResult),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      },
+      JSON.stringify({ isValid }),
+      { 
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        } 
+      }
     );
-
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+  } catch (error) {
+    console.error('Error in validate-browserstack-config function:', error);
     return new Response(
-      JSON.stringify({ error: errorMessage }),
-      {
+      JSON.stringify({ error: 'Failed to validate browser configuration' }),
+      { 
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      },
+        headers: { 
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        } 
+      }
     );
   }
 });
