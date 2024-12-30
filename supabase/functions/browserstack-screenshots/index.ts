@@ -51,18 +51,26 @@ serve(async (req) => {
 
     // Map configurations to BrowserStack format
     const browsers = selectedConfigs.map(config => {
+      // Validate and format os_version
+      if (!config.os_version || config.os_version.trim() === '' || config.os_version === 'null') {
+        console.error('Invalid os_version for config:', config)
+        throw new Error(`Invalid os_version for configuration: ${config.name}`)
+      }
+
       if (config.device_type === 'mobile') {
         // For mobile devices
-        return {
+        const mobileConfig = {
           os: config.os,
-          os_version: config.os_version,
+          os_version: config.os_version.trim(),
           device: config.device
         }
+        console.log('Mobile device configuration:', mobileConfig)
+        return mobileConfig
       } else {
         // For desktop browsers
         const desktopConfig: any = {
           os: config.os,
-          os_version: config.os_version,
+          os_version: config.os_version.trim(),
           browser: config.browser
         }
 
@@ -72,7 +80,7 @@ serve(async (req) => {
             config.browser_version.trim() !== '') {
           desktopConfig.browser_version = config.browser_version === 'latest' 
             ? 'latest' 
-            : config.browser_version
+            : config.browser_version.trim()
         }
 
         console.log('Desktop browser configuration:', desktopConfig)
