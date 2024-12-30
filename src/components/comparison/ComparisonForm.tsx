@@ -26,24 +26,45 @@ export const ComparisonForm = ({ onTestCreated }: ComparisonFormProps) => {
         throw new Error("User not authenticated");
       }
 
-      const { data, error } = await supabase
+      // Create the test record
+      const { data: test, error: testError } = await supabase
         .from('comparison_tests')
         .insert({
           baseline_url: baselineUrl,
           new_url: newUrl,
-          user_id: user.id
+          user_id: user.id,
+          status: 'pending'
         })
         .select()
         .single();
 
-      if (error) throw error;
-      return data;
+      if (testError) throw testError;
+
+      // Trigger screenshot generation
+      const response = await fetch('/api/browserstack-screenshots', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        },
+        body: JSON.stringify({
+          testId: test.id,
+          baselineUrl,
+          newUrl,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate screenshots');
+      }
+
+      return test;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comparison-tests'] });
       toast({
         title: "Test created",
-        description: "Your comparison test has been created successfully.",
+        description: "Your comparison test has been created and screenshots are being generated.",
       });
       onTestCreated();
       setBaselineUrl("");

@@ -3,6 +3,20 @@ import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
+
+const getStatusBadgeVariant = (status: string) => {
+  switch (status) {
+    case 'completed':
+      return 'success';
+    case 'failed':
+      return 'destructive';
+    case 'in_progress':
+      return 'warning';
+    default:
+      return 'secondary';
+  }
+};
 
 export const TestResultsTable = () => {
   const { data: tests, isLoading: testsLoading } = useQuery({
@@ -10,7 +24,7 @@ export const TestResultsTable = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('comparison_tests')
-        .select('*')
+        .select('*, test_screenshots(*)')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -43,7 +57,11 @@ export const TestResultsTable = () => {
                 <TableRow key={test.id}>
                   <TableCell className="truncate max-w-xs">{test.baseline_url}</TableCell>
                   <TableCell className="truncate max-w-xs">{test.new_url}</TableCell>
-                  <TableCell>{test.status}</TableCell>
+                  <TableCell>
+                    <Badge variant={getStatusBadgeVariant(test.status)}>
+                      {test.status}
+                    </Badge>
+                  </TableCell>
                   <TableCell>{new Date(test.created_at || '').toLocaleDateString()}</TableCell>
                 </TableRow>
               ))}
