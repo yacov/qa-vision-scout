@@ -2,24 +2,24 @@
   "name": "browserstack-screenshots",
   "version": "1.0.0",
   "description": "BrowserStack Screenshots API Testing",
+  "type": "module",
   "scripts": {
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "build:dev": "vite build --mode development"
+    "test": "jest --config jest.config.ts",
+    "test:watch": "jest --config jest.config.ts --watch",
+    "build:dev": "vite build --mode development",
+    "dev": "vite"
   },
   "devDependencies": {
     "@jest/globals": "^29.7.0",
-    "@types/dotenv": "^8.2.0",
     "@types/jest": "^29.5.14",
     "@types/node": "^20.11.5",
     "dotenv": "^16.3.1",
     "jest": "^29.7.0",
-    "lovable-tagger": "^1.0.19",
     "ts-jest": "^29.2.5",
-    "typescript": "^5.7.2"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@vitejs/plugin-react-swc": "^3.7.2",
-    "vite": "^6.0.6"
+    "@supabase/supabase-js": "^2.39.3"
   }
 }
