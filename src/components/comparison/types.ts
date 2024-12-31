@@ -16,4 +16,19 @@ export interface Test {
     diff_percentage: number | null;
     created_at: string | null;
   }>;
-} 
+}
+
+export interface Config {
+  id: string;
+  name: string;
+  device_type: 'desktop' | 'mobile';
+  os: string;
+  os_version: string;
+  browser: string | null;
+  browser_version: string | null;
+  device: string | null;
+  is_active: boolean | null;
+  created_at: string | null;
+  user_id: string;
+  is_predefined: boolean | null;
+}

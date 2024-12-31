@@ -37,6 +37,11 @@ export const TestResultsTable = ({ onTestSelect }: TestResultsTableProps) => {
     }
   });
 
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString();
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -67,11 +72,11 @@ export const TestResultsTable = ({ onTestSelect }: TestResultsTableProps) => {
                   <TableCell className="truncate max-w-xs">{test.baseline_url}</TableCell>
                   <TableCell className="truncate max-w-xs">{test.new_url}</TableCell>
                   <TableCell>
-                    <Badge variant={getStatusBadgeVariant(test.status)}>
+                    <Badge variant={getStatusBadgeVariant(test.status || '')}>
                       {test.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>{new Date(test.created_at || '').toLocaleDateString()}</TableCell>
+                  <TableCell>{formatDate(test.created_at)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
