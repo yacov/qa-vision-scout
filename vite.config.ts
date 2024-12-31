@@ -6,8 +6,8 @@ import type { PluginOption } from 'vite';
 
 export default defineConfig(({ mode }) => ({
   server: {
-    host: '0.0.0.0',
     port: 8080,
+    host: true,
     open: true,
     hmr: {
       overlay: true,
