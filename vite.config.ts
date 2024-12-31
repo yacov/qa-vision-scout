@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
-import { fileURLToPath } from 'url';
 import path from 'path';
 import type { PluginOption } from 'vite';
 
@@ -42,5 +41,15 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, './src'),
       },
     },
+    build: {
+      rollupOptions: {
+        external: ['react-router-dom'],
+        output: {
+          globals: {
+            'react-router-dom': 'ReactRouterDOM'
+          }
+        }
+      }
+    }
   };
 });
