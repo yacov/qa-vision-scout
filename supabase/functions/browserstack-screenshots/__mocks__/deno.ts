@@ -1,6 +1,6 @@
 // Mock Deno.env
 export const env = {
-  get: jest.fn((key: string) => {
+  get: vi.fn((key: string) => {
     switch (key) {
       case 'BROWSERSTACK_USERNAME':
         return 'test_user';
@@ -13,7 +13,7 @@ export const env = {
 };
 
 // Mock serve function from http/server.ts
-export const serve = jest.fn((handler: (request: Request) => Promise<Response> | Response) => {
+export const serve = vi.fn((handler: (request: Request) => Promise<Response> | Response) => {
   return Promise.resolve();
 });
 

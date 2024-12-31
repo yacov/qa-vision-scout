@@ -68,7 +68,7 @@ The test suite includes:
 
 ## Notes
 
-- The tests use Jest and TypeScript
+- The tests use Vitest and TypeScript
 - Rate limiting is implemented to respect BrowserStack's API limits
 - Tests include retry logic for transient failures
 - Environment variables are loaded from `.env.test`

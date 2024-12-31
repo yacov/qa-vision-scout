@@ -63,7 +63,7 @@
 - [ ] AI model integration (Gemini, Claude, GPT)
 
 #### Testing Implementation
-- [x] Jest setup for unit tests
+- [x] Vitest setup for unit tests
 - [ ] Cypress setup for E2E tests
 - [ ] Test coverage reporting
 - [ ] CI/CD pipeline
@@ -79,7 +79,7 @@
 - P5.js
 - Supabase
 - Browserstack API
-- Jest & Cypress
+- Vitest & Cypress
 
 ## Directory Structure
 ```
@@ -107,7 +107,7 @@ src/
   - [x] Environment variables setup
 - [x] Basic dependency installation
   - [x] Core dependencies (@supabase/supabase-js, etc.)
-  - [x] Development tools (Jest, TypeScript, etc.)
+  - [x] Development tools (Vitest, TypeScript, etc.)
   - [x] Testing frameworks configuration
 
 ### Authentication Phase (In Progress)

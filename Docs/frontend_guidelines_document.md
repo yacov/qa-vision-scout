@@ -32,7 +32,7 @@ Performance in TestHub is optimized through several strategies, including lazy l
 
 ### Testing and Quality Assurance
 
-For the frontend, TestHub incorporates a robust testing strategy using tools such as Jest for unit tests and Cypress for end-to-end testing. These tools ensure our components and overall system operate as expected under various scenarios. Continuous testing throughout the development cycle aids in identifying defects early, maintaining high-quality code standards, and ensuring reliability in production.
+For the frontend, TestHub incorporates a robust testing strategy using tools such as Vitest for unit tests and Cypress for end-to-end testing. These tools ensure our components and overall system operate as expected under various scenarios. Continuous testing throughout the development cycle aids in identifying defects early, maintaining high-quality code standards, and ensuring reliability in production.
 
 ### Conclusion and Overall Frontend Summary
 
