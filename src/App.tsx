@@ -7,12 +7,14 @@ import { Toaster } from "@/components/ui/toaster";
 function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<Index />} />
-        <Route path="/comparison" element={<Comparison />} />
-        <Route path="/settings" element={<Settings />} />
-      </Routes>
-      <Toaster />
+      <div className="min-h-screen bg-background">
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/comparison" element={<Comparison />} />
+          <Route path="/settings" element={<Settings />} />
+        </Routes>
+        <Toaster />
+      </div>
     </Router>
   );
 }
