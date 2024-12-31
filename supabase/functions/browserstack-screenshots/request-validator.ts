@@ -4,7 +4,6 @@ interface RequestData {
   testId?: string;
   url?: string;
   selected_configs?: Array<{
-    device_type: 'desktop' | 'mobile';
     os: string;
     os_version: string;
     browser?: string;
@@ -13,39 +12,53 @@ interface RequestData {
   }>;
 }
 
-export function validateRequest(requestData: RequestData): void {
+export function validateRequestData(data: unknown, requestId: string): RequestData {
   logger.info({
-    message: "Validating request data",
-    data: requestData
+    message: 'Validating request data',
+    requestId,
+    data
   });
 
-  if (!requestData.url) {
-    throw new Error("URL is required");
+  if (!data || typeof data !== 'object') {
+    throw new Error('Invalid request data: must be an object');
   }
 
-  if (!requestData.selected_configs || requestData.selected_configs.length === 0) {
-    throw new Error("At least one configuration must be selected");
+  const requestData = data as RequestData;
+
+  if (!requestData.testId) {
+    throw new Error('Missing required field: testId');
+  }
+
+  if (!requestData.url) {
+    throw new Error('Missing required field: url');
+  }
+
+  try {
+    new URL(requestData.url);
+  } catch {
+    throw new Error('Invalid URL format');
+  }
+
+  if (!Array.isArray(requestData.selected_configs) || requestData.selected_configs.length === 0) {
+    throw new Error('Missing or empty selected_configs array');
   }
 
   // Validate each config
   requestData.selected_configs.forEach((config, index) => {
-    if (!config.os || !config.os_version || !config.device_type) {
-      throw new Error(`Invalid configuration at index ${index}`);
+    if (!config.os) {
+      throw new Error(`Missing required field: os in config at index ${index}`);
     }
-
-    // Validate desktop specific fields
-    if (config.device_type === 'desktop' && (!config.browser || !config.browser_version)) {
-      throw new Error(`Browser and browser version are required for desktop configuration at index ${index}`);
-    }
-
-    // Validate mobile specific fields
-    if (config.device_type === 'mobile' && !config.device) {
-      throw new Error(`Device is required for mobile configuration at index ${index}`);
+    if (!config.os_version) {
+      throw new Error(`Missing required field: os_version in config at index ${index}`);
     }
   });
 
   logger.info({
-    message: "Request validation successful",
-    data: requestData
+    message: 'Request data validated successfully',
+    requestId,
+    testId: requestData.testId,
+    configCount: requestData.selected_configs.length
   });
+
+  return requestData;
 }

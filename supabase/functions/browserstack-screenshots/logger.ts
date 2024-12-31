@@ -1,11 +1,9 @@
 interface LogContext {
   message: string;
-  error?: unknown;
-  requestId?: string;
   [key: string]: unknown;
 }
 
-function formatError(error: unknown): Record<string, unknown> {
+function formatError(error: Error): unknown {
   if (error instanceof Error) {
     return {
       name: error.name,
@@ -17,11 +15,11 @@ function formatError(error: unknown): Record<string, unknown> {
   return { error };
 }
 
-export class Logger {
-  error(context: LogContext): void {
+class Logger {
+  error(context: LogContext & { error?: unknown }): void {
     const formattedContext = {
       ...context,
-      error: context.error ? formatError(context.error) : undefined,
+      error: context.error ? formatError(context.error as Error) : undefined,
       timestamp: new Date().toISOString(),
       level: 'error'
     };

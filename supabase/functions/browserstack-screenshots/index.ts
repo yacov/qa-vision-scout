@@ -13,7 +13,10 @@ const corsHeaders = {
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { 
+      headers: corsHeaders,
+      status: 204
+    });
   }
 
   try {
@@ -106,7 +109,7 @@ Deno.serve(async (req) => {
         error: error instanceof Error ? error.message : 'Internal server error'
       }),
       { 
-        status: 500,
+        status: error instanceof Error && error.message.includes('validation') ? 400 : 500,
         headers: { 
           'Content-Type': 'application/json',
           ...corsHeaders 
