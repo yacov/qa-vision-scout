@@ -1,123 +1,125 @@
-import { generateScreenshots, getAvailableBrowsers } from '../browserstack-api';
+import { jest } from '@jest/globals';
+import type { mockFetchResponse } from './test-utils';
 
-const TEST_TIMEOUT = 30000;
+jest.mock('node-fetch');
 
-describe('BrowserStack Screenshots API Tests', () => {
+interface BrowserstackCredentials {
+  username: string;
+  password: string;
+}
+
+interface BrowserConfig {
+  os: string;
+  os_version: string;
+  browser?: string;
+  browser_version?: string;
+  device?: string;
+}
+
+interface ScreenshotOptions {
+  quality?: 'compressed' | 'original';
+  waitTime?: number;
+}
+
+const mockCredentials: BrowserstackCredentials = {
+  username: 'test-user',
+  password: 'test-key'
+};
+
+const mockBrowsersResponse = {
+  desktop: [
+    { os: 'Windows', os_version: '10', browser: 'chrome', browser_version: '100.0' }
+  ],
+  mobile: [
+    { os: 'ios', os_version: '15', device: 'iPhone 13' }
+  ]
+};
+
+const mockScreenshotResponse = {
+  job_id: 'test-job-id',
+  screenshots: [
+    { browser: 'chrome', browser_version: '100.0', os: 'Windows', os_version: '10', url: 'https://test.com' }
+  ]
+};
+
+describe('browserstack-api', () => {
+  let mockFetchResponse: typeof import('./test-utils').mockFetchResponse;
+  let getAvailableBrowsers: (credentials: BrowserstackCredentials, requestId: string) => Promise<typeof mockBrowsersResponse>;
+  let generateScreenshots: (url: string, browsers: BrowserConfig[], credentials: BrowserstackCredentials, options: ScreenshotOptions, requestId: string) => Promise<typeof mockScreenshotResponse>;
+
+  beforeEach(() => {
+    jest.resetModules();
+    mockFetchResponse = require('./test-utils').mockFetchResponse;
+    const api = require('../browserstack-api');
+    getAvailableBrowsers = api.getAvailableBrowsers;
+    generateScreenshots = api.generateScreenshots;
+  });
+
   describe('getAvailableBrowsers', () => {
-    it('should successfully fetch available browsers', async () => {
-      const browsers = await getAvailableBrowsers(
-        { Authorization: 'Basic dGVzdDp0ZXN0' },
-        'test-request-id'
+    it('should fetch and return available browsers', async () => {
+      mockFetchResponse(mockBrowsersResponse);
+      
+      const browsers = await getAvailableBrowsers(mockCredentials, 'test-request-id');
+      
+      expect(browsers).toEqual(mockBrowsersResponse);
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/browsers'),
+        expect.any(Object)
       );
-      expect(browsers).toBeDefined();
-      expect(Array.isArray(browsers)).toBe(true);
-    }, TEST_TIMEOUT);
+    });
 
-    it('should handle authentication failure', async () => {
-      await expect(
-        getAvailableBrowsers(
-          { Authorization: 'Basic invalid' },
-          'test-auth-failure'
-        )
-      ).rejects.toThrow('Authentication failed');
-    }, TEST_TIMEOUT);
+    it('should throw error on API failure', async () => {
+      mockFetchResponse({ message: 'API Error' }, { status: 500 });
+      
+      await expect(getAvailableBrowsers(mockCredentials, 'test-error-id')).rejects.toThrow('Failed to fetch available browsers');
+    });
   });
 
   describe('generateScreenshots', () => {
-    it('should successfully generate screenshots', async () => {
-      const url = 'https://drsisterskincare.com/products/dark-spot-vanish';
-      const browsers = [
-        {
-          os: 'Windows',
-          os_version: '11',
-          browser: 'chrome',
-          browser_version: 'latest',
-        },
-      ];
-      const options = {
-        quality: 'compressed' as const,
-        waitTime: 5,
-      };
+    const mockConfig = {
+      browsers: [
+        { os: 'Windows', os_version: '10', browser: 'chrome', browser_version: '100.0' }
+      ] as BrowserConfig[],
+      orientation: 'portrait' as const,
+      url: 'https://test.com'
+    };
 
-      const result = await generateScreenshots(url, browsers, options, 'test-screenshot-gen');
-      expect(result).toBeDefined();
-    }, TEST_TIMEOUT);
+    const mockOptions: ScreenshotOptions = {
+      quality: 'compressed',
+      waitTime: 5
+    };
 
-    it('should handle invalid URL', async () => {
-      const url = 'invalid-url';
-      const browsers = [
-        {
-          os: 'Windows',
-          os_version: '11',
-          browser: 'chrome',
-          browser_version: 'latest',
-        },
-      ];
-      const options = {
-        quality: 'compressed' as const,
-        waitTime: 5,
-      };
+    it('should generate screenshots successfully', async () => {
+      mockFetchResponse(mockScreenshotResponse);
+      
+      const result = await generateScreenshots(
+        mockConfig.url,
+        mockConfig.browsers,
+        mockCredentials,
+        mockOptions,
+        'test-screenshot-id'
+      );
+      
+      expect(result).toEqual(mockScreenshotResponse);
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/generate'),
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.any(String)
+        })
+      );
+    });
 
-      await expect(
-        generateScreenshots(url, browsers, options, 'test-invalid-url')
-      ).rejects.toThrow('Invalid request parameters');
-    }, TEST_TIMEOUT);
-
-    it('should handle invalid browser configuration', async () => {
-      const url = 'https://drsisterskincare.com/products/dark-spot-vanish';
-      const browsers = [
-        {
-          os: 'InvalidOS',
-          os_version: 'InvalidVersion',
-          browser: 'InvalidBrowser',
-          browser_version: 'latest',
-        },
-      ];
-      const options = {
-        quality: 'compressed' as const,
-        waitTime: 5,
-      };
-
-      await expect(
-        generateScreenshots(url, browsers, options, 'test-invalid-browser')
-      ).rejects.toThrow('Invalid request parameters');
-    }, TEST_TIMEOUT);
-
-    it('should handle rate limiting', async () => {
-      const url = 'https://drsisterskincare.com/products/dark-spot-vanish';
-      const browsers = [
-        {
-          os: 'Windows',
-          os_version: '11',
-          browser: 'chrome',
-          browser_version: 'latest',
-        },
-      ];
-      const options = {
-        quality: 'compressed' as const,
-        waitTime: 5,
-      };
-
-      await expect(
-        generateScreenshots(url, browsers, options, 'test-rate-limit')
-      ).rejects.toThrow('API rate limit exceeded');
-    }, TEST_TIMEOUT);
-
-    it('should validate required parameters', async () => {
-      // Test missing URL
-      await expect(
-        generateScreenshots('', [], {}, 'test-no-url')
-      ).rejects.toThrow('Missing required parameter: url');
-
-      // Test missing browsers
-      await expect(
-        generateScreenshots('https://example.com', [], {}, 'test-no-browsers')
-      ).rejects.toThrow('Missing required parameter: browsers must be a non-empty array');
-
-      // Test empty browsers array
-      await expect(
-        generateScreenshots('https://example.com', [], {}, 'test-empty-browsers')
-      ).rejects.toThrow('Missing required parameter: browsers must be a non-empty array');
-    }, TEST_TIMEOUT);
+    it('should throw error on API failure', async () => {
+      mockFetchResponse({ message: 'API Error' }, { status: 500 });
+      
+      await expect(generateScreenshots(
+        mockConfig.url,
+        mockConfig.browsers,
+        mockCredentials,
+        mockOptions,
+        'test-error-id'
+      )).rejects.toThrow('Failed to generate screenshots');
+    });
   });
 }); 

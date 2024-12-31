@@ -109,4 +109,7 @@ export function validateWaitTime(waitTime: number | undefined, requestId: string
       `Invalid wait time: ${waitTime}. Valid wait times are: ${VALID_WAIT_TIMES.join(', ')} seconds`
     );
   }
-} 
+}
+
+export type ServeFunction = (req: Request) => Promise<Response>;
+export const serve: (handler: ServeFunction) => void = () => {}; 
