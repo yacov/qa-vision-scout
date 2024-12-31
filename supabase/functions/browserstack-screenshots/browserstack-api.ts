@@ -1,13 +1,10 @@
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "https://esm.sh/uuid@9.0.0";
 import { 
   VALID_RESOLUTIONS, 
   VALID_WAIT_TIMES, 
   type ResolutionType,
   getResolutionForType
-} from './types.js';
-
-// Remove node-fetch import and use native Response type
-type FetchResponse = globalThis.Response;
+} from './types.ts';
 
 export interface BrowserstackCredentials {
   username: string;
@@ -106,7 +103,7 @@ function validateWaitTime(waitTime: typeof VALID_WAIT_TIMES[number], requestId: 
   }
 }
 
-async function handleBrowserstackResponse<T>(response: FetchResponse, requestId: string): Promise<T> {
+async function handleBrowserstackResponse<T>(response: Response, requestId: string): Promise<T> {
   if (response.status === 429) {
     throw new BrowserstackError(
       'Rate limit exceeded',
@@ -161,7 +158,7 @@ async function handleBrowserstackResponse<T>(response: FetchResponse, requestId:
 export async function getBrowsers(credentials?: BrowserstackCredentials): Promise<Browser[]> {
   const requestId = uuidv4();
   const auth = credentials ? 
-    Buffer.from(`${credentials.username}:${credentials.password}`).toString('base64') :
+    btoa(`${credentials.username}:${credentials.password}`) :
     '';
 
   const response = await fetch('https://www.browserstack.com/screenshots/browsers.json', {
@@ -248,7 +245,7 @@ export async function generateScreenshots(
   console.log('Request payload:', JSON.stringify(payload, null, 2));
 
   const auth = credentials ? 
-    Buffer.from(`${credentials.username}:${credentials.password}`).toString('base64') :
+    btoa(`${credentials.username}:${credentials.password}`) :
     '';
 
   const response = await fetch('https://www.browserstack.com/screenshots', {
