@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -22,15 +23,30 @@ export const EditConfigDialog = ({
   const form = useForm({
     resolver: zodResolver(browserStackConfigSchema),
     defaultValues: {
-      name: config?.name || "",
-      deviceType: config?.device_type || "desktop",
-      os: config?.os || "",
-      osVersion: config?.os_version || "",
-      browser: config?.browser || "",
-      browserVersion: config?.browser_version || "",
-      device: config?.device || "",
+      name: "",
+      deviceType: "desktop",
+      os: "",
+      osVersion: "",
+      browser: "",
+      browserVersion: "",
+      device: "",
     },
   });
+
+  // Update form values when config changes
+  useEffect(() => {
+    if (config) {
+      form.reset({
+        name: config.name,
+        deviceType: config.device_type,
+        os: config.os,
+        osVersion: config.os_version,
+        browser: config.browser || "",
+        browserVersion: config.browser_version || "",
+        device: config.device || "",
+      });
+    }
+  }, [config, form.reset]);
 
   const onSubmit = async (data: any) => {
     try {
@@ -57,7 +73,6 @@ export const EditConfigDialog = ({
         description: "The configuration has been successfully updated.",
       });
       onOpenChange(false);
-      form.reset();
     } catch (error) {
       toast({
         title: "Error",
