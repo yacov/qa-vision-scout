@@ -27,10 +27,12 @@ Deno.serve(async (req) => {
 
     if (!username || !accessKey) {
       logger.error({
-        message: 'Missing BrowserStack credentials',
+        message: 'Missing BrowserStack credentials in environment',
         requestId,
+        username: !!username,
+        accessKey: !!accessKey
       });
-      throw new Error('BrowserStack credentials not configured');
+      throw new Error('BrowserStack credentials not configured in environment variables');
     }
 
     const credentials: BrowserstackCredentials = {
@@ -45,6 +47,7 @@ Deno.serve(async (req) => {
       requestId,
       testId: data.testId,
       configCount: data.selected_configs?.length,
+      url: data.url
     });
 
     const validatedData = validateRequestData(data, requestId);

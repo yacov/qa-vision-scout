@@ -30,6 +30,12 @@ export async function getBrowsers(
   const auth = btoa(`${credentials.username}:${credentials.password}`);
   
   try {
+    logger.info({
+      message: 'Making request to Browserstack API',
+      requestId,
+      url: 'https://www.browserstack.com/screenshots/browsers.json'
+    });
+
     const response = await fetch('https://www.browserstack.com/screenshots/browsers.json', {
       headers: {
         'Authorization': `Basic ${auth}`,
@@ -37,9 +43,54 @@ export async function getBrowsers(
       }
     });
 
-    const data = await handleBrowserstackResponse<BrowsersResponse>(response, requestId);
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error({
+        message: 'Browserstack API returned error',
+        requestId,
+        status: response.status,
+        statusText: response.statusText,
+        errorText
+      });
+      throw new BrowserstackError(
+        `Browserstack API error: ${response.statusText}`,
+        response.status,
+        requestId,
+        { errorText }
+      );
+    }
+
+    const responseText = await response.text();
+    logger.info({
+      message: 'Received response from Browserstack API',
+      requestId,
+      responseText
+    });
+
+    let data: BrowsersResponse;
+    try {
+      data = JSON.parse(responseText);
+    } catch (error) {
+      logger.error({
+        message: 'Failed to parse Browserstack API response',
+        requestId,
+        error,
+        responseText
+      });
+      throw new BrowserstackError(
+        'Invalid JSON response from Browserstack API',
+        500,
+        requestId,
+        { responseText }
+      );
+    }
     
     if (!data?.browsers || !Array.isArray(data.browsers)) {
+      logger.error({
+        message: 'Invalid response format from Browserstack API',
+        requestId,
+        data
+      });
       throw new BrowserstackError(
         'Invalid response format from Browserstack API',
         500,
