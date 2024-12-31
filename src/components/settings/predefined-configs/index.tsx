@@ -7,6 +7,7 @@ import {
   useConfigSelection,
   useConfigEditing,
 } from "./hooks";
+import type { Config } from "./types";
 
 export const PredefinedConfigs = () => {
   const { configs, isLoading } = usePredefinedConfigs();
@@ -19,7 +20,7 @@ export const PredefinedConfigs = () => {
     setVerifyingConfig,
   } = useConfigEditing();
 
-  const handleVerify = async (config: any) => {
+  const handleVerify = async (config: Config) => {
     setVerifyingConfig(config.id);
     try {
       await verifyConfig(config);
@@ -28,7 +29,7 @@ export const PredefinedConfigs = () => {
     }
   };
 
-  const handleEdit = (config: any) => {
+  const handleEdit = (config: Config) => {
     setEditingConfig(config);
   };
 
@@ -75,4 +76,4 @@ export const PredefinedConfigs = () => {
       />
     </>
   );
-}; 
+};

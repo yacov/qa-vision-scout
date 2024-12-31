@@ -1,64 +1,74 @@
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Check } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Config } from "@/components/settings/predefined-configs/types";
 
 interface ConfigSelectionProps {
-  selectedConfigs: string[];
-  onConfigToggle: (configId: string) => void;
+  onConfigSelect: (configs: string[]) => void;
 }
 
-export const ConfigSelection = ({
-  selectedConfigs,
-  onConfigToggle,
-}: ConfigSelectionProps) => {
-  const { data: configs } = useQuery({
-    queryKey: ['predefined-configs'],
-    queryFn: async () => {
+export const ConfigSelection = ({ onConfigSelect }: ConfigSelectionProps) => {
+  const [configs, setConfigs] = useState<Config[]>([]);
+  const [selectedConfigs, setSelectedConfigs] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchConfigs = async () => {
       const { data, error } = await supabase
-        .from('browserstack_configs')
-        .select('*')
-        .eq('is_predefined', true)
-        .order('created_at', { ascending: true });
-      
-      if (error) throw error;
-      return data;
-    }
-  });
+        .from("browserstack_configs")
+        .select("*")
+        .eq("is_active", true);
+
+      if (!error && data) {
+        setConfigs(data as Config[]);
+      }
+      setLoading(false);
+    };
+
+    void fetchConfigs();
+  }, []);
+
+  const handleConfigToggle = (config: Config) => {
+    const newSelectedConfigs = selectedConfigs.includes(config.id)
+      ? selectedConfigs.filter((id) => id !== config.id)
+      : [...selectedConfigs, config.id];
+
+    setSelectedConfigs(newSelectedConfigs);
+    onConfigSelect(newSelectedConfigs);
+  };
+
+  if (loading) {
+    return <div>Loading configurations...</div>;
+  }
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {configs?.map((config) => (
-          <Button
-            key={config.id}
-            variant={selectedConfigs.includes(config.id) ? "default" : "outline"}
-            className="h-auto p-4 flex flex-col items-start space-y-2 relative"
-            onClick={() => onConfigToggle(config.id)}
-          >
-            {selectedConfigs.includes(config.id) && (
-              <Check className="h-4 w-4 absolute top-2 right-2" />
-            )}
-            <div className="font-medium">{config.name}</div>
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary">
-                {config.device_type === 'desktop' ? 'Desktop' : 'Mobile'}
-              </Badge>
-              <Badge variant="outline">
+    <Card>
+      <CardHeader>
+        <CardTitle>Select Configurations</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {configs.map((config) => (
+            <Button
+              key={config.id}
+              variant={selectedConfigs.includes(config.id) ? "default" : "outline"}
+              className="h-auto p-4 flex flex-col items-start space-y-2"
+              onClick={() => handleConfigToggle(config)}
+            >
+              <div className="font-medium">{config.name}</div>
+              <div className="text-sm text-gray-500">
                 {config.os} {config.os_version}
-              </Badge>
-              {config.device_type === 'desktop' ? (
-                <Badge variant="outline">
+              </div>
+              {config.browser && (
+                <div className="text-sm text-gray-500">
                   {config.browser} {config.browser_version}
-                </Badge>
-              ) : (
-                <Badge variant="outline">{config.device}</Badge>
+                </div>
               )}
-            </div>
-          </Button>
-        ))}
-      </div>
-    </div>
+            </Button>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 };
