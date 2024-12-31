@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ValidationDialog } from "./configurations-list/ValidationDialog";
 import type { Config } from "./types";
+import { useState } from "react";  // Added this import
 
 export const ConfigurationsList = () => {
   const { toast } = useToast();
