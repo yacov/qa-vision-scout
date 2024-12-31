@@ -2,7 +2,7 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, Trash2, CheckCircle } from "lucide-react";
-import type { Config } from "./types";
+import type { Config } from "../types";
 
 interface ConfigurationRowProps {
   config: Config;
@@ -59,4 +59,4 @@ export const ConfigurationRow = ({
       </TableCell>
     </TableRow>
   );
-}; 
+};

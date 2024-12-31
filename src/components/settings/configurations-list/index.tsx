@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react";
 import { ConfigurationRow } from "./ConfigurationRow";
 import { ValidationDialog } from "./ValidationDialog";
 import { useConfigurations, useConfigurationMutations, useValidationDialog } from "./hooks";
-import type { Config } from "./types";
+import type { Config } from "../types";
 
 export const ConfigurationsList = () => {
   const { configs, isLoading } = useConfigurations();
@@ -84,4 +84,4 @@ export const ConfigurationsList = () => {
       />
     </>
   );
-}; 
+};

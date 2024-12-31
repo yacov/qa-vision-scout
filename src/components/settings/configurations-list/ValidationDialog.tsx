@@ -6,38 +6,29 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import type { ValidationDialogState, ValidationResponse } from "./types";
+import type { ValidationDialogState } from "../types";
 
 interface ValidationDialogProps {
   dialog: ValidationDialogState;
   onClose: () => void;
-  onUpdate: (suggestion: NonNullable<ValidationResponse['suggestion']>) => void;
+  onUpdate: (suggestion: { os_version?: string; browser_version?: string }) => void;
 }
 
-export const ValidationDialog = ({
-  dialog,
-  onClose,
-  onUpdate,
-}: ValidationDialogProps) => {
-  const { data } = dialog;
-  if (!data || !dialog.isOpen) return null;
-
+export const ValidationDialog = ({ dialog, onClose, onUpdate }: ValidationDialogProps) => {
   return (
-    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={dialog.isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {data.valid ? 'Configuration Valid' : 'Configuration Invalid'}
+            {dialog.data?.valid ? 'Configuration Valid' : 'Configuration Invalid'}
           </DialogTitle>
           <DialogDescription>
-            {data.message}
-            {data.suggestion && (
+            {dialog.data?.message}
+            {dialog.data?.suggestion && (
               <div className="mt-4">
                 <p className="font-medium">Would you like to update to the suggested configuration?</p>
                 <div className="mt-2 space-x-2">
-                  <Button
-                    onClick={() => onUpdate(data.suggestion!)}
-                  >
+                  <Button onClick={() => onUpdate(dialog.data!.suggestion!)}>
                     Update Configuration
                   </Button>
                   <Button
@@ -54,4 +45,4 @@ export const ValidationDialog = ({
       </DialogContent>
     </Dialog>
   );
-}; 
+};

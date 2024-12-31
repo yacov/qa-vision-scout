@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import type { Config } from "../types";
+import type { Config } from "../../types";
 
 export const useConfigMutations = () => {
   const queryClient = useQueryClient();

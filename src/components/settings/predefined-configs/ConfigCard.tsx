@@ -1,20 +1,7 @@
 import { Check, Edit2, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-
-interface Config {
-  id: string;
-  name: string;
-  device_type: 'desktop' | 'mobile';
-  os: string;
-  os_version: string;
-  browser: string | null;
-  browser_version: string | null;
-  device: string | null;
-  is_active?: boolean;
-  created_at?: string;
-  user_id?: string;
-}
+import type { Config } from "../types";
 
 interface ConfigCardProps {
   config: Config;
@@ -87,4 +74,4 @@ export const ConfigCard = ({
       </div>
     </Button>
   );
-}; 
+};

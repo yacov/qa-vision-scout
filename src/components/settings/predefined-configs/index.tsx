@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfigCard } from "./ConfigCard";
 import { EditConfigDialog } from "./EditConfigDialog";
 import { useConfigMutations, useConfigSelection, usePredefinedConfigs, useValidationDialog } from "./hooks";
-import type { Config } from "./types";
+import type { Config } from "../types";
 
 export const PredefinedConfigs = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);

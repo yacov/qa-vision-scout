@@ -2,13 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import type { Config, DatabaseConfig, ValidationResponse, ValidationDialogState } from "./types";
-
-const mapDatabaseConfigToConfig = (dbConfig: DatabaseConfig): Config => ({
-  ...dbConfig,
-  is_active: dbConfig.is_active ?? false,
-  created_at: dbConfig.created_at ?? new Date().toISOString(),
-});
+import type { Config, ValidationResponse, ValidationDialogState } from "../types";
 
 export const useConfigurations = () => {
   const { data: configs, isLoading } = useQuery<Config[], Error>({
@@ -17,16 +11,14 @@ export const useConfigurations = () => {
       const { data, error } = await supabase
         .from('browserstack_configs')
         .select('*')
-        .order('created_at', { ascending: false })
-        .returns<DatabaseConfig[]>();
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
-      if (!data) return [];
-      return data.map(mapDatabaseConfigToConfig);
+      return data ?? [];
     }
   });
 
-  return { configs: configs ?? [], isLoading };
+  return { configs, isLoading };
 };
 
 export const useConfigurationMutations = () => {
@@ -140,4 +132,4 @@ export const useValidationDialog = () => {
     openValidationDialog,
     closeValidationDialog,
   };
-}; 
+};
