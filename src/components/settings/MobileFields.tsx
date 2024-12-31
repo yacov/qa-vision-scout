@@ -14,7 +14,7 @@ export const MobileFields = () => {
         <FormItem>
           <FormLabel>Device</FormLabel>
           <FormControl>
-            <Input placeholder="e.g., iPhone 13, Pixel 6" {...field} value={field.value || ''} />
+            <Input placeholder="e.g., iPhone 14, Pixel 7" {...field} value={field.value || ''} />
           </FormControl>
         </FormItem>
       )}

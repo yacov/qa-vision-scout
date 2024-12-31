@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
@@ -27,9 +27,9 @@ export const BrowserstackConfigForm = () => {
       name: "",
       os: "",
       osVersion: "",
-      browser: "",
-      browserVersion: "",
-      device: "",
+      browser: null,
+      browserVersion: null,
+      device: null,
     },
   });
 
@@ -77,7 +77,7 @@ export const BrowserstackConfigForm = () => {
         <CardTitle>Add New Configuration</CardTitle>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
+        <FormProvider {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
@@ -165,11 +165,7 @@ export const BrowserstackConfigForm = () => {
               )}
             />
 
-            {deviceType === "desktop" ? (
-              <DesktopFields form={form} />
-            ) : (
-              <MobileFields form={form} />
-            )}
+            {deviceType === "desktop" ? <DesktopFields /> : <MobileFields />}
 
             <Button
               type="submit"
@@ -186,7 +182,7 @@ export const BrowserstackConfigForm = () => {
               )}
             </Button>
           </form>
-        </Form>
+        </FormProvider>
       </CardContent>
     </Card>
   );
