@@ -1,10 +1,5 @@
 import { v4 as uuidv4 } from "https://esm.sh/uuid@9.0.0";
-import { 
-  VALID_RESOLUTIONS, 
-  VALID_WAIT_TIMES, 
-  type ResolutionType,
-  getResolutionForType
-} from './types.ts';
+import { logger } from "./logger.ts";
 
 export interface BrowserstackCredentials {
   username: string;
@@ -14,21 +9,16 @@ export interface BrowserstackCredentials {
 export interface Browser {
   os: string;
   os_version: string;
-  browser: string;
-  browser_version: string;
-  device?: string | null;
-}
-
-export interface BrowsersResponse {
-  browsers: Browser[];
+  browser?: string;
+  browser_version?: string;
+  device?: string;
 }
 
 export interface ScreenshotRequest {
   url: string;
-  resolution: ResolutionType;
   browsers: Browser[];
-  wait_time?: typeof VALID_WAIT_TIMES[number];
   quality?: 'compressed' | 'original';
+  wait_time?: number;
   callback_url?: string;
 }
 
@@ -40,8 +30,8 @@ export interface Screenshot {
   state: string;
   os: string;
   os_version: string;
-  browser: string;
-  browser_version: string;
+  browser?: string;
+  browser_version?: string;
   created_at: string;
 }
 
@@ -49,15 +39,9 @@ export interface ScreenshotResponse {
   job_id: string;
   state: string;
   callback_url: string | null;
-  win_res?: string;
-  mac_res?: string;
   quality: 'compressed' | 'original';
   wait_time: number;
   screenshots: Screenshot[];
-}
-
-export interface BrowserstackErrorResponse {
-  message?: string;
 }
 
 export class BrowserstackError extends Error {
@@ -72,96 +56,47 @@ export class BrowserstackError extends Error {
   }
 }
 
-function validateResolution(resolution: ResolutionType, requestId: string): void {
-  if (!VALID_RESOLUTIONS[resolution]) {
-    throw new BrowserstackError(
-      `Invalid ${resolution} resolution`,
-      400,
-      requestId
-    );
-  }
-
-  const resolutionValue = getResolutionForType(resolution);
-  const validResolutions = VALID_RESOLUTIONS[resolution];
-  
-  if (!validResolutions.includes(resolutionValue as any)) {
-    throw new BrowserstackError(
-      `Invalid ${resolution} resolution: ${resolutionValue}. Must be one of: ${validResolutions.join(', ')}`,
-      400,
-      requestId
-    );
-  }
-}
-
-function validateWaitTime(waitTime: typeof VALID_WAIT_TIMES[number], requestId: string): void {
-  if (!VALID_WAIT_TIMES.includes(waitTime)) {
-    throw new BrowserstackError(
-      `Invalid wait time: ${waitTime}. Must be one of: ${VALID_WAIT_TIMES.join(', ')}`,
-      400,
-      requestId
-    );
-  }
-}
-
 async function handleBrowserstackResponse<T>(response: Response, requestId: string): Promise<T> {
-  if (response.status === 429) {
-    throw new BrowserstackError(
-      'Rate limit exceeded',
-      response.status,
-      requestId
-    );
+  if (!response.ok) {
+    const errorMessage = `Browserstack API error: ${response.status} ${response.statusText}`;
+    logger.error({
+      message: errorMessage,
+      requestId,
+      status: response.status,
+      statusText: response.statusText
+    });
+    throw new BrowserstackError(errorMessage, response.status, requestId);
   }
-
-  let responseData: unknown = null;
-  let responseText = '';
 
   try {
-    const clonedResponse = response.clone();
-    responseText = await clonedResponse.text();
-    if (responseText) {
-      responseData = JSON.parse(responseText);
-    }
-  } catch (e) {
-    throw new BrowserstackError(
-      'Invalid response format',
-      response.status,
+    const data = await response.json();
+    return data as T;
+  } catch (error) {
+    logger.error({
+      message: 'Failed to parse Browserstack API response',
       requestId,
-      {
-        responseText,
-        error: e
-      }
-    );
+      error
+    });
+    throw new BrowserstackError('Invalid response format', response.status, requestId);
   }
-
-  if (!response.ok) {
-    const errorData = responseData as BrowserstackErrorResponse;
-    const errorMessage = errorData?.message || `HTTP Error ${response.status}`;
-    throw new BrowserstackError(
-      errorMessage,
-      response.status,
-      requestId,
-      { responseData }
-    );
-  }
-
-  if (!responseData) {
-    throw new BrowserstackError(
-      'Empty response',
-      response.status,
-      requestId
-    );
-  }
-
-  return responseData as T;
 }
 
-export async function getBrowsers(credentials?: BrowserstackCredentials): Promise<Browser[]> {
-  const requestId = uuidv4();
-  const auth = credentials ? 
-    btoa(`${credentials.username}:${credentials.password}`) :
-    '';
+export async function generateScreenshots(
+  request: ScreenshotRequest,
+  credentials: BrowserstackCredentials,
+  requestId: string
+): Promise<ScreenshotResponse> {
+  logger.info({
+    message: 'Generating screenshots',
+    requestId,
+    url: request.url,
+    browserCount: request.browsers.length
+  });
 
-  const response = await fetch('https://www.browserstack.com/screenshots/browsers.json', {
+  const auth = btoa(`${credentials.username}:${credentials.password}`);
+
+  // First, get available browsers
+  const browsersResponse = await fetch('https://www.browserstack.com/screenshots/browsers.json', {
     headers: {
       'Authorization': `Basic ${auth}`,
       'Content-Type': 'application/json'
@@ -210,13 +145,12 @@ export async function generateScreenshots(
 
       if (chromeVersions.length === 0) {
         throw new BrowserstackError(
-          'No supported Chrome versions found',
+          `No matching browser configuration found for ${browser.os} ${browser.os_version}`,
           400,
           requestId
         );
       }
 
-      // Use the first available version
       return {
         ...browser,
         browser_version: chromeVersions[0]

@@ -1,16 +1,17 @@
 /// <reference types="deno" />
 
-import { generateScreenshots as generateBrowserstackScreenshots, type ScreenshotRequest, type ScreenshotResponse, type BrowserstackCredentials } from './browserstack-api.ts';
+import { generateScreenshots, type ScreenshotRequest, type BrowserstackCredentials } from './browserstack-api.ts';
 import { validateRequestData } from './request-validator.ts';
 import { logger } from './logger.ts';
 
-// Define CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 Deno.serve(async (req) => {
+  const requestId = crypto.randomUUID();
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { 
@@ -20,13 +21,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const requestId = crypto.randomUUID();
-    logger.info({
-      message: 'Processing screenshot generation request',
-      requestId,
-      method: req.method,
-    });
-
     // Get BrowserStack credentials from environment
     const username = Deno.env.get('BROWSERSTACK_USERNAME');
     const accessKey = Deno.env.get('BROWSERSTACK_ACCESS_KEY');
@@ -39,27 +33,31 @@ Deno.serve(async (req) => {
       throw new Error('BrowserStack credentials not configured');
     }
 
+    const credentials: BrowserstackCredentials = {
+      username,
+      password: accessKey
+    };
+
     // Parse and validate request body
-    const requestData = await req.json();
+    const data = await req.json();
     logger.info({
       message: 'Received request data',
       requestId,
-      testId: requestData.testId,
-      configCount: requestData.selected_configs?.length,
+      testId: data.testId,
+      configCount: data.selected_configs?.length,
     });
 
-    const validatedData = validateRequestData(requestData, requestId);
+    const validatedData = validateRequestData(data, requestId);
 
-    // Generate screenshots for both URLs
-    const baselineRequest: ScreenshotRequest = {
+    // Generate screenshots
+    const screenshotRequest: ScreenshotRequest = {
       url: validatedData.url,
-      resolution: 'WINDOWS',
       browsers: validatedData.selected_configs.map(config => ({
         os: config.os,
         os_version: config.os_version,
-        browser: config.browser || undefined,
-        browser_version: config.browser_version || undefined,
-        device: config.device || undefined
+        browser: config.browser,
+        browser_version: config.browser_version,
+        device: config.device
       })),
       wait_time: 5,
       quality: 'compressed'
@@ -73,12 +71,7 @@ Deno.serve(async (req) => {
       configCount: validatedData.selected_configs.length,
     });
 
-    const credentials: BrowserstackCredentials = {
-      username,
-      password: accessKey
-    };
-
-    const response = await generateBrowserstackScreenshots(baselineRequest, credentials);
+    const response = await generateScreenshots(screenshotRequest, credentials, requestId);
 
     logger.info({
       message: 'Screenshots generated successfully',
@@ -100,6 +93,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     logger.error({
       message: 'Error processing screenshot request',
+      requestId,
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
     });
