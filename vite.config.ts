@@ -16,7 +16,10 @@ export default defineConfig(({ mode }) => ({
     react({
       plugins: mode === 'development' ? [] : [['swc-plugin-coverage-instrument', {}]]
     }),
-    mode === 'development' && componentTagger()
+    mode === 'development' && {
+      ...componentTagger(),
+      enforce: 'pre'
+    }
   ].filter(Boolean),
   resolve: {
     alias: {
