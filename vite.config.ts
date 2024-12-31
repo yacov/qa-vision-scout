@@ -38,7 +38,8 @@ export default defineConfig(({ mode }) => ({
             '@radix-ui/react-scroll-area',
             '@radix-ui/react-radio-group',
             '@radix-ui/react-label',
-            '@radix-ui/react-slot'
+            '@radix-ui/react-slot',
+            '@radix-ui/react-checkbox'
           ],
           'vendor-form': [
             '@hookform/resolvers',
