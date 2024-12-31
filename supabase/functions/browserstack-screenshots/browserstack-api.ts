@@ -190,8 +190,16 @@ export async function generateScreenshots(
   
   // Map browsers and handle versions
   const browsers = request.browsers.map(browser => {
+    if (!browser.os || !browser.browser) {
+      throw new BrowserstackError(
+        `Invalid browser configuration: OS and browser are required fields`,
+        400,
+        requestId
+      );
+    }
+
     // For Chrome, find a supported version
-    if (browser.browser && browser.browser.toLowerCase() === 'chrome' && browser.os) {
+    if (browser.browser.toLowerCase() === 'chrome') {
       const chromeVersions = availableBrowsers
         .filter(b => b.browser && 
                     b.browser.toLowerCase() === 'chrome' && 
@@ -216,15 +224,25 @@ export async function generateScreenshots(
     }
 
     // For other browsers, validate against available browsers
+    if (!availableBrowsers || !Array.isArray(availableBrowsers)) {
+      throw new BrowserstackError(
+        'Failed to fetch available browsers from Browserstack',
+        500,
+        requestId
+      );
+    }
+
     const matchingBrowser = availableBrowsers.find(b => 
-      b.browser?.toLowerCase() === browser.browser?.toLowerCase() &&
-      b.os?.toLowerCase() === browser.os?.toLowerCase() &&
+      b.browser && browser.browser &&
+      b.browser.toLowerCase() === browser.browser.toLowerCase() &&
+      b.os && browser.os &&
+      b.os.toLowerCase() === browser.os.toLowerCase() &&
       b.os_version === browser.os_version
     );
 
     if (!matchingBrowser) {
       throw new BrowserstackError(
-        `No matching browser configuration found for ${browser.browser} on ${browser.os} ${browser.os_version}`,
+        `No matching browser configuration found for ${browser.browser} on ${browser.os} ${browser.os_version || 'latest'}`,
         400,
         requestId
       );
