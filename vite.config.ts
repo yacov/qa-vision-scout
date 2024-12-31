@@ -35,7 +35,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       mode === 'development' && devPlugin,
-    ].filter(Boolean),
+    ].filter(Boolean) as PluginOption[],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),

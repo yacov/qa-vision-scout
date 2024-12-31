@@ -56,7 +56,10 @@ export interface ValidationDialogState {
   data: ValidationResponse | null;
 }
 
-export interface EditConfigDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+export interface ConfigCardProps {
+  config: DatabaseConfig;
+  isSelected: boolean;
+  onEdit: () => void;
+  onSelect: () => void | Promise<void>;
+  onUpdate: any; // Using any here since it's a mutation result type
 }
