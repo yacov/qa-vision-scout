@@ -11,6 +11,13 @@ export const PredefinedConfigs = () => {
   const { selectedConfigs, toggleConfig } = useConfigSelection();
   const { verifyConfig, updateConfig } = useConfigMutations();
 
+  const handleOpenChange = (open: boolean): void => {
+    setEditDialogOpen(open);
+    if (!open) {
+      setSelectedConfig(undefined);
+    }
+  };
+
   const handleConfigSelect = async (config: Config) => {
     toggleConfig(config.id);
   };

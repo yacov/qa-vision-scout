@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
-import type { Test } from "@/components/settings/types";
+import type { Test } from "./types";
 
 interface TestResultsTableProps {
   onTestSelect?: (baselineUrl: string, newUrl: string) => void;
