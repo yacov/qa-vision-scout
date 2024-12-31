@@ -1,22 +1,11 @@
-import { z } from "zod";
+import type { UseMutationResult } from "@tanstack/react-query";
 
-export const browserStackConfigSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  deviceType: z.enum(["desktop", "mobile"]),
-  os: z.string().min(1, "Operating System is required"),
-  osVersion: z.string().min(1, "OS Version is required"),
-  browser: z.string().optional(),
-  browserVersion: z.string().optional(),
-  device: z.string().optional(),
-});
+export type DeviceType = "desktop" | "mobile";
 
-export type BrowserStackConfigFormData = z.infer<typeof browserStackConfigSchema>;
-
-// Base configuration type that matches database schema
-export interface DatabaseConfig {
+export interface Config {
   id: string;
   name: string;
-  device_type: "desktop" | "mobile";
+  device_type: DeviceType;
   os: string;
   os_version: string;
   browser: string | null;
@@ -25,20 +14,8 @@ export interface DatabaseConfig {
   is_active: boolean | null;
   created_at: string | null;
   updated_at: string | null;
+  is_predefined: boolean | null;
   user_id: string;
-  is_predefined?: boolean | null;
-}
-
-// Frontend Config type that matches database schema
-export type Config = DatabaseConfig;
-
-export interface Test {
-  id: string;
-  baseline_url: string;
-  new_url: string;
-  status: "pending" | "in_progress" | "completed" | "failed";
-  created_at: string | null;
-  test_screenshots: any[];
 }
 
 export interface ValidationResponse {
@@ -57,9 +34,15 @@ export interface ValidationDialogState {
 }
 
 export interface ConfigCardProps {
-  config: DatabaseConfig;
+  config: Config;
   isSelected: boolean;
   onEdit: () => void;
   onSelect: () => void | Promise<void>;
-  onUpdate: any; // Using any here since it's a mutation result type
+  onUpdate: UseMutationResult<void, Error, any, unknown>;
+}
+
+export interface EditConfigDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  config?: Config;
 }

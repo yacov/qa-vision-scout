@@ -1,35 +1,31 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
-import { fileURLToPath } from 'url';
 import path from 'path';
+import { componentTagger } from "lovable-tagger";
+import type { Plugin, PluginOption } from 'vite';
 
 export default defineConfig(({ mode }) => ({
   server: {
-    host: '0.0.0.0',
+    host: "::",
     port: 8080,
-    open: true,
-    hmr: {
-      overlay: true,
-    },
   },
   plugins: [
     react(),
-    mode === 'development' && {
-      name: 'lovable-tagger',
-      enforce: 'pre',
-      apply: 'serve',
-      transform(code, id) {
-        if (id.includes('node_modules')) {
-          return code;
-        }
-        // Add your transform logic here
-        return code;
-      },
-    },
-  ].filter(Boolean),
+    mode === 'development' && componentTagger(),
+  ].filter(Boolean) as PluginOption[],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      external: ['react-router-dom'],
+      output: {
+        globals: {
+          'react-router-dom': 'ReactRouterDOM'
+        }
+      }
+    }
+  }
 }));

@@ -6,21 +6,64 @@ import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { browserStackConfigSchema } from "../types";
-import type { EditConfigDialogProps } from "../types";
+import { EditConfigDialogProps } from "../types";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
-export const EditConfigDialog = ({ open, onOpenChange }: EditConfigDialogProps) => {
+export const EditConfigDialog = ({
+  open,
+  onOpenChange,
+  config
+}: EditConfigDialogProps) => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const form = useForm({
     resolver: zodResolver(browserStackConfigSchema),
     defaultValues: {
-      name: "",
-      deviceType: "desktop",
-      os: "",
-      osVersion: "",
-      browser: "",
-      browserVersion: "",
-      device: "",
+      name: config?.name || "",
+      deviceType: config?.device_type || "desktop",
+      os: config?.os || "",
+      osVersion: config?.os_version || "",
+      browser: config?.browser || "",
+      browserVersion: config?.browser_version || "",
+      device: config?.device || "",
     },
   });
+
+  const onSubmit = async (data: any) => {
+    try {
+      const { error } = await supabase
+        .from('browserstack_configs')
+        .update({
+          name: data.name,
+          device_type: data.deviceType,
+          os: data.os,
+          os_version: data.osVersion,
+          browser: data.deviceType === 'desktop' ? data.browser : null,
+          browser_version: data.deviceType === 'desktop' ? data.browserVersion : null,
+          device: data.deviceType === 'mobile' ? data.device : null,
+        })
+        .eq('id', config?.id);
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['predefined-configs'] });
+      toast({
+        title: "Configuration updated",
+        description: "The configuration has been successfully updated.",
+      });
+      onOpenChange(false);
+      form.reset();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update configuration. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -29,7 +72,7 @@ export const EditConfigDialog = ({ open, onOpenChange }: EditConfigDialogProps) 
           <DialogTitle>Edit Configuration</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit((data) => console.log(data))} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="name"
