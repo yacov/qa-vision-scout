@@ -1,12 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Config, DatabaseConfig } from "../types";
-
-const mapDatabaseConfigToConfig = (dbConfig: DatabaseConfig): Config => ({
-  ...dbConfig,
-  is_active: dbConfig.is_active ?? false,
-  created_at: dbConfig.created_at ?? new Date().toISOString(),
-});
+import type { Config } from "../../types";
 
 export const usePredefinedConfigs = () => {
   const { data: configs, isLoading } = useQuery({
@@ -17,10 +11,10 @@ export const usePredefinedConfigs = () => {
         .select('*')
         .eq('is_predefined', true)
         .order('created_at', { ascending: true })
-        .returns<DatabaseConfig[]>();
+        .returns<Config[]>();
       
       if (error) throw error;
-      return (data ?? []).map(mapDatabaseConfigToConfig);
+      return data ?? [];
     }
   });
 

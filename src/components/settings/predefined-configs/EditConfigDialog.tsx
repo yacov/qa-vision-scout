@@ -2,68 +2,34 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { browserStackConfigSchema } from "../types";
-import { Button } from "@/components/ui/button";
-import type { z } from "zod";
+import type { EditConfigDialogProps } from "../types";
 
-type FormData = z.infer<typeof browserStackConfigSchema>;
-
-interface Config {
-  id: string;
-  name: string;
-  device_type: 'desktop' | 'mobile';
-  os: string;
-  os_version: string;
-  browser: string | null;
-  browser_version: string | null;
-  device: string | null;
-  is_active?: boolean;
-  created_at?: string;
-  user_id?: string;
-}
-
-interface EditConfigDialogProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  config: Config | null;
-  onSubmit: (data: FormData & { id: string }) => void;
-}
-
-export const EditConfigDialog = ({
-  isOpen,
-  onOpenChange,
-  config,
-  onSubmit,
-}: EditConfigDialogProps) => {
-  const form = useForm<FormData>({
+export const EditConfigDialog = ({ open, onOpenChange }: EditConfigDialogProps) => {
+  const form = useForm({
     resolver: zodResolver(browserStackConfigSchema),
     defaultValues: {
-      name: config?.name || "",
-      deviceType: config?.device_type || "desktop",
-      os: config?.os || "",
-      osVersion: config?.os_version || "",
-      browser: config?.browser || "",
-      browserVersion: config?.browser_version || "",
-      device: config?.device || "",
+      name: "",
+      deviceType: "desktop",
+      os: "",
+      osVersion: "",
+      browser: "",
+      browserVersion: "",
+      device: "",
     },
   });
 
-  const handleSubmit = (data: FormData) => {
-    if (config) {
-      onSubmit({ ...data, id: config.id });
-    }
-  };
-
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit Configuration</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit((data) => console.log(data))} className="space-y-4">
             <FormField
               control={form.control}
               name="name"
@@ -176,16 +142,9 @@ export const EditConfigDialog = ({
               />
             )}
 
-            <div className="flex justify-end space-x-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit">Save Changes</Button>
-            </div>
+            <Button type="submit" className="w-full">
+              Save Changes
+            </Button>
           </form>
         </Form>
       </DialogContent>

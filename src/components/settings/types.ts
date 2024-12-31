@@ -12,7 +12,8 @@ export const browserStackConfigSchema = z.object({
 
 export type BrowserStackConfigFormData = z.infer<typeof browserStackConfigSchema>;
 
-export interface Config {
+// Base configuration type that matches database schema
+export interface DatabaseConfig {
   id: string;
   name: string;
   device_type: "desktop" | "mobile";
@@ -22,13 +23,14 @@ export interface Config {
   browser_version: string | null;
   device: string | null;
   is_active: boolean | null;
-  created_at?: string;
-  updated_at?: string;
+  created_at: string | null;
+  updated_at: string | null;
   user_id: string;
   is_predefined?: boolean;
 }
 
-export interface DatabaseConfig extends Config {}
+// Frontend Config type that extends DatabaseConfig
+export type Config = DatabaseConfig;
 
 export interface Test {
   id: string;
@@ -37,4 +39,24 @@ export interface Test {
   status: "pending" | "in_progress" | "completed" | "failed";
   created_at: string | null;
   test_screenshots: any[];
+}
+
+export interface ValidationResponse {
+  valid: boolean;
+  message: string;
+  configId?: string;
+  suggestion?: {
+    os_version?: string;
+    browser_version?: string;
+  };
+}
+
+export interface ValidationDialogState {
+  isOpen: boolean;
+  data: ValidationResponse | null;
+}
+
+export interface EditConfigDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
