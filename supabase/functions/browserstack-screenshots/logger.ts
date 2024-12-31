@@ -17,7 +17,7 @@ function formatError(error: unknown): Record<string, unknown> {
   return { error };
 }
 
-class Logger {
+export class Logger {
   error(context: LogContext): void {
     const formattedContext = {
       ...context,
