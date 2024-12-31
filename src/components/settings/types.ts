@@ -1,6 +1,28 @@
-import type { UseMutationResult } from "@tanstack/react-query";
+import { z } from "zod";
 
 export type DeviceType = "desktop" | "mobile";
+
+export interface Test {
+  id: string;
+  user_id: string;
+  baseline_url: string;
+  new_url: string;
+  status: string;
+  created_at: string | null;
+  updated_at: string | null;
+  test_screenshots: TestScreenshot[];
+}
+
+export interface TestScreenshot {
+  id: string;
+  test_id: string;
+  device_name: string;
+  os_version: string;
+  baseline_screenshot_url: string | null;
+  new_screenshot_url: string | null;
+  diff_percentage: number | null;
+  created_at: string | null;
+}
 
 export interface Config {
   id: string;
@@ -18,27 +40,24 @@ export interface Config {
   user_id: string;
 }
 
-export interface ValidationResponse {
-  valid: boolean;
-  message: string;
-  configId?: string;
-  suggestion?: {
-    os_version?: string;
-    browser_version?: string;
-  };
-}
+export const browserStackConfigSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  deviceType: z.enum(["desktop", "mobile"]),
+  os: z.string().min(1, "Operating System is required"),
+  osVersion: z.string().min(1, "OS Version is required"),
+  browser: z.string().optional(),
+  browserVersion: z.string().optional(),
+  device: z.string().optional(),
+});
 
-export interface ValidationDialogState {
-  isOpen: boolean;
-  data: ValidationResponse | null;
-}
+export type BrowserStackConfigFormData = z.infer<typeof browserStackConfigSchema>;
 
 export interface ConfigCardProps {
   config: Config;
   isSelected: boolean;
   onEdit: () => void;
-  onSelect: () => void | Promise<void>;
-  onUpdate: UseMutationResult<void, Error, any, unknown>;
+  onSelect: () => void;
+  onUpdate: () => void;
 }
 
 export interface EditConfigDialogProps {

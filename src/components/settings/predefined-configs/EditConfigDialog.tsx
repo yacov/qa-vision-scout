@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { browserStackConfigSchema } from "../types";
-import { EditConfigDialogProps } from "../types";
+import type { EditConfigDialogProps } from "../types";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,6 +34,8 @@ export const EditConfigDialog = ({
 
   const onSubmit = async (data: any) => {
     try {
+      if (!config?.id) return;
+
       const { error } = await supabase
         .from('browserstack_configs')
         .update({
@@ -45,7 +47,7 @@ export const EditConfigDialog = ({
           browser_version: data.deviceType === 'desktop' ? data.browserVersion : null,
           device: data.deviceType === 'mobile' ? data.device : null,
         })
-        .eq('id', config?.id);
+        .eq('id', config.id);
 
       if (error) throw error;
 
