@@ -26,10 +26,10 @@ export interface DatabaseConfig {
   created_at: string | null;
   updated_at: string | null;
   user_id: string;
-  is_predefined?: boolean;
+  is_predefined?: boolean | null;
 }
 
-// Frontend Config type that extends DatabaseConfig
+// Frontend Config type that matches database schema
 export type Config = DatabaseConfig;
 
 export interface Test {
