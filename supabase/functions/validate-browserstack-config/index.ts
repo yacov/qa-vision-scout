@@ -2,7 +2,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from '../_shared/cors.ts';
 import { validateBrowserConfig } from '../browserstack-screenshots/browser-validation.ts';
-import { getAvailableBrowsers } from '../browserstack-screenshots/browserstack-api.ts';
 
 interface ValidationResponse {
   isValid: boolean;
@@ -25,43 +24,57 @@ class ValidationError extends Error {
 
 // @ts-ignore: Deno types
 serve(async (req: Request) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
+    // Get BrowserStack credentials from environment
     // @ts-ignore: Deno types
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const username = Deno.env.get('BROWSERSTACK_USERNAME');
     // @ts-ignore: Deno types
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    
-    if (!supabaseUrl || !supabaseKey) {
+    const accessKey = Deno.env.get('BROWSERSTACK_ACCESS_KEY');
+
+    if (!username || !accessKey) {
+      console.error('Missing BrowserStack credentials');
       throw new ValidationError({
-        message: 'Missing required environment variables',
+        message: 'BrowserStack credentials not configured',
         status: 500
       });
     }
-    
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    const { data, error } = await req.json();
 
-    if (error) {
+    const { data } = await req.json();
+    
+    if (!data) {
       throw new ValidationError({
         message: 'Invalid request data',
         status: 400
       });
     }
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
+    console.log('Validating config:', JSON.stringify(data, null, 2));
+
+    // Get available browsers from BrowserStack
+    const browsersResponse = await fetch('https://api.browserstack.com/automate/browsers.json', {
+      headers: {
+        'Authorization': `Basic ${btoa(`${username}:${accessKey}`)}`,
+      }
+    });
+
+    if (!browsersResponse.ok) {
+      console.error('Failed to fetch browsers from BrowserStack:', browsersResponse.statusText);
       throw new ValidationError({
-        message: 'No authorization header',
-        status: 401
+        message: 'Failed to fetch browser configurations',
+        status: 500
       });
     }
 
-    const availableBrowsers = await getAvailableBrowsers({ Authorization: authHeader }, 'validate-config');
-    const isValid = validateBrowserConfig(data, availableBrowsers);
+    const browsers = await browsersResponse.json();
+    console.log('Available browsers:', JSON.stringify(browsers, null, 2));
+
+    const isValid = validateBrowserConfig(data, browsers);
+    console.log('Validation result:', isValid);
 
     const response: ValidationResponse = {
       isValid,
@@ -71,7 +84,6 @@ serve(async (req: Request) => {
     };
 
     if (!isValid && data.browser_version !== 'latest') {
-      // Suggest using 'latest' version if specific version validation fails
       response.suggestion = {
         browser_version: 'latest'
       };
