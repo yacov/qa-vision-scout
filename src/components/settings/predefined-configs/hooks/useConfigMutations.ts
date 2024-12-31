@@ -7,20 +7,45 @@ export const useConfigMutations = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  const verifyConfig = useMutation({
+    mutationFn: async (config: Config) => {
+      const { data, error } = await supabase.functions.invoke('validate-browserstack-config', {
+        body: { config }
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: data.valid ? "Configuration Valid" : "Configuration Invalid",
+        description: data.message,
+        variant: data.valid ? "default" : "destructive",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Verification Error",
+        description: "Failed to verify configuration with BrowserStack",
+        variant: "destructive",
+      });
+    },
+  });
+
   const updateConfig = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (config: Config) => {
       const { error } = await supabase
         .from('browserstack_configs')
         .update({
-          name: data.name,
-          device_type: data.deviceType,
-          os: data.os,
-          os_version: data.osVersion,
-          browser: data.deviceType === 'desktop' ? data.browser : null,
-          browser_version: data.deviceType === 'desktop' ? data.browserVersion : null,
-          device: data.deviceType === 'mobile' ? data.device : null,
+          name: config.name,
+          device_type: config.device_type,
+          os: config.os,
+          os_version: config.os_version,
+          browser: config.device_type === 'desktop' ? config.browser : null,
+          browser_version: config.device_type === 'desktop' ? config.browser_version : null,
+          device: config.device_type === 'mobile' ? config.device : null,
         })
-        .eq('id', data.id);
+        .eq('id', config.id);
 
       if (error) throw error;
     },
@@ -40,38 +65,8 @@ export const useConfigMutations = () => {
     },
   });
 
-  const verifyConfig = async (config: Config) => {
-    try {
-      const { data: response, error } = await supabase.functions.invoke<{
-        valid: boolean;
-        message: string;
-        suggestion?: {
-          os_version?: string;
-          browser_version?: string;
-        };
-      }>('validate-browserstack-config', {
-        body: { config }
-      });
-
-      if (error) throw error;
-      if (!response) throw new Error('No response from validation');
-
-      toast({
-        title: response.valid ? "Configuration Valid" : "Configuration Invalid",
-        description: response.message,
-        variant: response.valid ? "default" : "destructive",
-      });
-
-      return response;
-    } catch (error) {
-      toast({
-        title: "Verification Error",
-        description: "Failed to verify configuration with BrowserStack",
-        variant: "destructive",
-      });
-      throw error;
-    }
+  return {
+    verifyConfig,
+    updateConfig
   };
-
-  return { updateConfig, verifyConfig };
 };

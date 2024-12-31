@@ -1,18 +1,27 @@
 import { Check, Edit2, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import type { ConfigCardProps } from "../types";
+import type { Config } from "../types";
+
+interface ConfigCardProps {
+  config: Config;
+  isSelected: boolean;
+  onSelect: () => void;
+  onEdit: () => void;
+  onVerify: () => void;
+  isVerifying: boolean;
+}
 
 export const ConfigCard = ({
   config,
   isSelected,
   onSelect,
   onEdit,
-  onUpdate
+  onVerify,
+  isVerifying,
 }: ConfigCardProps) => {
   return (
     <Button
-      key={config.id}
       className={`h-auto p-4 flex flex-col items-start space-y-2 relative group ${
         isSelected ? "bg-primary text-primary-foreground" : "bg-transparent border hover:bg-accent"
       }`}
@@ -28,6 +37,7 @@ export const ConfigCard = ({
             e.stopPropagation();
             onEdit();
           }}
+          disabled={isVerifying}
         >
           <Edit2 className="h-4 w-4" />
         </Button>
@@ -35,8 +45,9 @@ export const ConfigCard = ({
           className="h-8 w-8 bg-transparent hover:bg-accent"
           onClick={(e) => {
             e.stopPropagation();
-            onUpdate();
+            onVerify();
           }}
+          disabled={isVerifying}
         >
           <Shield className="h-4 w-4" />
         </Button>

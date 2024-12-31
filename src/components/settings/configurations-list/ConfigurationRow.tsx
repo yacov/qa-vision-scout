@@ -1,14 +1,14 @@
-import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { TableCell, TableRow } from "@/components/ui/table";
 import { Loader2, Trash2, CheckCircle } from "lucide-react";
 import type { Config } from "../types";
 
 interface ConfigurationRowProps {
   config: Config;
   isValidating: boolean;
-  onValidate: (configId: string) => void;
-  onDelete: (configId: string) => void;
+  onValidate: (id: string) => void;
+  onDelete: (id: string) => void;
 }
 
 export const ConfigurationRow = ({
@@ -18,10 +18,10 @@ export const ConfigurationRow = ({
   onDelete,
 }: ConfigurationRowProps) => {
   return (
-    <TableRow>
+    <TableRow key={config.id}>
       <TableCell>{config.name}</TableCell>
       <TableCell>
-        <Badge variant="outline">
+        <Badge className="outline">
           {config.device_type}
         </Badge>
       </TableCell>
@@ -32,14 +32,13 @@ export const ConfigurationRow = ({
           : config.device}
       </TableCell>
       <TableCell>
-        <Badge variant={config.is_active ? "default" : "secondary"}>
+        <Badge className={config.is_active ? "default" : "secondary"}>
           {config.is_active ? "Active" : "Inactive"}
         </Badge>
       </TableCell>
       <TableCell className="space-x-2">
         <Button
-          variant="outline"
-          size="icon"
+          className="bg-transparent border hover:bg-accent"
           onClick={() => onValidate(config.id)}
           disabled={isValidating}
         >
@@ -50,8 +49,7 @@ export const ConfigurationRow = ({
           )}
         </Button>
         <Button
-          variant="ghost"
-          size="icon"
+          className="hover:bg-accent hover:text-accent-foreground"
           onClick={() => onDelete(config.id)}
         >
           <Trash2 className="h-4 w-4" />

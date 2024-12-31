@@ -11,5 +11,8 @@ export const useConfigSelection = () => {
     );
   };
 
-  return { selectedConfigs, toggleConfig };
+  return {
+    selectedConfigs,
+    toggleConfig
+  };
 };

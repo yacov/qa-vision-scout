@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Config, ValidationResponse, ValidationDialogState } from "../types";
 
 export const useConfigurations = () => {
-  const { data: configs, isLoading } = useQuery<Config[], Error>({
+  const { data: configs, isLoading } = useQuery<Config[]>({
     queryKey: ['browserstack-configs'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -25,8 +25,8 @@ export const useConfigurationMutations = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const deleteConfig = useMutation<void, Error, string>({
-    mutationFn: async (id) => {
+  const deleteConfig = useMutation({
+    mutationFn: async (id: string) => {
       const { error } = await supabase
         .from('browserstack_configs')
         .delete()
@@ -50,8 +50,8 @@ export const useConfigurationMutations = () => {
     },
   });
 
-  const validateConfig = useMutation<ValidationResponse, Error, string>({
-    mutationFn: async (configId) => {
+  const validateConfig = useMutation({
+    mutationFn: async (configId: string) => {
       const response = await fetch('/api/validate-browserstack-config', {
         method: 'POST',
         headers: {
@@ -75,12 +75,8 @@ export const useConfigurationMutations = () => {
     },
   });
 
-  const updateConfig = useMutation<
-    void,
-    Error,
-    { id: string; data: { os_version?: string; browser_version?: string } }
-  >({
-    mutationFn: async ({ id, data }) => {
+  const updateConfig = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
       const { error } = await supabase
         .from('browserstack_configs')
         .update(data)

@@ -28,11 +28,11 @@ export const ValidationDialog = ({ dialog, onClose, onUpdate }: ValidationDialog
               <div className="mt-4">
                 <p className="font-medium">Would you like to update to the suggested configuration?</p>
                 <div className="mt-2 space-x-2">
-                  <Button onClick={() => onUpdate(dialog.data!.suggestion!)}>
+                  <Button onClick={() => onUpdate(dialog.data?.suggestion || {})}>
                     Update Configuration
                   </Button>
                   <Button
-                    variant="outline"
+                    className="bg-transparent border hover:bg-accent"
                     onClick={onClose}
                   >
                     Cancel

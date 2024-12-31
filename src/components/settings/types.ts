@@ -1,31 +1,8 @@
 import { z } from "zod";
-import type { UseMutationResult } from "@tanstack/react-query";
 
 export type DeviceType = "desktop" | "mobile";
 
-export interface Test {
-  id: string;
-  user_id: string;
-  baseline_url: string;
-  new_url: string;
-  status: string;
-  created_at: string | null;
-  updated_at: string | null;
-  test_screenshots: TestScreenshot[];
-}
-
-export interface TestScreenshot {
-  id: string;
-  test_id: string;
-  device_name: string;
-  os_version: string;
-  baseline_screenshot_url: string | null;
-  new_screenshot_url: string | null;
-  diff_percentage: number | null;
-  created_at: string | null;
-}
-
-export interface Config {
+export interface DatabaseConfig {
   id: string;
   name: string;
   device_type: DeviceType;
@@ -36,10 +13,11 @@ export interface Config {
   device: string | null;
   is_active: boolean | null;
   created_at: string | null;
-  updated_at: string | null;
-  is_predefined: boolean | null;
   user_id: string;
+  is_predefined: boolean | null;
 }
+
+export type Config = DatabaseConfig;
 
 export const browserStackConfigSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -66,18 +44,4 @@ export interface ValidationResponse {
 export interface ValidationDialogState {
   isOpen: boolean;
   data: ValidationResponse | null;
-}
-
-export interface ConfigCardProps {
-  config: Config;
-  isSelected: boolean;
-  onEdit: () => void;
-  onSelect: () => void;
-  onUpdate: () => void;
-}
-
-export interface EditConfigDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  config?: Config;
 }
