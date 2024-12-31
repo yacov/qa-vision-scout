@@ -1,13 +1,11 @@
 import { FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import type { UseFormReturn } from "react-hook-form";
+import { useFormContext } from "react-hook-form";
 import type { BrowserStackConfigFormData } from "./types";
 
-interface DesktopFieldsProps {
-  form: UseFormReturn<BrowserStackConfigFormData>;
-}
+export const DesktopFields = () => {
+  const form = useFormContext<BrowserStackConfigFormData>();
 
-export const DesktopFields = ({ form }: DesktopFieldsProps) => {
   return (
     <>
       <FormField
