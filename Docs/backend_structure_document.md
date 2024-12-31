@@ -1,35 +1,230 @@
-### Introduction
+# Backend Structure Documentation
 
-TestHub serves as an internal web-based tool tailored to meet the rigorous testing needs of the QA department. Its primary function is to automate and streamline the comparison of new website designs against baseline versions, ensuring each page maintains functional and design integrity across various devices and operating systems. By utilizing Browserstack API for cross-platform testing and integrating advanced visualization libraries such as Three.js, D3.js, and P5.js, TestHub presents data in a compelling, easily navigable format crucial for high-efficiency and quality assurance. It aims to reduce manual QA efforts while enhancing output quality by centralizing testing processes.
+## Overview
 
-### Backend Architecture
+The backend of TestHub is built on Supabase, utilizing Edge Functions for serverless compute and PostgreSQL for data storage. This document outlines the structure, patterns, and best practices for the backend implementation.
 
-The backend architecture of TestHub is built on Supabase, a comprehensive backend service that handles database management, authentication, and storage seamlessly. This architecture employs a modern, serverless design pattern that promotes scalability and ease of maintenance. The backend is designed to handle concurrent user requests efficiently, ensuring quick responses through optimized database queries and effective use of Supabase's serverless capabilities.
+## Directory Structure
 
-### Database Management
+```
+/supabase/
+├── functions/
+│   ├── browserstack-screenshots/
+│   │   ├── __tests__/
+│   │   │   ├── test-utils.ts
+│   │   │   ├── index.test.ts
+│   │   │   ├── browserstack-api.test.ts
+│   │   │   └── browserstack-api.integration.test.ts
+│   │   ├── types.ts
+│   │   ├── browserstack-api.ts
+│   │   ├── index.ts
+│   │   ├── vitest.config.ts
+│   │   └── vitest.setup.ts
+│   └── other-functions/
+├── migrations/
+└── seed/
+```
 
-Supabase is the backbone of our data management strategy, leveraging PostgreSQL to provide a robust, SQL-based storage solution. Data within TestHub is structured relationally, allowing for clear and efficient access to webpage comparison results and user information. Supabase automatically handles data replication and backup, thus enhancing reliability and data integrity. Access to data is secured with role-based fine-grained permission controls, crucial for maintaining strict data privacy and security.
+## Edge Functions
 
-### API Design and Endpoints
+### BrowserStack Screenshots Function
 
-The API design follows RESTful principles, ensuring predictability and scalability in communication between frontend and backend components. Key endpoints include routes for uploading webpage URLs for comparison, fetching comparison and responsiveness data, and exporting reports. These endpoints facilitate real-time data processing and retrieval, enabling the seamless function of TestHub’s UI and feature set.
+The BrowserStack screenshots function handles the generation and comparison of website screenshots across different browsers and devices.
 
-### Hosting Solutions
+#### Key Components:
 
-TestHub’s backend is hosted on Supabase, utilizing its serverless functions for efficient resource management and scalability. This cloud-based approach ensures that our tool can scale horizontally according to demand while maintaining cost-effectiveness. Supabase’s built-in CDN increases the application's reliability and speed by decreasing latency in data delivery.
+1. **API Integration (`browserstack-api.ts`)**
+   - Handles communication with BrowserStack API
+   - Implements request validation and error handling
+   - Uses native fetch API for HTTP requests
 
-### Infrastructure Components
+2. **Type Definitions (`types.ts`)**
+   - Defines TypeScript interfaces for requests/responses
+   - Includes validation constants and utilities
+   - Ensures type safety across the application
 
-The infrastructure includes load balancers to distribute incoming requests evenly, minimizing the risk of server overloading. For caching, a Layer 7 CDN provided by Supabase ensures that frequently accessed data is delivered swiftly without repeated database queries. This setup aggregates to significantly boost performance and provides a smooth user experience by minimizing load times.
+3. **Main Handler (`index.ts`)**
+   - Processes incoming requests
+   - Coordinates with BrowserStack API
+   - Returns standardized responses
 
-### Security Measures
+### Testing Structure
 
-Security is a cornerstone of TestHub’s backend structure. Supabase’s authentication layer offers robust protection with support for OAuth2.0 protocols, ensuring secure user authentication. For authorization, role-based access controls prevent unauthorized data access. Data in transit is encrypted using industry-standard TLS (Transport Layer Security) protocols, ensuring confidentiality and integrity between client-server communications.
+#### 1. Unit Tests
+```typescript
+// browserstack-api.test.ts
+describe('BrowserStack API', () => {
+  it('should validate input correctly', () => {
+    // Test input validation
+  });
 
-### Monitoring and Maintenance
+  it('should handle API responses', async () => {
+    // Test response handling
+  });
+});
+```
 
-The backend employs monitoring tools integrated with Supabase to track system performance metrics and detect anomalies in real time. Alerts are configured for critical issues to ensure prompt resolution by the technical team. Routine maintenance procedures, such as system updates and performance optimizations, are scheduled to keep the backend infrastructure robust and cutting-edge.
+#### 2. Integration Tests
+```typescript
+// browserstack-api.integration.test.ts
+describe('BrowserStack API Integration', () => {
+  it('should generate screenshots', async () => {
+    // Test end-to-end screenshot generation
+  });
 
-### Conclusion and Overall Backend Summary
+  it('should handle rate limiting', async () => {
+    // Test API rate limiting scenarios
+  });
+});
+```
 
-The backend structure of TestHub is thoughtfully architected to align with its core objectives: enhancing QA efficiency and improving webpage testing accuracy. By leveraging Supabase for both database management and hosting, alongside RESTful API designs and a layered security approach, TestHub ensures rapid, secure, and scalable performance. This unique backend setup stands out due to its comprehensive use of modern internet technologies, reducing manual QA labor and improving throughput with advanced visualizations and streamlined data management practices.
+#### 3. Test Utilities
+```typescript
+// test-utils.ts
+export const mockFetch = {
+  fn: vi.fn(defaultMockFetch),
+  mockReset() {
+    this.fn.mockReset();
+    this.fn.mockImplementation(defaultMockFetch);
+  }
+};
+```
+
+## Database Schema
+
+### Tables
+
+1. **screenshots**
+   ```sql
+   CREATE TABLE screenshots (
+     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+     job_id TEXT NOT NULL,
+     url TEXT NOT NULL,
+     status TEXT NOT NULL,
+     created_at TIMESTAMPTZ DEFAULT NOW(),
+     updated_at TIMESTAMPTZ DEFAULT NOW()
+   );
+   ```
+
+2. **comparison_results**
+   ```sql
+   CREATE TABLE comparison_results (
+     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+     baseline_id UUID REFERENCES screenshots(id),
+     comparison_id UUID REFERENCES screenshots(id),
+     difference_score FLOAT,
+     created_at TIMESTAMPTZ DEFAULT NOW()
+   );
+   ```
+
+## API Endpoints
+
+### Screenshot Generation
+- **POST** `/browserstack-screenshots`
+  ```typescript
+  interface Request {
+    url: string;
+    resolution: ResolutionType;
+    browsers: Browser[];
+    wait_time?: number;
+    quality?: 'compressed' | 'original';
+  }
+  ```
+
+### Screenshot Comparison
+- **POST** `/compare-screenshots`
+  ```typescript
+  interface Request {
+    baselineId: string;
+    comparisonId: string;
+  }
+  ```
+
+## Error Handling
+
+### Standard Error Response
+```typescript
+interface ErrorResponse {
+  error: {
+    message: string;
+    code: string;
+    requestId: string;
+    context?: Record<string, unknown>;
+  };
+}
+```
+
+### Error Types
+1. **ValidationError**: Input validation failures
+2. **APIError**: External API communication issues
+3. **RateLimitError**: Rate limiting violations
+4. **DatabaseError**: Database operation failures
+
+## Testing Best Practices
+
+### 1. Mock Management
+- Use centralized mock utilities
+- Reset mocks before each test
+- Maintain type safety in mocks
+- Use native implementations when available
+
+### 2. Test Organization
+- Group related tests together
+- Use descriptive test names
+- Test both success and error paths
+- Include rate limiting scenarios
+
+### 3. Integration Testing
+- Test complete API flows
+- Verify error handling
+- Check response formats
+- Validate edge cases
+
+### 4. Performance Testing
+- Monitor response times
+- Test under load
+- Verify resource cleanup
+- Check memory usage
+
+## Deployment
+
+### Environment Variables
+```bash
+BROWSERSTACK_USERNAME=xxx
+BROWSERSTACK_ACCESS_KEY=xxx
+DATABASE_URL=xxx
+```
+
+### Deployment Process
+1. Run tests: `npm test`
+2. Check coverage: `npm run test:coverage`
+3. Build: `npm run build`
+4. Deploy: `supabase functions deploy`
+
+## Monitoring
+
+### Metrics to Track
+- API response times
+- Error rates
+- Screenshot generation success rate
+- Database query performance
+
+### Logging
+- Request/response details
+- Error contexts
+- Performance metrics
+- Rate limiting events
+
+## Security
+
+### API Security
+- Authentication required
+- Rate limiting enforced
+- Input validation
+- Secure credential storage
+
+### Data Security
+- Encrypted storage
+- Access control
+- Audit logging
+- Regular backups

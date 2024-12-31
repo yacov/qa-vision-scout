@@ -20,7 +20,7 @@ export const validateBrowserConfig = (config: BrowserConfig, availableBrowsers: 
     os: config.os?.toLowerCase(),
     os_version: config.os_version,
     browser: config.browser?.toLowerCase(),
-    browser_version: config.browser_version?.toLowerCase(),
+    browser_version: config.browser_version,
     device: config.device
   };
 
@@ -58,18 +58,34 @@ export const validateBrowserConfig = (config: BrowserConfig, availableBrowsers: 
     return false;
   }
 
-  // Always accept 'latest' as a valid version
-  if (!normalizedConfig.browser_version || 
-      normalizedConfig.browser_version === 'latest') {
-    console.log(`Accepting latest version for ${normalizedConfig.browser}`);
+  // For specific versions, check if they exist
+  if (!normalizedConfig.browser_version) {
+    console.log('Missing browser version');
+    return false;
+  }
+
+  // Accept 'latest' as a valid version
+  if (normalizedConfig.browser_version === 'latest') {
+    console.log('Using latest browser version');
     return true;
   }
 
-  // For specific versions, check if they exist
-  const hasVersion = browserMatches.some(b => 
-    b.browser_version === normalizedConfig.browser_version
-  );
+  // Check if the version is a valid format (major.minor)
+  const versionRegex = /^\d+\.\d+$/;
+  const isValidFormat = versionRegex.test(normalizedConfig.browser_version);
+  if (!isValidFormat) {
+    console.log(`Invalid version format: ${normalizedConfig.browser_version}`);
+    return false;
+  }
 
-  console.log(`Version validation result for ${normalizedConfig.browser_version}:`, hasVersion);
-  return hasVersion;
+  // For Chrome browser, ensure version is in correct format
+  if (normalizedConfig.browser === 'chrome') {
+    const [major, minor] = normalizedConfig.browser_version.split('.');
+    if (parseInt(major) < 1 || parseInt(minor) !== 0) {
+      console.log(`Invalid Chrome version format: ${normalizedConfig.browser_version}`);
+      return false;
+    }
+  }
+
+  return true;
 };

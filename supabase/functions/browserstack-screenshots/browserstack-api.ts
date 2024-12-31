@@ -4,8 +4,10 @@ import {
   VALID_WAIT_TIMES, 
   type ResolutionType,
   getResolutionForType
-} from './types';
-import type { Response } from 'node-fetch';
+} from './types.js';
+
+// Remove node-fetch import and use native Response type
+type FetchResponse = globalThis.Response;
 
 export interface BrowserstackCredentials {
   username: string;
@@ -17,27 +19,43 @@ export interface Browser {
   os_version: string;
   browser: string;
   browser_version: string;
+  device?: string | null;
+}
+
+export interface BrowsersResponse {
+  browsers: Browser[];
 }
 
 export interface ScreenshotRequest {
   url: string;
   resolution: ResolutionType;
-  waitTime: typeof VALID_WAIT_TIMES[number];
   browsers: Browser[];
+  wait_time?: typeof VALID_WAIT_TIMES[number];
+  quality?: 'compressed' | 'original';
+  callback_url?: string;
 }
 
 export interface Screenshot {
-  browser: string;
-  browser_version: string;
-  os: string;
-  os_version: string;
+  id: string;
   url: string;
   thumb_url: string;
   image_url: string;
+  state: string;
+  os: string;
+  os_version: string;
+  browser: string;
+  browser_version: string;
+  created_at: string;
 }
 
 export interface ScreenshotResponse {
   job_id: string;
+  state: string;
+  callback_url: string | null;
+  win_res?: string;
+  mac_res?: string;
+  quality: 'compressed' | 'original';
+  wait_time: number;
   screenshots: Screenshot[];
 }
 
@@ -58,7 +76,6 @@ export class BrowserstackError extends Error {
 }
 
 function validateResolution(resolution: ResolutionType, requestId: string): void {
-  // First check if the resolution type is valid
   if (!VALID_RESOLUTIONS[resolution]) {
     throw new BrowserstackError(
       `Invalid ${resolution} resolution`,
@@ -89,8 +106,7 @@ function validateWaitTime(waitTime: typeof VALID_WAIT_TIMES[number], requestId: 
   }
 }
 
-async function handleBrowserstackResponse<T>(response: Response, requestId: string): Promise<T> {
-  // Handle rate limiting first
+async function handleBrowserstackResponse<T>(response: FetchResponse, requestId: string): Promise<T> {
   if (response.status === 429) {
     throw new BrowserstackError(
       'Rate limit exceeded',
@@ -103,12 +119,12 @@ async function handleBrowserstackResponse<T>(response: Response, requestId: stri
   let responseText = '';
 
   try {
-    responseText = await response.text();
+    const clonedResponse = response.clone();
+    responseText = await clonedResponse.text();
     if (responseText) {
       responseData = JSON.parse(responseText);
     }
   } catch (e) {
-    // If we can't parse the response as JSON, throw an error with the raw text
     throw new BrowserstackError(
       'Invalid response format',
       response.status,
@@ -120,10 +136,9 @@ async function handleBrowserstackResponse<T>(response: Response, requestId: stri
     );
   }
 
-  // Handle other errors
-  if (!response.ok || !responseData) {
+  if (!response.ok) {
     const errorData = responseData as BrowserstackErrorResponse;
-    const errorMessage = errorData?.message || 'Unknown error';
+    const errorMessage = errorData?.message || `HTTP Error ${response.status}`;
     throw new BrowserstackError(
       errorMessage,
       response.status,
@@ -132,19 +147,32 @@ async function handleBrowserstackResponse<T>(response: Response, requestId: stri
     );
   }
 
+  if (!responseData) {
+    throw new BrowserstackError(
+      'Empty response',
+      response.status,
+      requestId
+    );
+  }
+
   return responseData as T;
 }
 
 export async function getBrowsers(credentials?: BrowserstackCredentials): Promise<Browser[]> {
   const requestId = uuidv4();
-  const response = await fetch('https://api.browserstack.com/screenshots/browsers.json', {
+  const auth = credentials ? 
+    Buffer.from(`${credentials.username}:${credentials.password}`).toString('base64') :
+    '';
+
+  const response = await fetch('https://www.browserstack.com/screenshots/browsers.json', {
     headers: {
-      'Authorization': `Basic ${Buffer.from(`${credentials?.username || ''}:${credentials?.password || ''}`).toString('base64')}`,
+      'Authorization': `Basic ${auth}`,
       'Content-Type': 'application/json'
     }
-  }) as unknown as Response;
+  });
 
-  return handleBrowserstackResponse<Browser[]>(response, requestId);
+  const data = await handleBrowserstackResponse<BrowsersResponse>(response, requestId);
+  return data.browsers;
 }
 
 export async function generateScreenshots(
@@ -152,26 +180,85 @@ export async function generateScreenshots(
   credentials?: BrowserstackCredentials
 ): Promise<ScreenshotResponse> {
   const requestId = uuidv4();
-
-  // Validate inputs before making API call
   validateResolution(request.resolution, requestId);
-  validateWaitTime(request.waitTime, requestId);
+  
+  if (request.wait_time) {
+    validateWaitTime(request.wait_time, requestId);
+  }
 
+  // First, get available browsers
+  const availableBrowsers = await getBrowsers(credentials);
+  
   const resolution = getResolutionForType(request.resolution);
-  const response = await fetch('https://api.browserstack.com/screenshots', {
+  
+  // Map browsers and handle versions
+  const browsers = request.browsers.map(browser => {
+    // For Chrome, find a supported version
+    if (browser.browser?.toLowerCase() === 'chrome') {
+      const chromeVersions = availableBrowsers
+        .filter(b => b.browser?.toLowerCase() === 'chrome' && b.os?.toLowerCase() === browser.os?.toLowerCase())
+        .map(b => b.browser_version)
+        .filter(v => v && v !== 'latest');
+
+      if (chromeVersions.length === 0) {
+        throw new BrowserstackError(
+          'No supported Chrome versions found',
+          400,
+          requestId
+        );
+      }
+
+      // Use the first available version
+      return {
+        ...browser,
+        browser_version: chromeVersions[0]
+      };
+    }
+
+    // For other browsers, validate against available browsers
+    const matchingBrowser = availableBrowsers.find(b => 
+      b.browser?.toLowerCase() === browser.browser?.toLowerCase() &&
+      b.os?.toLowerCase() === browser.os?.toLowerCase() &&
+      b.os_version === browser.os_version
+    );
+
+    if (!matchingBrowser) {
+      throw new BrowserstackError(
+        `No matching browser configuration found for ${browser.browser} on ${browser.os} ${browser.os_version}`,
+        400,
+        requestId
+      );
+    }
+
+    return {
+      ...browser,
+      browser_version: browser.browser_version === 'latest' ? matchingBrowser.browser_version : browser.browser_version
+    };
+  });
+
+  const payload = {
+    url: request.url,
+    browsers,
+    quality: request.quality || 'compressed',
+    wait_time: request.wait_time || 5,
+    callback_url: request.callback_url,
+    ...(request.resolution === 'WINDOWS' ? { win_res: resolution } : { mac_res: resolution })
+  };
+
+  console.log('Request payload:', JSON.stringify(payload, null, 2));
+
+  const auth = credentials ? 
+    Buffer.from(`${credentials.username}:${credentials.password}`).toString('base64') :
+    '';
+
+  const response = await fetch('https://www.browserstack.com/screenshots', {
     method: 'POST',
     headers: {
-      'Authorization': `Basic ${Buffer.from(`${credentials?.username || ''}:${credentials?.password || ''}`).toString('base64')}`,
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
+      'Authorization': `Basic ${auth}`,
+      'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      url: request.url,
-      resolution,
-      wait_time: request.waitTime,
-      browsers: request.browsers
-    })
-  }) as unknown as Response;
+    body: JSON.stringify(payload)
+  });
 
   return handleBrowserstackResponse<ScreenshotResponse>(response, requestId);
 }

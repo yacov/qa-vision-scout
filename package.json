@@ -1,11 +1,10 @@
 {
-  "name": "browserstack-screenshots",
+  "name": "visualtest",
   "version": "1.0.0",
-  "description": "BrowserStack screenshot generation service",
+  "description": "",
   "main": "index.js",
-  "type": "module",
   "scripts": {
-    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --config jest.config.ts",
+    "test": "cd supabase/functions/browserstack-screenshots && npm run test",
     "build": "tsc",
     "start": "node dist/index.js"
   },
@@ -15,25 +14,21 @@
     "@radix-ui/react-slot": "^1.1.1",
     "@tanstack/react-query": "^5.62.11",
     "lucide-react": "^0.469.0",
-    "node-fetch": "^2.6.7",
     "react-hook-form": "^7.54.2",
     "uuid": "^9.0.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@jest/globals": "^29.5.0",
-    "@jest/types": "^29.5.0",
-    "@types/deno": "^2.0.0",
-    "@types/jest": "^29.5.0",
     "@types/node": "^18.15.11",
-    "@types/node-fetch": "^2.6.3",
-    "@types/react": "^19.0.2",
     "@types/uuid": "^9.0.0",
+    "@vitest/coverage-v8": "^1.6.0",
     "cross-env": "^7.0.3",
-    "jest": "^29.5.0",
-    "ts-jest": "^29.1.0",
-    "ts-node": "^10.9.1",
+    "dotenv": "^16.4.7",
     "typescript": "^5.0.3",
-    "vite": "^6.0.6"
+    "vite": "^5.0.0",
+    "vitest": "^1.6.0",
+    "tailwindcss": "^3.0.0",
+    "postcss": "^8.0.0",
+    "autoprefixer": "^10.0.0"
   }
 }

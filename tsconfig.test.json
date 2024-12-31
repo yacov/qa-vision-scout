@@ -1,12 +1,21 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "module": "CommonJS",
-    "moduleResolution": "node",
-    "verbatimModuleSyntax": false,
+    "types": ["jest", "node"],
+    "isolatedModules": false,
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "es2020",
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true
   },
-  "include": ["**/__tests__/**/*.ts", "jest.config.ts", "jest.setup.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "supabase/functions/browserstack-screenshots/**/*.ts",
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 } 

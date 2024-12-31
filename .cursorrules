@@ -117,3 +117,96 @@ Contains unit and integration tests for both frontend and backend.
 
 *   Ensure visualizations are accessible with text alternatives.
 *   Consider keyboard navigation and screen reader compatibility in the UI design.
+
+## Testing Best Practices
+
+### API Integration Testing
+
+1. **Native vs Third-Party Fetch**:
+   * Prefer native `fetch` over third-party implementations like `node-fetch` when working with modern Node.js
+   * Ensure type compatibility between mock implementations and actual API types
+   * Remove unnecessary dependencies that duplicate built-in functionality
+
+2. **Mock Implementation**:
+   * Create a centralized mock utility file (e.g., `test-utils.ts`)
+   * Implement proper type definitions for mock functions
+   * Use consistent mock patterns across all test files
+   * Avoid setting global mocks in multiple places
+
+3. **Test Structure**:
+   * Keep test setup DRY by using shared utilities
+   * Use descriptive test names that indicate the scenario being tested
+   * Include both happy path and error cases
+   * Test rate limiting and error handling scenarios
+
+4. **Async Testing**:
+   * Properly handle async/await in test cases
+   * Use appropriate timeout values in test configuration
+   * Ensure mock implementations resolve promptly
+   * Avoid unnecessary Promise chaining
+
+5. **Mock Response Handling**:
+   * Create helper functions for generating mock responses
+   * Maintain consistent response structures
+   * Include all required fields in mock data
+   * Use realistic data that matches production scenarios
+
+### Debugging Strategies
+
+1. **Systematic Approach**:
+   * Start with type compatibility issues
+   * Check for dependency conflicts
+   * Verify mock implementations
+   * Review test timeouts and configuration
+
+2. **Common Issues to Check**:
+   * Type mismatches between mock and actual implementations
+   * Missing or incorrect mock reset logic
+   * Improper async/await usage
+   * Unnecessary dependencies causing conflicts
+
+3. **Performance Considerations**:
+   * Remove slow or unnecessary network calls in tests
+   * Use appropriate timeout values
+   * Implement efficient mock responses
+   * Avoid unnecessary file operations during tests
+
+### Code Organization
+
+1. **Test File Structure**:
+   * Group related tests together
+   * Maintain consistent file naming
+   * Keep test files close to implementation files
+   * Use clear and consistent import ordering
+
+2. **Mock Organization**:
+   * Centralize mock implementations
+   * Share common test utilities
+   * Maintain type safety in mocks
+   * Document mock behavior and requirements
+
+3. **Configuration Management**:
+   * Use appropriate test runner configuration
+   * Set realistic timeout values
+   * Configure coverage reporting
+   * Maintain consistent environment variables
+
+### Lessons Learned
+
+1. **What Worked Well**:
+   * Centralized mock utilities
+   * Proper type definitions
+   * Consistent test patterns
+   * Clear error handling
+
+2. **What to Avoid**:
+   * Multiple global mock assignments
+   * Mixing different fetch implementations
+   * Unnecessary dependencies
+   * Overcomplicated mock setups
+
+3. **Best Practices**:
+   * Start with native implementations when available
+   * Keep mocks simple and type-safe
+   * Maintain consistent patterns across tests
+   * Document test requirements and setup

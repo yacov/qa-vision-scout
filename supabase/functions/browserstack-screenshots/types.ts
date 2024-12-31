@@ -1,13 +1,13 @@
 // Resolution constants as per API documentation
 export const VALID_RESOLUTIONS = {
-  WINDOWS: ['1024x768', '1280x1024', '1920x1080'] as const,
-  MAC: ['1024x768', '1280x960', '1280x1024', '1600x1200', '1920x1080'] as const
+  WINDOWS: ['1024x768', '1280x1024', '1920x1080'],
+  MAC: ['1024x768', '1280x960', '1280x1024', '1600x1200', '1920x1080']
 } as const;
 
 export const VALID_WAIT_TIMES = [2, 5, 10, 15, 20, 60] as const;
 
 export type WaitTime = typeof VALID_WAIT_TIMES[number];
-export type ResolutionType = keyof typeof VALID_RESOLUTIONS;
+export type ResolutionType = 'WINDOWS' | 'MAC';
 export type WindowsResolution = typeof VALID_RESOLUTIONS.WINDOWS[number];
 export type MacResolution = typeof VALID_RESOLUTIONS.MAC[number];
 
@@ -91,7 +91,7 @@ export interface JobStatus {
 }
 
 export function getResolutionForType(type: ResolutionType): string {
-  return DEFAULT_RESOLUTIONS[type];
+  return type === 'WINDOWS' ? '1024x768' : '1024x768';
 }
 
 export function validateResolution(res: string | undefined, type: 'Windows' | 'Mac'): void {
@@ -118,3 +118,15 @@ export function validateWaitTime(waitTime: number | undefined): void {
 
 export type ServeFunction = (req: Request) => Promise<Response>;
 export const serve: (handler: ServeFunction) => void = () => {}; 
+
+export interface ScreenshotRequest {
+  url: string;
+  resolution: string;
+  browsers: {
+    os: string;
+    os_version: string;
+    browser: string;
+    browser_version: string;
+  }[];
+  waitTime: number;
+} 

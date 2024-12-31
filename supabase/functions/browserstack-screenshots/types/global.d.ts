@@ -1,11 +1,11 @@
-import { Response, RequestInfo, RequestInit } from 'node-fetch';
-import { Mock } from 'jest-mock';
+import type { Mock } from 'vitest';
 
 declare global {
-  function fetch(url: RequestInfo, init?: RequestInit): Promise<Response>;
+  var fetch: typeof globalThis.fetch;
+  
   namespace NodeJS {
     interface Global {
-      fetch: Mock<Promise<Response>, [RequestInfo, (RequestInit | undefined)?]>;
+      fetch: typeof globalThis.fetch;
     }
   }
 } 

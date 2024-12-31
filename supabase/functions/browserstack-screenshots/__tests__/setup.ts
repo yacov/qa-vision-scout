@@ -1,9 +1,11 @@
-import { jest } from '@jest/globals';
+import { vi } from 'vitest';
 import type { ScreenshotSettings, BrowserConfig } from '../types';
+import type { RequestInfo, HeadersInit } from 'node-fetch';
+import { Response } from 'node-fetch';
 
 // Mock the database client
-jest.mock('../database', () => ({
-  createSupabaseClient: jest.fn().mockReturnValue({
+vi.mock('../database', () => ({
+  createSupabaseClient: vi.fn().mockReturnValue({
     // Add any required mock methods here
   })
 }));
@@ -18,7 +20,7 @@ type GenerateScreenshotsType = (settings: ScreenshotSettings, authHeader: Header
   } & BrowserConfig>;
 }>;
 
-const mockGenerateScreenshots = jest.fn((settings: ScreenshotSettings, authHeader: HeadersInit) => {
+const mockGenerateScreenshots = vi.fn((settings: ScreenshotSettings, authHeader: HeadersInit) => {
   // Validate required parameters
   if (!settings.url) {
     throw new Error('Missing required parameter: url');
@@ -36,21 +38,21 @@ const mockGenerateScreenshots = jest.fn((settings: ScreenshotSettings, authHeade
       ...browser
     }))
   });
-}) as unknown as jest.MockedFunction<GenerateScreenshotsType>;
+});
 
-jest.mock('../browserstack-api', () => ({
+vi.mock('../browserstack-api', () => ({
   generateScreenshots: mockGenerateScreenshots
 }));
 
 // Mock the os-config
 type NormalizeConfigType = (config: BrowserConfig) => { os: string; os_version: string };
 
-const mockNormalizeOsConfig = jest.fn((config: BrowserConfig) => ({
+const mockNormalizeOsConfig = vi.fn((config: BrowserConfig) => ({
   os: config.os,
   os_version: config.os_version
-})) as unknown as jest.MockedFunction<NormalizeConfigType>;
+}));
 
-jest.mock('../os-config', () => ({
+vi.mock('../os-config', () => ({
   normalizeOsConfig: mockNormalizeOsConfig
 }));
 
@@ -60,9 +62,13 @@ const mockResponse = new Response(JSON.stringify({ message: 'Mocked response' })
   headers: { 'Content-Type': 'application/json' }
 });
 
-type FetchType = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+// Use native fetch types
+type FetchResponse = globalThis.Response;
 
-const mockFetch = jest.fn(async () => mockResponse) as unknown as jest.MockedFunction<FetchType>;
+const mockFetch = vi.fn<Parameters<typeof fetch>, Promise<FetchResponse>>();
 
-// Set up global fetch mock
-global.fetch = mockFetch; 
+global.fetch = mockFetch;
+
+beforeEach(() => {
+  mockFetch.mockReset();
+}); 
