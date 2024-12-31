@@ -3,9 +3,17 @@ import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Badge } from "@/components/ui/badge";
+import { Badge, type BadgeProps } from "@/components/ui/badge";
 
-const getStatusBadgeVariant = (status: string) => {
+interface Test {
+  id: string;
+  baseline_url: string;
+  new_url: string;
+  status: string;
+  created_at: string;
+}
+
+const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" => {
   switch (status) {
     case 'completed':
       return 'default';
@@ -57,7 +65,7 @@ export const TestResultsTable = ({ onTestSelect }: TestResultsTableProps) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tests.map((test) => (
+              {tests.map((test: Test) => (
                 <TableRow 
                   key={test.id}
                   className="cursor-pointer hover:bg-muted"
@@ -66,7 +74,7 @@ export const TestResultsTable = ({ onTestSelect }: TestResultsTableProps) => {
                   <TableCell className="truncate max-w-xs">{test.baseline_url}</TableCell>
                   <TableCell className="truncate max-w-xs">{test.new_url}</TableCell>
                   <TableCell>
-                    <Badge variant={getStatusBadgeVariant(test.status || 'unknown')}>
+                    <Badge className={getStatusBadgeVariant(test.status || 'unknown')}>
                       {test.status}
                     </Badge>
                   </TableCell>

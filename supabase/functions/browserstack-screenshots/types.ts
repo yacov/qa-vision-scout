@@ -1,30 +1,21 @@
 // Resolution constants as per API documentation
-export const VALID_WIN_RESOLUTIONS = [
-  '1024x768',
-  '1280x800',
-  '1280x1024',
-  '1366x768',
-  '1440x900',
-  '1680x1050',
-  '1600x1200',
-  '1920x1200',
-  '1920x1080',
-  '2048x1536'
-] as const;
-
-export const VALID_MAC_RESOLUTIONS = [
-  '1024x768',
-  '1280x960',
-  '1280x1024',
-  '1600x1200',
-  '1920x1080'
-] as const;
+export const VALID_RESOLUTIONS = {
+  WINDOWS: ['1024x768', '1280x1024', '1920x1080'] as const,
+  MAC: ['1024x768', '1280x960', '1280x1024', '1600x1200', '1920x1080'] as const
+} as const;
 
 export const VALID_WAIT_TIMES = [2, 5, 10, 15, 20, 60] as const;
 
-export type WinResolution = typeof VALID_WIN_RESOLUTIONS[number];
-export type MacResolution = typeof VALID_MAC_RESOLUTIONS[number];
 export type WaitTime = typeof VALID_WAIT_TIMES[number];
+export type ResolutionType = keyof typeof VALID_RESOLUTIONS;
+export type WindowsResolution = typeof VALID_RESOLUTIONS.WINDOWS[number];
+export type MacResolution = typeof VALID_RESOLUTIONS.MAC[number];
+
+// Default resolutions for each platform
+export const DEFAULT_RESOLUTIONS: Record<ResolutionType, string> = {
+  WINDOWS: '1024x768',
+  MAC: '1024x768'
+};
 
 export interface BrowserConfig {
   device_type?: 'desktop' | 'mobile';
@@ -40,7 +31,7 @@ export interface ScreenshotSettings {
   browsers: BrowserConfig[];
   quality?: 'original' | 'compressed';
   wait_time?: WaitTime;
-  win_res?: WinResolution;
+  win_res?: WindowsResolution;
   mac_res?: MacResolution;
   orientation?: 'portrait' | 'landscape';
 }
@@ -71,15 +62,19 @@ export interface BrowserStackResponse {
 export interface BrowserStackRequestBody {
   url: string;
   browsers: BrowserConfig[];
-  quality: string;
-  wait_time: number;
-  win_res?: string;
-  mac_res?: string;
-  orientation?: string;
+  quality: 'compressed' | 'original';
+  wait_time: WaitTime;
+  win_res?: WindowsResolution;
+  mac_res?: MacResolution;
+  orientation?: 'portrait' | 'landscape';
+  callback_url?: string;
+  local?: boolean;
 }
 
 export interface JobStatus {
-  state: 'pending' | 'done' | 'error';
+  id: string;
+  state: 'queued' | 'processing' | 'done' | 'error';
+  message?: string;
   screenshots: Array<{
     os: string;
     os_version: string;
@@ -87,7 +82,7 @@ export interface JobStatus {
     browser_version?: string;
     device?: string;
     id: string;
-    state: 'pending' | 'done' | 'error';
+    state: 'queued' | 'processing' | 'done' | 'error';
     url: string;
     thumb_url?: string;
     image_url?: string;
@@ -95,16 +90,26 @@ export interface JobStatus {
   }>;
 }
 
-export function validateResolution(res: string | undefined, validResolutions: readonly string[], type: 'Windows' | 'Mac', requestId: string): void {
-  if (res && !validResolutions.includes(res)) {
+export function getResolutionForType(type: ResolutionType): string {
+  return DEFAULT_RESOLUTIONS[type];
+}
+
+export function validateResolution(res: string | undefined, type: 'Windows' | 'Mac'): void {
+  if (!res) return;
+  
+  const validResolutions = type === 'Windows' ? VALID_RESOLUTIONS.WINDOWS : VALID_RESOLUTIONS.MAC;
+  
+  if (!validResolutions.includes(res as any)) {
     throw new Error(
       `Invalid ${type} resolution: ${res}. Valid resolutions are: ${validResolutions.join(', ')}`
     );
   }
 }
 
-export function validateWaitTime(waitTime: number | undefined, requestId: string): void {
-  if (waitTime && !VALID_WAIT_TIMES.includes(waitTime as WaitTime)) {
+export function validateWaitTime(waitTime: number | undefined): void {
+  if (!waitTime) return;
+  
+  if (!VALID_WAIT_TIMES.includes(waitTime as WaitTime)) {
     throw new Error(
       `Invalid wait time: ${waitTime}. Valid wait times are: ${VALID_WAIT_TIMES.join(', ')} seconds`
     );

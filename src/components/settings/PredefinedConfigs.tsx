@@ -14,6 +14,17 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { browserStackConfigSchema } from "./types";
 import { supabase } from "@/integrations/supabase/client";
 
+interface Config {
+  id: string;
+  name: string;
+  device_type: string;
+  os: string;
+  os_version: string;
+  browser?: string;
+  browser_version?: string;
+  device?: string;
+}
+
 export const PredefinedConfigs = () => {
   const [selectedConfigs, setSelectedConfigs] = useState<string[]>([]);
   const [editingConfig, setEditingConfig] = useState<any>(null);
@@ -145,11 +156,12 @@ export const PredefinedConfigs = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {configs?.map((config) => (
+            {configs?.map((config: Config) => (
               <Button
                 key={config.id}
-                variant={selectedConfigs.includes(config.id) ? "default" : "outline"}
-                className="h-auto p-4 flex flex-col items-start space-y-2 relative group"
+                className={`h-auto p-4 flex flex-col items-start space-y-2 relative group ${
+                  selectedConfigs.includes(config.id) ? "bg-primary text-primary-foreground" : "bg-transparent border hover:bg-accent"
+                }`}
                 onClick={() => toggleConfig(config.id)}
               >
                 {selectedConfigs.includes(config.id) && (
@@ -157,43 +169,39 @@ export const PredefinedConfigs = () => {
                 )}
                 <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      verifyConfig(config);
-                    }}
-                    disabled={verifyingConfig === config.id}
-                  >
-                    <Shield className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
+                    className="h-8 w-8 bg-transparent hover:bg-accent"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleEdit(config);
                     }}
+                    disabled={verifyingConfig === config.id}
                   >
                     <Edit2 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    className="h-8 w-8 bg-transparent hover:bg-accent"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      verifyConfig(config);
+                    }}
+                  >
+                    <Shield className="h-4 w-4" />
                   </Button>
                 </div>
                 <div className="font-medium">{config.name}</div>
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant="secondary">
+                  <Badge className="bg-secondary text-secondary-foreground">
                     {config.device_type === 'desktop' ? 'Desktop' : 'Mobile'}
                   </Badge>
-                  <Badge variant="outline">
+                  <Badge className="border bg-transparent">
                     {config.os} {config.os_version}
                   </Badge>
                   {config.device_type === 'desktop' ? (
-                    <Badge variant="outline">
+                    <Badge className="border bg-transparent">
                       {config.browser} {config.browser_version}
                     </Badge>
                   ) : (
-                    <Badge variant="outline">{config.device}</Badge>
+                    <Badge className="border bg-transparent">{config.device}</Badge>
                   )}
                 </div>
               </Button>
@@ -202,7 +210,10 @@ export const PredefinedConfigs = () => {
         </CardContent>
       </Card>
 
-      <Dialog open={!!editingConfig} onOpenChange={(open) => !open && setEditingConfig(null)}>
+      <Dialog 
+        open={!!editingConfig} 
+        onOpenChange={(open: boolean) => !open && setEditingConfig(null)}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Configuration</DialogTitle>

@@ -1,43 +1,44 @@
 import { jest } from '@jest/globals';
-import fetch from 'cross-fetch';
+import type { Response } from 'node-fetch';
 
-interface MockOptions {
-  status?: number;
-  headers?: Record<string, string>;
+export const mockCredentials = {
+  username: 'test-user',
+  password: 'test-pass'
+};
+
+export const mockFetch = jest.fn<() => Promise<Response>>();
+
+export function setupIntegrationTest() {
+  // Clear any existing mocks
+  jest.clearAllMocks();
+  
+  // Set up global fetch mock
+  global.fetch = mockFetch as unknown as typeof fetch;
+  
+  // Set up default mock response for successful requests
+  mockFetch.mockImplementation(async () => ({
+    ok: true,
+    status: 200,
+    text: async () => JSON.stringify({
+      job_id: 'test-job-id',
+      screenshots: [{
+        browser: 'chrome',
+        browser_version: '90',
+        os: 'Windows',
+        os_version: '10',
+        url: 'https://example.com',
+        thumb_url: 'https://example.com/thumb.jpg',
+        image_url: 'https://example.com/image.jpg'
+      }]
+    })
+  } as Response));
 }
 
-interface MockResponse {
-  ok: boolean;
-  status: number;
-  headers: Headers;
-  json: () => Promise<unknown>;
-}
-
-export function mockFetchResponse(data: unknown, options: MockOptions = {}): MockResponse {
-  const headers = new Headers({
-    'content-type': 'application/json',
-    ...(options.headers || {})
-  });
-
-  const response = {
-    ok: options.status ? options.status >= 200 && options.status < 300 : true,
-    status: options.status || 200,
-    headers,
+export function createMockResponse(status: number, data: unknown): Response {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    text: async () => JSON.stringify(data),
     json: async () => data
-  } as MockResponse;
-
-  // @ts-ignore - Ignore type checking for test mock
-  global.fetch = jest.fn(() => Promise.resolve(response));
-  return response;
-}
-
-export function setupIntegrationTest(): void {
-  // @ts-ignore - Ignore type checking for test setup
-  global.fetch = fetch;
-}
-
-export const mockRateLimiter = {
-  RateLimiter: jest.fn(() => ({
-    acquireToken: jest.fn(() => Promise.resolve({ value: undefined }))
-  }))
-}; 
+  } as Response;
+} 

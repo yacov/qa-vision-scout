@@ -1,18 +1,20 @@
 import { jest } from '@jest/globals';
-
-jest.mock('../browserstack-api', () => ({
-  generateScreenshots: jest.fn()
-}));
+import { generateScreenshots } from '../browserstack-api';
+import type { ScreenshotRequest } from '../browserstack-api';
 
 describe('index', () => {
-  let api: { generateScreenshots: jest.Mock };
-
   beforeEach(() => {
     jest.resetModules();
-    api = require('../browserstack-api');
   });
 
   it('should be properly configured', () => {
-    expect(jest.isMockFunction(api.generateScreenshots)).toBe(true);
+    const validInput: ScreenshotRequest = {
+      url: 'https://example.com',
+      resolution: 'WINDOWS',
+      waitTime: 5,
+      browsers: [{ os: 'Windows', os_version: '10', browser: 'chrome', browser_version: '90' }]
+    };
+
+    expect(() => generateScreenshots(validInput)).not.toThrow();
   });
 }); 

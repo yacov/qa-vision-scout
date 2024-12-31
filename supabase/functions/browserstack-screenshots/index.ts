@@ -2,7 +2,7 @@
 
 import { serve } from './types';
 import { corsHeaders } from '../_shared/cors';
-import { generateScreenshots } from './browserstack-api';
+import { generateScreenshots, type Browser } from './browserstack-api';
 import { normalizeOsConfig } from './os-config';
 import { logger } from './logger';
 import { z } from 'zod';
@@ -20,13 +20,23 @@ const BrowserstackConfigSchema = z.object({
   wait_time: z.number().min(1).max(60).optional(),
   orientation: z.enum(['portrait', 'landscape']).optional(),
 });
+
+interface RequestBody {
+  url: string;
+  browsers: any[];
+  quality?: number;
+  wait_time?: number;
+  orientation?: string;
+}
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const { url, browsers, quality, wait_time, orientation } = await req.json();
+    const { url, browsers, quality, wait_time, orientation } = await req.json() as RequestBody;
+    // @ts-ignore
     const requestId = crypto.randomUUID();
 
     logger.info({
@@ -43,22 +53,19 @@ serve(async (req: Request) => {
       orientation,
     });
 
-    const normalizedBrowsers = config.browsers.map(browser => normalizeOsConfig(browser));
+    const normalizedBrowsers = config.browsers
+      .map(browser => normalizeOsConfig(browser))
+      .filter(browser => browser.browser !== undefined) as Browser[];
 
-    const result = await generateScreenshots(
-      config.url,
-      normalizedBrowsers,
-      {
-        username: Deno.env.get('BROWSERSTACK_USERNAME')!,
-        password: Deno.env.get('BROWSERSTACK_ACCESS_KEY')!
-      },
-      {
-        quality: config.quality,
-        waitTime: config.wait_time,
-        orientation: config.orientation,
-      },
-      requestId
-    );
+    const result = await generateScreenshots({
+      url: config.url,
+      resolution: 'WINDOWS',
+      browsers: normalizedBrowsers,
+      waitTime: (config.wait_time || 5) as 2 | 5 | 10 | 15 | 20 | 60
+    }, {
+      username: Deno.env.get('BROWSERSTACK_USERNAME')!,
+      password: Deno.env.get('BROWSERSTACK_ACCESS_KEY')!
+    });
 
     return new Response(JSON.stringify(result), {
       headers: {

@@ -1,214 +1,202 @@
----
-created: 2024-12-30T10:31:06 (UTC +02:00)
-tags: []
-source: https://www.browserstack.com/screenshots/api#generate-screenshots
-author: 
----
+# BrowserStack Screenshots API Documentation (2024)
 
-# Screenshots API for Quick Testing on 3000+ Real Browsers | BrowserStack
+## Overview
+The Screenshots API enables automated creation of screenshots for any URL across multiple browsers and operating systems. This API supports cross-browser compatibility testing on desktop browsers and real mobile devices, with specific considerations for AI-based analysis.
 
-> ## Excerpt
-> Use Screenshots API to test your Website on Chrome, IE, Firefox and Safari for Cross Browser compatibility on desktop browsers and real mobile devices.
+## Important Limitations for AI Analysis
+Before implementing screenshot analysis with AI, be aware of these limitations:
 
----
-The Screenshots API allows headless creation of screenshots for a URL. The API allows selection of OS and browsers, starting and stopping screenshot generation.
+1. **Content Capture Limitations:**
+   - Cannot capture content from iframes from external websites
+   - Limited support for shadow-DOM elements
+   - Cannot capture canvas elements
+   - Cannot capture video sources (e.g., YouTube videos)
+   - Limited support for Mapbox and maps
 
+2. **Mobile Screenshot Limitations:**
+   - Maximum scroll limit of 10 for full-page screenshots on mobile devices
+   - Page height limitations may affect full-page captures
 
-### Authentication
+3. **Security Considerations:**
+   - Websites with strict Content Security Policy (CSP) may not be captured properly
+   - Some dynamic content may not render in screenshots
 
-All methods need to authenticate who you are before running any process. Authentication is done using your username and BrowserStack access key within the HTTP request. For example:
+## Authentication
+All API requests require authentication using your BrowserStack username and access key.
 
-```
-<span>$ curl </span><span>-</span><span>u </span><span>"iakovvolfkovich_F75ojQ:HYAZ4DUHsvFrouzKZqyj"</span><span> https</span><span>:</span><span>//www.browserstack.com/screenshots</span>
-```
-
-**Warning:** A 401 Unauthorized response is given if an unauthorized request is made.
-
-### Get list of available OS and browsers
-
-**Usage**
-
-```
-<span>GET </span><span>/</span><span>screenshots</span><span>/</span><span>browsers</span><span>.</span><span>json</span>
+```bash
+curl -u "username:access_key" https://www.browserstack.com/screenshots
 ```
 
-**Example**
+**Note:** Unauthorized requests will receive a 401 response.
 
-```
-<span>curl </span><span>-</span><span>u </span><span>"iakovvolfkovich_F75ojQ:HYAZ4DUHsvFrouzKZqyj"</span><span> </span><span>-</span><span>H </span><span>"Content-Type: application/json"</span><span> </span><span>-</span><span>H </span><span>"Accept: application/json"</span><span>  </span><span>-</span><span>d </span><span>'{"browsers": [{"os": "Windows", "os_version": "7", "browser_version": "8.0", "browser": "ie"}], "url": "http://google.com"}'</span><span> https</span><span>:</span><span>//www.browserstack.com/screenshots</span>
-```
+## API Endpoints
 
-**Response**
+### 1. Get Available Browsers and OS
+Lists all available operating systems and browsers for screenshot testing.
 
-```
-<span>[</span><span>
-  </span><span>{</span><span>
-    </span><span>"os"</span><span>:</span><span> </span><span>"Windows"</span><span>,</span><span>
-    </span><span>"os_version"</span><span>:</span><span> </span><span>"XP"</span><span>,</span><span>
-    </span><span>"browser"</span><span>:</span><span> </span><span>"chrome"</span><span>
-    </span><span>"browser_version"</span><span>:</span><span> </span><span>"21.0"</span><span>
-    </span><span>"device"</span><span>:</span><span> </span><span>null</span><span>
-  </span><span>}</span><span>
-  </span><span>{</span><span>
-    </span><span>"os"</span><span>:</span><span> </span><span>"ios"</span><span>,</span><span>
-    </span><span>"os_version"</span><span>:</span><span> </span><span>"6.0"</span><span>,</span><span>
-    </span><span>"browser"</span><span>:</span><span> </span><span>"Mobile Safari"</span><span>
-    </span><span>"browser_version"</span><span>:</span><span> </span><span>null</span><span>
-    </span><span>"device"</span><span>:</span><span> </span><span>"iPhone 4S (6.0)"</span><span>
-  </span><span>}</span><span>
-  </span><span>....</span><span>
-</span><span>]</span>
-```
+**Request:**
+- Method: `GET`
+- Endpoint: `/screenshots/browsers.json`
 
-### Generate screenshots for a URL
-
-| Parameters | Value |
-| --- | --- |
-| **url**  
-The URL of the desired page. | Example: www.example.com |
-| **os**  
-OS you want to test. | Windows, OS X, ios, android  
-Example: Windows |
-| **os\_version**  
-The OS version you want to test. | Example: 8.1 |
-| **browser**  
-The browser you want to test. | ie, chrome, firefox, safari, opera, Android Browser  
-Example: chrome |
-| **browser\_version**  
-The browser version you want to test. | Example: 31.0 |
-| **device**  
-Required if you want to test on a mobile device. | Example: iPhone 4S |
-| **orientation**  
-Required if specifying the screen orientation for the device. | portrait, landscape  
-**Default:** portrait |
-| **mac\_res**  
-Required if specifying the screen resolution for browsers on OSX. | **Default:** 1024x768  
-**Values:** 1024x768, 1280x960, 1280x1024, 1600x1200, 1920x1080 |
-| **win\_res**  
-Required if specifying the screen resolution for browsers on Windows. | **Default:** 1024x768  
-**Values:** 1024x768, 1280x1024 |
-| **quality**  
-Required if specifying the quality of the screenshot. | **Default:** Compressed  
-**Values:** Original, Compressed |
-| **local**  
-Required if the page is local and that a Local Testing connection has been set up. | **Default:** false  
-<small><strong>Values:</strong></small> true, false |
-| **wait\_time**  
-Required if specifying the time (in seconds) to wait before taking the screenshot. | **Default:** 5  
-**Values:** 2, 5, 10, 15, 20, 60 |
-| **callback\_url** | **Default:** nil  
-Required if results are to be sent back to a public URL |
-
-**Note:** If specified, the data will be posted to **callback\_url** , which must be a valid URL. The response contains a listing of all screenshots generated once processing has completed. Alternatively, the response is accessible using [GET /screenshots/<JOB-ID>.json](https://www.browserstack.com/screenshots/api#screenshots-states).
-
-**Usage**
-
-```
-<span>POST </span><span>/</span><span>screenshots
-</span><!-- <strong><span>The request should be a JSON POST.</span></strong> --><span>
-</span><span>{</span><span>
-  </span><span>"url"</span><span>:</span><span>"www.google.com"</span><span>,</span><span>
-  </span><span>"callback_url"</span><span>:</span><span> </span><span>"http://staging.example.com"</span><span>,</span><span>
-  </span><span>"win_res"</span><span>:</span><span> </span><span>"1024x768"</span><span>,</span><span>
-  </span><span>"mac_res"</span><span>:</span><span> </span><span>"1920x1080"</span><span>,</span><span>
-  </span><span>"quality"</span><span>:</span><span> </span><span>"compressed"</span><span>,</span><span>
-  </span><span>"wait_time"</span><span>:</span><span> </span><span>5</span><span>,</span><span>
-  </span><span>"orientation"</span><span>:</span><span> </span><span>"portrait"</span><span>,</span><span>
-  </span><span>"browsers"</span><span>:[</span><span>
-   </span><span>{</span><span>
-     </span><span>"os"</span><span>:</span><span>"Windows"</span><span>,</span><span>
-     </span><span>"os_version"</span><span>:</span><span>"XP"</span><span>,</span><span>
-     </span><span>"browser"</span><span>:</span><span>"ie"</span><span>,</span><span>
-     </span><span>"browser_version"</span><span>:</span><span>"7.0"</span><span>
-   </span><span>},</span><span>
-   </span><span>{</span><span>
-     </span><span>"os"</span><span>:</span><span>"ios"</span><span>,</span><span>
-     </span><span>"os_version"</span><span>:</span><span>"6.0"</span><span>,</span><span>
-     </span><span>"device"</span><span>:</span><span>"iPhone 4S (6.0)"</span><span>
-    </span><span>},</span><span>
-    </span><span>....</span><span>
-  </span><span>],</span><span>
-</span><span>}</span>
+**Response Example:**
+```json
+[
+  {
+    "os": "Windows",
+    "os_version": "10",
+    "browser": "chrome",
+    "browser_version": "121.0",
+    "device": null
+  },
+  {
+    "os": "ios",
+    "os_version": "17",
+    "browser": "Mobile Safari",
+    "browser_version": null,
+    "device": "iPhone 15"
+  }
+]
 ```
 
-**Response**
+### 2. Generate Screenshots
+Creates screenshots for a specified URL across selected browser configurations.
 
+**Request:**
+- Method: `POST`
+- Endpoint: `/screenshots`
+- Content-Type: `application/json`
+
+**Parameters:**
+
+| Parameter | Description | Values/Example |
+|-----------|-------------|----------------|
+| url | Target webpage URL | www.example.com |
+| os | Operating system | Windows, OS X, ios, android |
+| os_version | OS version | Example: "10" |
+| browser | Browser type | ie, chrome, firefox, safari, opera, Android Browser |
+| browser_version | Browser version | Example: "121.0" |
+| device | Mobile device name (required for mobile testing) | Example: "iPhone 15" |
+| orientation | Screen orientation for mobile devices | portrait, landscape (Default: portrait) |
+| mac_res | Screen resolution for OSX | 1024x768, 1280x960, 1280x1024, 1600x1200, 1920x1080 (Default: 1024x768) |
+| win_res | Screen resolution for Windows | 1024x768, 1280x1024 (Default: 1024x768) |
+| quality | Screenshot quality | Original, Compressed (Default: Compressed) |
+| local | Enable local testing connection | true, false (Default: false) |
+| wait_time | Wait time before screenshot (seconds) | 2, 5, 10, 15, 20, 60 (Default: 5) |
+| callback_url | URL for results notification | Optional |
+
+**Request Example:**
+```json
+{
+  "url": "www.example.com",
+  "callback_url": "http://your-callback-url.com",
+  "win_res": "1920x1080",
+  "quality": "original",
+  "wait_time": 10,
+  "browsers": [
+    {
+      "os": "Windows",
+      "os_version": "10",
+      "browser": "chrome",
+      "browser_version": "121.0"
+    },
+    {
+      "os": "ios",
+      "os_version": "17",
+      "device": "iPhone 15"
+    }
+  ]
+}
 ```
-<span>{</span><span>
-  </span><span>"job_id"</span><span>:</span><span>"13b93a14db22872fcb5fd1c86b730a51197db319"</span><span>,</span><span>
-  </span><span>"callback_url"</span><span>:</span><span> </span><span>"http://staging.example.com"</span><span>,</span><span>
-  </span><span>"win_res"</span><span>:</span><span> </span><span>"1024x768"</span><span>,</span><span>
-  </span><span>"mac_res"</span><span>:</span><span> </span><span>"1920x1080"</span><span>,</span><span>
-  </span><span>"quality"</span><span>:</span><span> </span><span>"compressed"</span><span>,</span><span>
-  </span><span>"wait_time"</span><span>:</span><span> </span><span>5</span><span>,</span><span>
-  </span><span>"orientation"</span><span>:</span><span> </span><span>"portrait"</span><span>,</span><span>
-  </span><span>"screenshots"</span><span>:</span><span> </span><span>[</span><span>
-   </span><span>{</span><span>
-     </span><span>"os"</span><span>:</span><span>"Windows"</span><span>,</span><span>
-     </span><span>"os_version"</span><span>:</span><span>"XP"</span><span>,</span><span>
-     </span><span>"browser"</span><span>:</span><span>"ie"</span><span>,</span><span>
-     </span><span>"id"</span><span>:</span><span>"be9989892cbba9b9edc2c95f403050aa4996ac6a"</span><span>,</span><span>
-     </span><span>"state"</span><span>:</span><span>"pending"</span><span>,</span><span>
-     </span><span>"browser_version"</span><span>:</span><span>"7.0"</span><span>,</span><span>
-     </span><span>"url"</span><span>:</span><span>"www.google.com"</span><span>
-   </span><span>},</span><span>
-   </span><span>{</span><span>
-     </span><span>"os"</span><span>:</span><span>"ios"</span><span>,</span><span>
-     </span><span>"os_version"</span><span>:</span><span>"6.0"</span><span>,</span><span>
-     </span><span>"id"</span><span>:</span><span>"1f3a6054e09592e239e9ea79c247b077e68d3d71"</span><span>,</span><span>
-     </span><span>"state"</span><span>:</span><span>"pending"</span><span>,</span><span>
-     </span><span>"device"</span><span>:</span><span>"iPhone 4S (6.0)"</span><span>,</span><span>
-     </span><span>"url"</span><span>:</span><span>"www.google.com"</span><span>
-   </span><span>}</span><span>
-  </span><span>....</span><span>
-  </span><span>]</span><span>
-</span><span>}</span>
+
+### 3. Check Screenshot Status
+Retrieves the status and details of a screenshot generation job.
+
+**Request:**
+- Method: `GET`
+- Endpoint: `/screenshots/<JOB-ID>.json`
+
+**Response Example:**
+```json
+{
+  "id": "job_id_here",
+  "state": "done",
+  "screenshots": [
+    {
+      "os": "Windows",
+      "os_version": "10",
+      "browser": "chrome",
+      "browser_version": "121.0",
+      "id": "screenshot_id_here",
+      "state": "done",
+      "url": "www.example.com",
+      "thumb_url": "https://www.browserstack.com/screenshots/job_id_here/thumb_win10_chrome_121.jpg",
+      "image_url": "https://www.browserstack.com/screenshots/job_id_here/win10_chrome_121.png",
+      "created_at": "2024-01-30 16:25:45 UTC"
+    }
+  ]
+}
 ```
 
-### Generate the list of screenshots and their states
+## Best Practices for AI Analysis
 
-**Usage**
+1. **Image Quality:**
+   - Use "Original" quality setting for better AI analysis accuracy
+   - Consider higher wait_time (10-15 seconds) for dynamic content to load fully
 
+2. **Resolution Selection:**
+   - Use consistent resolutions across tests for comparable results
+   - Prefer higher resolutions (e.g., 1920x1080) for desktop screenshots
+
+3. **Error Handling:**
+   - Always check the screenshot state before analysis
+   - Implement retry logic for failed screenshots
+   - Verify image URLs are accessible before processing
+
+4. **Performance Optimization:**
+   - Use the callback_url parameter for async processing
+   - Batch screenshot requests when possible
+   - Cache successful screenshots if reanalysis is needed
+
+## Integration Examples
+
+### Python Example using API Wrapper
+```python
+from browserstack_screenshots import Screenshots
+
+client = Screenshots('username', 'access_key')
+
+# Generate screenshots
+job_id = client.generate_screenshots('http://example.com', {
+    'browsers': [
+        {'os': 'Windows', 'os_version': '10', 'browser': 'chrome', 'browser_version': '121.0'},
+        {'os': 'ios', 'os_version': '17', 'device': 'iPhone 15'}
+    ],
+    'quality': 'original',
+    'wait_time': 10
+})
+
+# Get screenshots when complete
+screenshots = client.get_screenshots(job_id)
 ```
-<span>GET </span><span>/</span><span>screenshots</span><span>/&lt;</span><span>JOB</span><span>-</span><span>ID</span><span>&gt;.</span><span>json</span>
-```
 
-**Response**
+### Webhook Handler Example
+```python
+from flask import Flask, request
+import requests
 
-```
-<span>{</span><span>
-  </span><span>"id"</span><span>:</span><span>"13b93a14db22872fcb5fd1c86b730a51197db319"</span><span>,</span><span>
-  </span><span>"state"</span><span>:</span><span>"done"</span><span>,</span><span>
-  </span><span>"callback_url"</span><span>:</span><span> </span><span>"http://staging.example.com"</span><span>,</span><span>
-  </span><span>"win_res"</span><span>:</span><span> </span><span>"1024x768"</span><span>,</span><span>
-  </span><span>"mac_res"</span><span>:</span><span> </span><span>"1920x1080"</span><span>,</span><span>
-  </span><span>"quality"</span><span>:</span><span> </span><span>"compressed"</span><span>,</span><span>
-  </span><span>"wait_time"</span><span>:</span><span> </span><span>5</span><span>,</span><span>
-  </span><span>"screenshots"</span><span>:</span><span> </span><span>[</span><span>
-    </span><span>{</span><span>
-      </span><span>"os"</span><span>:</span><span>"Windows"</span><span>,</span><span>
-      </span><span>"os_version"</span><span>:</span><span>"XP"</span><span>,</span><span>
-      </span><span>"browser"</span><span>:</span><span>"ie"</span><span>,</span><span>
-      </span><span>"browser_version"</span><span>:</span><span>"7.0"</span><span>,</span><span>
-      </span><span>"id"</span><span>:</span><span>"be9989892cbba9b9edc2c95f403050aa4996ac6a"</span><span>,</span><span>
-      </span><span>"state"</span><span>:</span><span>"done"</span><span>,</span><span>
-      </span><span>"url"</span><span>:</span><span>"www.google.com"</span><span>,</span><span>
-      </span><span>"thumb_url"</span><span>:</span><span>"https://www.browserstack.com/screenshots/13b93a14db22872fcb5fd1c86b730a51197db319/thumb_winxp_ie_7.0.jpg"</span><span>,</span><span>
-      </span><span>"image_url"</span><span>:</span><span>"https://www.browserstack.com/screenshots/13b93a14db22872fcb5fd1c86b730a51197db319/winxp_ie_7.0.png"</span><span>,</span><span>
-      </span><span>"created_at"</span><span>:</span><span>"2013-03-14 16:25:45 UTC"</span><span>
-    </span><span>},</span><span>
-    </span><span>{</span><span>
-      </span><span>"os"</span><span>:</span><span>"Windows"</span><span>,</span><span>
-      </span><span>"os_version"</span><span>:</span><span>"7"</span><span>,</span><span>
-      </span><span>"browser"</span><span>:</span><span>"ie"</span><span>,</span><span>
-      </span><span>"browser_version"</span><span>:</span><span>"8.0"</span><span>,</span><span>
-      </span><span>"id"</span><span>:</span><span>"1f3a6054e09592e239e9ea79c247b077e68d3d71"</span><span>,</span><span>
-      </span><span>"state"</span><span>:</span><span>"done"</span><span>,</span><span>
-      </span><span>"url"</span><span>:</span><span>"www.google.com"</span><span>,</span><span>
-      </span><span>"thumb_url"</span><span>:</span><span>"https://www.browserstack.com/screenshots/13b93a14db22872fcb5fd1c86b730a51197db319/thumb_win7_ie_8.0.jpg"</span><span>,</span><span>
-      </span><span>"image_url"</span><span>:</span><span>"https://www.browserstack.com/screenshots/13b93a14db22872fcb5fd1c86b730a51197db319/win7_ie_8.0.png"</span><span>,</span><span>
-      </span><span>"created_at"</span><span>:</span><span>"2013-03-14 16:25:45 UTC"</span><span>
-    </span><span>}</span><span>
-   </span><span>]</span><span>
-</span><span>}</span>
+app = Flask(__name__)
+
+@app.route('/browserstack/callback', methods=['POST'])
+def handle_screenshots():
+    data = request.json
+    if data['state'] == 'done':
+        for screenshot in data['screenshots']:
+            if screenshot['state'] == 'done':
+                # Download screenshot for AI analysis
+                image_url = screenshot['image_url']
+                response = requests.get(image_url)
+                # Process image with your AI model
+                # analyze_image(response.content)
+    return '', 200
 ```

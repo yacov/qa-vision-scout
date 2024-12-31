@@ -1,20 +1,36 @@
+export interface RateLimiterOptions {
+  maxRetries?: number;
+  initialRetryDelay?: number;
+  backoffFactor?: number;
+}
+
 export class RateLimiter {
   private tokens: number;
   private lastRefill: number;
-  private readonly refillRate: number;
   private readonly maxTokens: number;
+  private readonly refillInterval: number;
+  private readonly options: Required<RateLimiterOptions>;
 
-  constructor(maxTokens: number = 5, refillRate: number = 1000) {
+  constructor(
+    maxTokens: number,
+    refillInterval: number,
+    options: RateLimiterOptions = {}
+  ) {
+    this.maxTokens = maxTokens;
     this.tokens = maxTokens;
     this.lastRefill = Date.now();
-    this.refillRate = refillRate;
-    this.maxTokens = maxTokens;
+    this.refillInterval = refillInterval;
+    this.options = {
+      maxRetries: options.maxRetries ?? 3,
+      initialRetryDelay: options.initialRetryDelay ?? 1000,
+      backoffFactor: options.backoffFactor ?? 2
+    };
   }
 
-  private refill() {
+  private refillTokens(): void {
     const now = Date.now();
     const timePassed = now - this.lastRefill;
-    const tokensToAdd = Math.floor(timePassed / this.refillRate);
+    const tokensToAdd = Math.floor(timePassed / this.refillInterval) * this.maxTokens;
     
     if (tokensToAdd > 0) {
       this.tokens = Math.min(this.maxTokens, this.tokens + tokensToAdd);
@@ -23,20 +39,24 @@ export class RateLimiter {
   }
 
   async acquireToken(): Promise<void> {
-    this.refill();
-    
-    if (this.tokens > 0) {
-      this.tokens--;
-      return Promise.resolve();
-    }
-    
-    return new Promise((resolve) => {
-      const waitTime = this.refillRate - (Date.now() - this.lastRefill);
-      setTimeout(() => {
-        this.refill();
+    let attempts = 0;
+    let delay = this.options.initialRetryDelay;
+
+    while (attempts < this.options.maxRetries) {
+      this.refillTokens();
+
+      if (this.tokens > 0) {
         this.tokens--;
-        resolve();
-      }, waitTime);
-    });
+        return;
+      }
+
+      attempts++;
+      if (attempts < this.options.maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, delay));
+        delay *= this.options.backoffFactor;
+      }
+    }
+
+    throw new Error('Rate limit exceeded');
   }
 } 

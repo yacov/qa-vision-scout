@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import type { ButtonProps as BaseButtonProps } from "@/components/ui/button";
 import { Loader2, Trash2, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +15,22 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useState } from "react";
+
+interface Config {
+  id: string;
+  name: string;
+  device_type: string;
+  os: string;
+  os_version: string;
+  browser?: string;
+  browser_version?: string;
+  device?: string;
+  is_active: boolean;
+}
+
+type ButtonProps = BaseButtonProps & {
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
+};
 
 export const ConfigurationsList = () => {
   const { toast } = useToast();
@@ -148,11 +165,11 @@ export const ConfigurationsList = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {configs.map((config) => (
+                {configs.map((config: Config) => (
                   <TableRow key={config.id}>
                     <TableCell>{config.name}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">
+                      <Badge className="outline">
                         {config.device_type}
                       </Badge>
                     </TableCell>
@@ -163,14 +180,13 @@ export const ConfigurationsList = () => {
                         : config.device}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={config.is_active ? "default" : "secondary"}>
+                      <Badge className={config.is_active ? "default" : "secondary"}>
                         {config.is_active ? "Active" : "Inactive"}
                       </Badge>
                     </TableCell>
                     <TableCell className="space-x-2">
                       <Button
-                        variant="outline"
-                        size="icon"
+                        className="bg-transparent border hover:bg-accent"
                         onClick={() => validateConfig.mutate(config.id)}
                         disabled={validateConfig.isPending}
                       >
@@ -181,8 +197,7 @@ export const ConfigurationsList = () => {
                         )}
                       </Button>
                       <Button
-                        variant="ghost"
-                        size="icon"
+                        className="hover:bg-accent hover:text-accent-foreground"
                         onClick={() => deleteConfig.mutate(config.id)}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -200,7 +215,7 @@ export const ConfigurationsList = () => {
 
       <Dialog 
         open={validationDialog.isOpen} 
-        onOpenChange={(open) => !open && setValidationDialog({ isOpen: false, data: null })}
+        onOpenChange={(open: boolean) => !open && setValidationDialog({ isOpen: false, data: null })}
       >
         <DialogContent>
           <DialogHeader>
@@ -215,7 +230,7 @@ export const ConfigurationsList = () => {
                   <div className="mt-2 space-x-2">
                     <Button
                       onClick={() => {
-                        const configId = configs?.find(c => c.id === validationDialog.data?.configId)?.id;
+                        const configId = configs?.find((c: Config) => c.id === validationDialog.data?.configId)?.id;
                         if (!configId) return;
                         updateConfig.mutate({
                           id: configId,
@@ -226,7 +241,7 @@ export const ConfigurationsList = () => {
                       Update Configuration
                     </Button>
                     <Button
-                      variant="outline"
+                      className="bg-transparent border hover:bg-accent"
                       onClick={() => setValidationDialog({ isOpen: false, data: null })}
                     >
                       Cancel

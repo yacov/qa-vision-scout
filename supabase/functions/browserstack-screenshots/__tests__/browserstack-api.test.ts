@@ -1,125 +1,120 @@
 import { jest } from '@jest/globals';
-import type { mockFetchResponse } from './test-utils';
+import { BrowserstackError, generateScreenshots, getBrowsers, type ScreenshotRequest } from '../browserstack-api';
+import { mockFetch } from './test-utils';
+import type { Response } from 'node-fetch';
 
-jest.mock('node-fetch');
+// Mock fetch globally
+global.fetch = mockFetch as unknown as typeof fetch;
 
-interface BrowserstackCredentials {
-  username: string;
-  password: string;
-}
-
-interface BrowserConfig {
-  os: string;
-  os_version: string;
-  browser?: string;
-  browser_version?: string;
-  device?: string;
-}
-
-interface ScreenshotOptions {
-  quality?: 'compressed' | 'original';
-  waitTime?: number;
-}
-
-const mockCredentials: BrowserstackCredentials = {
-  username: 'test-user',
-  password: 'test-key'
-};
-
-const mockBrowsersResponse = {
-  desktop: [
-    { os: 'Windows', os_version: '10', browser: 'chrome', browser_version: '100.0' }
-  ],
-  mobile: [
-    { os: 'ios', os_version: '15', device: 'iPhone 13' }
-  ]
-};
-
-const mockScreenshotResponse = {
-  job_id: 'test-job-id',
-  screenshots: [
-    { browser: 'chrome', browser_version: '100.0', os: 'Windows', os_version: '10', url: 'https://test.com' }
-  ]
-};
-
-describe('browserstack-api', () => {
-  let mockFetchResponse: typeof import('./test-utils').mockFetchResponse;
-  let getAvailableBrowsers: (credentials: BrowserstackCredentials, requestId: string) => Promise<typeof mockBrowsersResponse>;
-  let generateScreenshots: (url: string, browsers: BrowserConfig[], credentials: BrowserstackCredentials, options: ScreenshotOptions, requestId: string) => Promise<typeof mockScreenshotResponse>;
-
+describe('BrowserStack API', () => {
   beforeEach(() => {
-    jest.resetModules();
-    mockFetchResponse = require('./test-utils').mockFetchResponse;
-    const api = require('../browserstack-api');
-    getAvailableBrowsers = api.getAvailableBrowsers;
-    generateScreenshots = api.generateScreenshots;
+    jest.clearAllMocks();
   });
 
-  describe('getAvailableBrowsers', () => {
-    it('should fetch and return available browsers', async () => {
-      mockFetchResponse(mockBrowsersResponse);
-      
-      const browsers = await getAvailableBrowsers(mockCredentials, 'test-request-id');
-      
-      expect(browsers).toEqual(mockBrowsersResponse);
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/browsers'),
-        expect.any(Object)
-      );
+  describe('getBrowsers', () => {
+    it('should fetch available browsers successfully', async () => {
+      const mockResponse = [
+        { os: 'Windows', os_version: '10', browser: 'chrome', browser_version: '90' }
+      ];
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify(mockResponse)
+      } as Response);
+
+      const result = await getBrowsers();
+      expect(result).toEqual(mockResponse);
     });
 
-    it('should throw error on API failure', async () => {
-      mockFetchResponse({ message: 'API Error' }, { status: 500 });
-      
-      await expect(getAvailableBrowsers(mockCredentials, 'test-error-id')).rejects.toThrow('Failed to fetch available browsers');
+    it('should handle API errors', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        text: async () => JSON.stringify({ message: 'Unauthorized' })
+      } as Response);
+
+      await expect(getBrowsers()).rejects.toThrow(BrowserstackError);
     });
   });
 
   describe('generateScreenshots', () => {
-    const mockConfig = {
-      browsers: [
-        { os: 'Windows', os_version: '10', browser: 'chrome', browser_version: '100.0' }
-      ] as BrowserConfig[],
-      orientation: 'portrait' as const,
-      url: 'https://test.com'
-    };
-
-    const mockOptions: ScreenshotOptions = {
-      quality: 'compressed',
+    const validInput: ScreenshotRequest = {
+      url: 'https://example.com',
+      resolution: 'WINDOWS',
+      browsers: [{
+        os: 'Windows',
+        os_version: '10',
+        browser: 'chrome',
+        browser_version: '90'
+      }],
       waitTime: 5
     };
 
     it('should generate screenshots successfully', async () => {
-      mockFetchResponse(mockScreenshotResponse);
-      
-      const result = await generateScreenshots(
-        mockConfig.url,
-        mockConfig.browsers,
-        mockCredentials,
-        mockOptions,
-        'test-screenshot-id'
-      );
-      
-      expect(result).toEqual(mockScreenshotResponse);
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/generate'),
-        expect.objectContaining({
-          method: 'POST',
-          body: expect.any(String)
-        })
-      );
+      const mockResponse = {
+        job_id: 'test-job-id',
+        screenshots: [{
+          browser: 'chrome',
+          browser_version: '90',
+          os: 'Windows',
+          os_version: '10',
+          url: 'https://example.com',
+          thumb_url: 'https://example.com/thumb.jpg',
+          image_url: 'https://example.com/image.jpg'
+        }]
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify(mockResponse)
+      } as Response);
+
+      const result = await generateScreenshots(validInput);
+      expect(result).toEqual(mockResponse);
     });
 
-    it('should throw error on API failure', async () => {
-      mockFetchResponse({ message: 'API Error' }, { status: 500 });
-      
-      await expect(generateScreenshots(
-        mockConfig.url,
-        mockConfig.browsers,
-        mockCredentials,
-        mockOptions,
-        'test-error-id'
-      )).rejects.toThrow('Failed to generate screenshots');
+    it('should reject invalid resolution', async () => {
+      const invalidInput = {
+        ...validInput,
+        resolution: 'INVALID' as any
+      };
+
+      await expect(generateScreenshots(invalidInput)).rejects.toThrow('Invalid INVALID resolution');
+    });
+
+    it('should reject invalid wait time', async () => {
+      const invalidInput = {
+        ...validInput,
+        waitTime: 30 as any
+      };
+
+      await expect(generateScreenshots(invalidInput)).rejects.toThrow('Invalid wait time');
+    });
+
+    it('should handle API errors', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        text: async () => JSON.stringify({ message: 'Internal server error' })
+      } as Response);
+
+      await expect(generateScreenshots(validInput)).rejects.toThrow('Internal server error');
+    });
+
+    it('should handle rate limiting', async () => {
+      // Mock fetch to simulate rate limiting
+      global.fetch = jest.fn().mockImplementationOnce(async () => ({
+        ok: false,
+        status: 429,
+        text: async () => JSON.stringify({
+          message: 'Rate limit exceeded',
+          status_code: 429
+        })
+      } as Response)) as unknown as typeof fetch;
+
+      await expect(generateScreenshots(validInput)).rejects.toThrow('Rate limit exceeded');
     });
   });
 }); 

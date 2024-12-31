@@ -1,55 +1,32 @@
-/** @type {import('@jest/types').Config.InitialOptions} */
-module.exports = {
-  preset: 'ts-jest',
+import type { Config } from '@jest/types';
+
+const config: Config.InitialOptions = {
+  preset: 'ts-jest/presets/default-esm',
   testEnvironment: 'node',
-  moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1',
-  },
+  roots: ['<rootDir>/supabase/functions/browserstack-screenshots'],
   transform: {
-    '^.+\\.tsx?$': ['ts-jest', {
-      tsconfig: 'tsconfig.test.json',
-      isolatedModules: true
-    }],
+    '^.+\\.tsx?$': [
+      'ts-jest',
+      {
+        useESM: true,
+      },
+    ],
+  },
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+    '^node-fetch$': 'node-fetch/lib/index.js'
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(node-fetch|data-uri-to-buffer|fetch-blob|formdata-polyfill)/)'
+    'node_modules/(?!(node-fetch)/)'
   ],
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
-  testMatch: ['**/__tests__/**/*.test.ts'],
-  testPathIgnorePatterns: ['/node_modules/', '.*\\.integration\\.test\\.ts$'],
-  setupFiles: ['<rootDir>/jest.setup.ts'],
-  projects: [
-    {
-      displayName: 'unit',
-      preset: 'ts-jest',
-      testEnvironment: 'node',
-      testMatch: ['**/__tests__/**/*.test.ts'],
-      testPathIgnorePatterns: ['/node_modules/', '.*\\.integration\\.test\\.ts$'],
-      transform: {
-        '^.+\\.tsx?$': ['ts-jest', {
-          tsconfig: 'tsconfig.test.json',
-          isolatedModules: true
-        }],
-      },
-      transformIgnorePatterns: [
-        'node_modules/(?!(node-fetch|data-uri-to-buffer|fetch-blob|formdata-polyfill)/)'
-      ],
-    },
-    {
-      displayName: 'integration',
-      preset: 'ts-jest',
-      testEnvironment: 'node',
-      testMatch: ['**/__tests__/**/*.integration.test.ts'],
-      setupFiles: ['<rootDir>/jest.setup.integration.ts'],
-      transform: {
-        '^.+\\.tsx?$': ['ts-jest', {
-          tsconfig: 'tsconfig.test.json',
-          isolatedModules: true
-        }],
-      },
-      transformIgnorePatterns: [
-        'node_modules/(?!(node-fetch|data-uri-to-buffer|fetch-blob|formdata-polyfill)/)'
-      ],
-    },
+  testMatch: [
+    '**/__tests__/**/*.test.ts',
+    '**/__tests__/**/*.integration.test.ts'
   ],
-}; 
+  extensionsToTreatAsEsm: ['.ts'],
+  testTimeout: 10000,
+  maxConcurrency: 1,
+  maxWorkers: 1
+};
+
+module.exports = config; 

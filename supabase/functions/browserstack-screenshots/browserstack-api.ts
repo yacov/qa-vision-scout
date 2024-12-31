@@ -1,51 +1,48 @@
-import { z } from 'zod';
-import { RateLimiter } from './rate-limiter';
-import { logger } from './logger';
-
-const BROWSERSTACK_API_BASE = 'https://api.browserstack.com/screenshots/v1';
-const rateLimiter = new RateLimiter(5, 1000); // 5 requests per second
+import { v4 as uuidv4 } from 'uuid';
+import { 
+  VALID_RESOLUTIONS, 
+  VALID_WAIT_TIMES, 
+  type ResolutionType,
+  getResolutionForType
+} from './types';
+import type { Response } from 'node-fetch';
 
 export interface BrowserstackCredentials {
   username: string;
   password: string;
 }
 
-export interface BrowserConfig {
+export interface Browser {
   os: string;
   os_version: string;
-  browser?: string;
-  browser_version?: string | null;
-  device?: string | null;
-  real_mobile?: boolean | null;
+  browser: string;
+  browser_version: string;
 }
 
-export interface BrowserList {
-  desktop: BrowserConfig[];
-  mobile: BrowserConfig[];
-}
-
-export interface ScreenshotOptions {
-  quality?: 'compressed' | 'original';
-  waitTime?: number;
-  orientation?: 'portrait' | 'landscape';
-  callbackUrl?: string;
-  macResolution?: string;
-  windowsResolution?: string;
-  local?: boolean;
+export interface ScreenshotRequest {
+  url: string;
+  resolution: ResolutionType;
+  waitTime: typeof VALID_WAIT_TIMES[number];
+  browsers: Browser[];
 }
 
 export interface Screenshot {
-  url: string;
+  browser: string;
+  browser_version: string;
   os: string;
   os_version: string;
-  browser?: string;
-  browser_version?: string | null;
-  device?: string | null;
+  url: string;
+  thumb_url: string;
+  image_url: string;
 }
 
-export interface ScreenshotResult {
+export interface ScreenshotResponse {
   job_id: string;
   screenshots: Screenshot[];
+}
+
+export interface BrowserstackErrorResponse {
+  message?: string;
 }
 
 export class BrowserstackError extends Error {
@@ -60,257 +57,121 @@ export class BrowserstackError extends Error {
   }
 }
 
-const browserConfigSchema = z.object({
-  os: z.string(),
-  os_version: z.string(),
-  browser: z.string().optional(),
-  browser_version: z.string().nullable().optional(),
-  device: z.string().nullable().optional(),
-  real_mobile: z.boolean().nullable().optional(),
-});
+function validateResolution(resolution: ResolutionType, requestId: string): void {
+  // First check if the resolution type is valid
+  if (!VALID_RESOLUTIONS[resolution]) {
+    throw new BrowserstackError(
+      `Invalid ${resolution} resolution`,
+      400,
+      requestId
+    );
+  }
 
-const browserResponseSchema = z.array(browserConfigSchema);
-
-const screenshotSchema = z.object({
-  url: z.string(),
-  os: z.string(),
-  os_version: z.string(),
-  browser: z.string().optional(),
-  browser_version: z.string().nullable().optional(),
-  device: z.string().nullable().optional(),
-});
-
-const screenshotResultSchema = z.object({
-  job_id: z.string(),
-  screenshots: z.array(screenshotSchema),
-});
-
-const submitResponseSchema = z.object({
-  job_id: z.string(),
-});
-
-const jobStatusSchema = z.object({
-  job_id: z.string(),
-  state: z.enum(['queued', 'processing', 'done', 'error']),
-  message: z.string().optional(),
-  screenshots: z.array(screenshotSchema).optional(),
-});
-
-function getAuthorizationHeader(credentials: BrowserstackCredentials): string {
-  const authString = Buffer.from(`${credentials.username}:${credentials.password}`).toString('base64');
-  return `Basic ${authString}`;
+  const resolutionValue = getResolutionForType(resolution);
+  const validResolutions = VALID_RESOLUTIONS[resolution];
+  
+  if (!validResolutions.includes(resolutionValue as any)) {
+    throw new BrowserstackError(
+      `Invalid ${resolution} resolution: ${resolutionValue}. Must be one of: ${validResolutions.join(', ')}`,
+      400,
+      requestId
+    );
+  }
 }
 
-export async function getAvailableBrowsers(
-  credentials: BrowserstackCredentials,
-  requestId: string
-): Promise<BrowserList> {
-  try {
-    if (!credentials.username || !credentials.password) {
-      throw new BrowserstackError('Missing required credentials', 400, requestId);
-    }
-
-    await rateLimiter.acquireToken();
-
-    const response = await fetch(`${BROWSERSTACK_API_BASE}/browsers.json`, {
-      method: 'GET',
-      headers: {
-        'Authorization': getAuthorizationHeader(credentials),
-        'Accept': 'application/json',
-        'User-Agent': 'BrowserStack-Integration-Tests',
-      },
-    });
-
-    if (!response.ok) {
-      throw new BrowserstackError(
-        await response.text(),
-        response.status,
-        requestId,
-        { response }
-      );
-    }
-
-    const data = await response.json();
-    const browsers = browserResponseSchema.parse(data);
-
-    // Split browsers into desktop and mobile
-    const desktop = browsers.filter(browser => !browser.real_mobile && !browser.device);
-    const mobile = browsers.filter(browser => browser.real_mobile || browser.device);
-
-    return { desktop, mobile };
-  } catch (error) {
-    const browserStackError = error instanceof BrowserstackError
-      ? error
-      : new BrowserstackError(
-          error instanceof Error ? error.message : 'Unknown error occurred',
-          500,
-          requestId,
-          { originalError: error }
-        );
-
-    logger.error({
-      message: 'Error fetching available browsers',
-      error: browserStackError,
-      requestId,
-    });
-
-    throw browserStackError;
+function validateWaitTime(waitTime: typeof VALID_WAIT_TIMES[number], requestId: string): void {
+  if (!VALID_WAIT_TIMES.includes(waitTime)) {
+    throw new BrowserstackError(
+      `Invalid wait time: ${waitTime}. Must be one of: ${VALID_WAIT_TIMES.join(', ')}`,
+      400,
+      requestId
+    );
   }
+}
+
+async function handleBrowserstackResponse<T>(response: Response, requestId: string): Promise<T> {
+  // Handle rate limiting first
+  if (response.status === 429) {
+    throw new BrowserstackError(
+      'Rate limit exceeded',
+      response.status,
+      requestId
+    );
+  }
+
+  let responseData: unknown = null;
+  let responseText = '';
+
+  try {
+    responseText = await response.text();
+    if (responseText) {
+      responseData = JSON.parse(responseText);
+    }
+  } catch (e) {
+    // If we can't parse the response as JSON, throw an error with the raw text
+    throw new BrowserstackError(
+      'Invalid response format',
+      response.status,
+      requestId,
+      {
+        responseText,
+        error: e
+      }
+    );
+  }
+
+  // Handle other errors
+  if (!response.ok || !responseData) {
+    const errorData = responseData as BrowserstackErrorResponse;
+    const errorMessage = errorData?.message || 'Unknown error';
+    throw new BrowserstackError(
+      errorMessage,
+      response.status,
+      requestId,
+      { responseData }
+    );
+  }
+
+  return responseData as T;
+}
+
+export async function getBrowsers(credentials?: BrowserstackCredentials): Promise<Browser[]> {
+  const requestId = uuidv4();
+  const response = await fetch('https://api.browserstack.com/screenshots/browsers.json', {
+    headers: {
+      'Authorization': `Basic ${Buffer.from(`${credentials?.username || ''}:${credentials?.password || ''}`).toString('base64')}`,
+      'Content-Type': 'application/json'
+    }
+  }) as unknown as Response;
+
+  return handleBrowserstackResponse<Browser[]>(response, requestId);
 }
 
 export async function generateScreenshots(
-  url: string,
-  browsers: BrowserConfig[],
-  credentials: BrowserstackCredentials,
-  options: ScreenshotOptions = {},
-  requestId: string
-): Promise<ScreenshotResult> {
-  try {
-    // Validate required parameters
-    if (!url) {
-      throw new BrowserstackError('Missing required parameter: url', 400, requestId);
-    }
-    if (!Array.isArray(browsers) || browsers.length === 0) {
-      throw new BrowserstackError('Missing required parameter: browsers must be a non-empty array', 400, requestId);
-    }
-    if (!credentials.username || !credentials.password) {
-      throw new BrowserstackError('Missing required credentials', 400, requestId);
-    }
+  request: ScreenshotRequest,
+  credentials?: BrowserstackCredentials
+): Promise<ScreenshotResponse> {
+  const requestId = uuidv4();
 
-    await rateLimiter.acquireToken();
+  // Validate inputs before making API call
+  validateResolution(request.resolution, requestId);
+  validateWaitTime(request.waitTime, requestId);
 
-    // Step 1: Submit screenshot generation job
-    const requestBody = {
-      url,
-      quality: options.quality || 'compressed',
-      wait_time: options.waitTime || 5,
-      orientation: options.orientation || 'portrait',
-      callback_url: options.callbackUrl || 'https://example.com/callback',
-      mac_res: options.macResolution || '1920x1080',
-      win_res: options.windowsResolution || '1920x1080',
-      local: options.local || false,
-      browsers: browsers.map(browser => {
-        const config: Record<string, string | boolean | null> = {
-          os: browser.os,
-          os_version: browser.os_version,
-        };
+  const resolution = getResolutionForType(request.resolution);
+  const response = await fetch('https://api.browserstack.com/screenshots', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${Buffer.from(`${credentials?.username || ''}:${credentials?.password || ''}`).toString('base64')}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify({
+      url: request.url,
+      resolution,
+      wait_time: request.waitTime,
+      browsers: request.browsers
+    })
+  }) as unknown as Response;
 
-        if (browser.device) {
-          config.device = browser.device;
-          config.realMobile = true;
-        } else {
-          config.browser = browser.browser!;
-          config.browser_version = browser.browser_version || 'latest';
-        }
-
-        return config;
-      }),
-    };
-
-    logger.info({
-      message: 'Submitting screenshot generation request',
-      requestBody,
-      requestId,
-    });
-
-    const submitResponse = await fetch(`${BROWSERSTACK_API_BASE}`, {
-      method: 'POST',
-      headers: {
-        'Authorization': getAuthorizationHeader(credentials),
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'User-Agent': 'BrowserStack-Integration-Tests',
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!submitResponse.ok) {
-      const errorText = await submitResponse.text();
-      logger.error({
-        message: 'Screenshot generation request failed',
-        error: errorText,
-        status: submitResponse.status,
-        requestId,
-        responseText: errorText,
-      });
-      throw new BrowserstackError(
-        errorText || 'Failed to submit screenshot generation job',
-        submitResponse.status,
-        requestId,
-        { response: submitResponse, responseText: errorText }
-      );
-    }
-
-    const submitData = submitResponseSchema.parse(await submitResponse.json());
-    const jobId = submitData.job_id;
-
-    // Step 2: Poll for job completion
-    const maxAttempts = 30; // Maximum number of polling attempts
-    const pollInterval = 2000; // Poll every 2 seconds
-    let attempts = 0;
-
-    while (attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
-      await rateLimiter.acquireToken();
-
-      const statusResponse = await fetch(`${BROWSERSTACK_API_BASE}/${jobId}.json`, {
-        method: 'GET',
-        headers: {
-          'Authorization': getAuthorizationHeader(credentials),
-          'Accept': 'application/json',
-          'User-Agent': 'BrowserStack-Integration-Tests',
-        },
-      });
-
-      if (!statusResponse.ok) {
-        throw new BrowserstackError(
-          await statusResponse.text(),
-          statusResponse.status,
-          requestId,
-          { response: statusResponse }
-        );
-      }
-
-      const statusData = jobStatusSchema.parse(await statusResponse.json());
-      
-      if (statusData.state === 'done' && statusData.screenshots) {
-        return {
-          job_id: statusData.job_id,
-          screenshots: statusData.screenshots,
-        };
-      } else if (statusData.state === 'error') {
-        throw new BrowserstackError(
-          statusData.message || 'Screenshot generation failed',
-          500,
-          requestId,
-          { response: statusData }
-        );
-      }
-
-      attempts++;
-    }
-
-    throw new BrowserstackError(
-      'Screenshot generation timed out',
-      500,
-      requestId
-    );
-  } catch (error) {
-    const browserStackError = error instanceof BrowserstackError
-      ? error
-      : new BrowserstackError(
-          error instanceof Error ? error.message : 'Unknown error occurred',
-          500,
-          requestId,
-          { originalError: error }
-        );
-
-    logger.error({
-      message: 'Error generating screenshots',
-      error: browserStackError,
-      requestId,
-    });
-
-    throw browserStackError;
-  }
+  return handleBrowserstackResponse<ScreenshotResponse>(response, requestId);
 }
