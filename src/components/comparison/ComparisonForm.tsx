@@ -40,50 +40,63 @@ export const ComparisonForm = ({
 
   const createTest = useMutation({
     mutationFn: async () => {
-      // First create the test record
-      const { data: test, error: testError } = await supabase
-        .from('comparison_tests')
-        .insert({
-          baseline_url: baselineUrl,
-          new_url: newUrl,
-          user_id: '00000000-0000-0000-0000-000000000000',
-          status: 'pending'
-        })
-        .select()
-        .single();
+      try {
+        // First create the test record
+        const { data: test, error: testError } = await supabase
+          .from('comparison_tests')
+          .insert({
+            baseline_url: baselineUrl,
+            new_url: newUrl,
+            user_id: '00000000-0000-0000-0000-000000000000', // This should be replaced with actual user ID
+            status: 'pending'
+          })
+          .select()
+          .single();
 
-      if (testError) {
-        console.error("Error creating test:", testError);
-        throw new Error(testError.message);
+        if (testError) {
+          console.error("Error creating test:", testError);
+          throw new Error(testError.message);
+        }
+
+        if (!test) {
+          throw new Error('Failed to create test record');
+        }
+
+        // Get the selected configurations
+        const { data: configs, error: configError } = await supabase
+          .from('browserstack_configs')
+          .select('*')
+          .in('id', selectedConfigs);
+
+        if (configError) {
+          console.error("Error fetching configs:", configError);
+          throw new Error('Failed to fetch configurations');
+        }
+
+        if (!configs || configs.length === 0) {
+          throw new Error('No configurations found');
+        }
+
+        // Generate screenshots
+        const { error: screenshotError } = await supabase.functions
+          .invoke('browserstack-screenshots', {
+            body: {
+              testId: test.id,
+              url: baselineUrl,
+              selected_configs: configs
+            },
+          });
+
+        if (screenshotError) {
+          console.error("Screenshot generation error:", screenshotError);
+          throw new Error('Failed to generate screenshots');
+        }
+
+        return test;
+      } catch (error) {
+        console.error("Error in createTest:", error);
+        throw error;
       }
-
-      // Get the selected configurations
-      const { data: configs, error: configError } = await supabase
-        .from('browserstack_configs')
-        .select('*')
-        .in('id', selectedConfigs);
-
-      if (configError) {
-        console.error("Error fetching configs:", configError);
-        throw new Error('Failed to fetch configurations');
-      }
-
-      // Generate screenshots
-      const { error: screenshotError } = await supabase.functions
-        .invoke('browserstack-screenshots', {
-          body: {
-            testId: test.id,
-            url: baselineUrl,
-            selected_configs: configs
-          },
-        });
-
-      if (screenshotError) {
-        console.error("Screenshot generation error:", screenshotError);
-        throw new Error('Failed to generate screenshots');
-      }
-
-      return test;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comparison-tests'] });
@@ -107,6 +120,7 @@ export const ComparisonForm = ({
   });
 
   const handleCompare = () => {
+    // Validate URLs
     if (!baselineUrl || !newUrl) {
       toast({
         title: "Validation Error",
@@ -115,6 +129,21 @@ export const ComparisonForm = ({
       });
       return;
     }
+
+    // Validate URL format
+    try {
+      new URL(baselineUrl);
+      new URL(newUrl);
+    } catch (error) {
+      toast({
+        title: "Invalid URL",
+        description: "Please enter valid URLs for both baseline and new versions.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate configurations
     if (selectedConfigs.length === 0) {
       toast({
         title: "Validation Error",
@@ -123,6 +152,7 @@ export const ComparisonForm = ({
       });
       return;
     }
+
     createTest.mutate();
   };
 
