@@ -46,9 +46,9 @@ export const browserStackConfigSchema = z.object({
   deviceType: z.enum(["desktop", "mobile"]),
   os: z.string().min(1, "Operating System is required"),
   osVersion: z.string().min(1, "OS Version is required"),
-  browser: z.string().optional(),
-  browserVersion: z.string().optional(),
-  device: z.string().optional(),
+  browser: z.string().nullable(),
+  browserVersion: z.string().nullable(),
+  device: z.string().nullable(),
 });
 
 export type BrowserStackConfigFormData = z.infer<typeof browserStackConfigSchema>;
