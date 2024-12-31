@@ -191,9 +191,12 @@ export async function generateScreenshots(
   // Map browsers and handle versions
   const browsers = request.browsers.map(browser => {
     // For Chrome, find a supported version
-    if (browser.browser?.toLowerCase() === 'chrome') {
+    if (browser.browser && browser.browser.toLowerCase() === 'chrome' && browser.os) {
       const chromeVersions = availableBrowsers
-        .filter(b => b.browser?.toLowerCase() === 'chrome' && b.os?.toLowerCase() === browser.os?.toLowerCase())
+        .filter(b => b.browser && 
+                    b.browser.toLowerCase() === 'chrome' && 
+                    b.os && 
+                    b.os.toLowerCase() === browser.os.toLowerCase())
         .map(b => b.browser_version)
         .filter(v => v && v !== 'latest');
 
