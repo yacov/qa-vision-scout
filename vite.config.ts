@@ -1,28 +1,46 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import { fileURLToPath } from 'url';
-import { componentTagger } from "lovable-tagger";
+import path from 'path';
+import type { PluginOption } from 'vite';
 
-export default defineConfig(({ mode }) => ({
-  server: {
-    host: '0.0.0.0',
-    port: 3000,
-    open: true,
-    hmr: {
-      overlay: true,
+interface DevPlugin extends PluginOption {
+  name: string;
+  enforce: 'pre' | 'post';
+  apply: 'build' | 'serve';
+  transform: (code: string, id: string) => string;
+}
+
+export default defineConfig(({ mode }) => {
+  const devPlugin: DevPlugin = {
+    name: 'lovable-tagger',
+    enforce: 'pre',
+    apply: 'serve',
+    transform(code: string, id: string) {
+      if (id.includes('node_modules')) {
+        return code;
+      }
+      return code;
     },
-  },
-  plugins: [
-    react(),
-    {
-      ...componentTagger(),
-      enforce: 'pre',
-      apply: 'serve',
+  };
+
+  return {
+    server: {
+      host: '0.0.0.0',
+      port: 8080,
+      open: true,
+      hmr: {
+        overlay: true,
+      },
     },
-  ],
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    plugins: [
+      react(),
+      mode === 'development' && devPlugin,
+    ].filter(Boolean),
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+      },
     },
-  },
-}));
+  };
+});
