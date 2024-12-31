@@ -4,40 +4,14 @@ export interface Config {
   device_type: 'desktop' | 'mobile';
   os: string;
   os_version: string;
-  browser: string | null;
-  browser_version: string | null;
-  device: string | null;
+  browser?: string;
+  browser_version?: string;
+  device?: string;
   is_active: boolean;
-  created_at: string;
-  user_id: string;
+  is_predefined: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
-export interface ValidationResponse {
-  valid: boolean;
-  message: string;
-  configId?: string;
-  suggestion?: {
-    os_version?: string;
-    browser_version?: string;
-  };
-}
-
-export interface ValidationDialogState {
-  isOpen: boolean;
-  data: ValidationResponse | null;
-}
-
-export interface DatabaseConfig {
-  id: string;
-  name: string;
-  device_type: 'desktop' | 'mobile';
-  os: string;
-  os_version: string;
-  browser: string | null;
-  browser_version: string | null;
-  device: string | null;
-  is_active: boolean | null;
-  created_at: string | null;
-  user_id: string;
-  is_predefined: boolean | null;
-}
+export type ConfigMutationFn = (config: Config) => Promise<void>;
+export type ConfigSelectionFn = (config: Config) => void;

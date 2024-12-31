@@ -1,79 +1,54 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 import { ConfigCard } from "./ConfigCard";
 import { EditConfigDialog } from "./EditConfigDialog";
-import {
-  usePredefinedConfigs,
-  useConfigMutations,
-  useConfigSelection,
-  useConfigEditing,
-} from "./hooks";
+import { useConfigMutations, useConfigSelection, usePredefinedConfigs, useValidationDialog } from "./hooks";
 import type { Config } from "./types";
 
 export const PredefinedConfigs = () => {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { configs, isLoading } = usePredefinedConfigs();
-  const { updateConfig, verifyConfig } = useConfigMutations();
   const { selectedConfigs, toggleConfig } = useConfigSelection();
-  const {
-    editingConfig,
-    setEditingConfig,
-    verifyingConfig,
-    setVerifyingConfig,
-  } = useConfigEditing();
+  const { verifyConfig, updateConfig } = useConfigMutations();
+  const { showValidationDialog } = useValidationDialog();
 
-  const handleVerify = async (config: Config) => {
-    setVerifyingConfig(config.id);
-    try {
-      await verifyConfig(config);
-    } finally {
-      setVerifyingConfig(null);
-    }
+  const handleConfigSelect = async (config: Config) => {
+    await verifyConfig(config);
+    toggleConfig(config);
   };
-
-  const handleEdit = (config: Config) => {
-    setEditingConfig(config);
-  };
-
-  const handleSubmit = (data: any) => {
-    updateConfig.mutate({
-      ...data,
-      id: editingConfig?.id,
-    });
-    setEditingConfig(null);
-  };
-
-  if (isLoading) {
-    return <div>Loading configurations...</div>;
-  }
 
   return (
-    <>
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Predefined Configurations</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {configs?.map((config) => (
-              <ConfigCard
-                key={config.id}
-                config={config}
-                isSelected={selectedConfigs.includes(config.id)}
-                isVerifying={verifyingConfig === config.id}
-                onToggle={toggleConfig}
-                onVerify={handleVerify}
-                onEdit={handleEdit}
-              />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Predefined Configurations</CardTitle>
+        <Button onClick={() => setIsDialogOpen(true)} variant="outline" size="icon">
+          <Plus className="h-4 w-4" />
+        </Button>
+      </CardHeader>
+      <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {isLoading ? (
+          <p>Loading configurations...</p>
+        ) : configs?.length ? (
+          configs.map((config) => (
+            <ConfigCard
+              key={config.id}
+              config={config}
+              isSelected={selectedConfigs.some((c) => c.id === config.id)}
+              onSelect={() => handleConfigSelect(config)}
+              onEdit={() => showValidationDialog(config)}
+              onUpdate={updateConfig}
+            />
+          ))
+        ) : (
+          <p>No configurations found</p>
+        )}
+      </CardContent>
       <EditConfigDialog
-        isOpen={!!editingConfig}
-        onOpenChange={(open) => !open && setEditingConfig(null)}
-        config={editingConfig}
-        onSubmit={handleSubmit}
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
       />
-    </>
+    </Card>
   );
 };
