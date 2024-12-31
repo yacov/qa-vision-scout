@@ -1,0 +1,2 @@
+[functions.browserstack-screenshots]
+verify_jwt = false
