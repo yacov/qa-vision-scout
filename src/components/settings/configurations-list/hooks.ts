@@ -1,8 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import type { Config, ValidationResponse } from "../types";
 import { useState } from "react";
-import type { Config, ValidationResponse, ValidationDialogState } from "../types";
+
+interface ValidationDialogState {
+  isOpen: boolean;
+  data: ValidationResponse | null;
+}
 
 export const useConfigurations = () => {
   const { data: configs, isLoading } = useQuery({
@@ -64,7 +69,7 @@ export const useConfigurationMutations = () => {
         throw new Error('Failed to validate configuration');
       }
       
-      return response.json() as Promise<ValidationResponse>;
+      return response.json();
     },
     onError: () => {
       toast({
@@ -126,5 +131,9 @@ export const useValidationDialog = () => {
     });
   };
 
-  return { validationDialog, openValidationDialog, closeValidationDialog };
+  return {
+    validationDialog,
+    openValidationDialog,
+    closeValidationDialog,
+  };
 };

@@ -14,7 +14,11 @@ interface ValidationDialogProps {
   onUpdate: (suggestion: { os_version?: string; browser_version?: string }) => void;
 }
 
-export const ValidationDialog = ({ dialog, onClose, onUpdate }: ValidationDialogProps) => {
+export const ValidationDialog = ({
+  dialog,
+  onClose,
+  onUpdate,
+}: ValidationDialogProps) => {
   return (
     <Dialog open={dialog.isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent>

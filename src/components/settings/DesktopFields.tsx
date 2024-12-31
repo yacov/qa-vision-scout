@@ -17,7 +17,7 @@ export const DesktopFields = ({ form }: DesktopFieldsProps) => {
           <FormItem>
             <FormLabel>Browser</FormLabel>
             <FormControl>
-              <Input placeholder="e.g., chrome, firefox, safari" {...field} />
+              <Input placeholder="e.g., chrome, firefox, safari" {...field} value={field.value || ''} />
             </FormControl>
           </FormItem>
         )}
@@ -30,7 +30,7 @@ export const DesktopFields = ({ form }: DesktopFieldsProps) => {
           <FormItem>
             <FormLabel>Browser Version</FormLabel>
             <FormControl>
-              <Input placeholder="e.g., 121.0, latest" {...field} />
+              <Input placeholder="e.g., 121.0, latest" {...field} value={field.value || ''} />
             </FormControl>
           </FormItem>
         )}
