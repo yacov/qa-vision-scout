@@ -4,14 +4,32 @@ export interface Config {
   device_type: 'desktop' | 'mobile';
   os: string;
   os_version: string;
-  browser?: string;
-  browser_version?: string;
-  device?: string;
-  is_active: boolean;
-  is_predefined: boolean;
+  browser: string | null;
+  browser_version: string | null;
+  device: string | null;
+  is_active: boolean | null;
   created_at?: string;
   updated_at?: string;
+  user_id: string;
+  is_predefined?: boolean;
 }
 
-export type ConfigMutationFn = (config: Config) => Promise<void>;
-export type ConfigSelectionFn = (config: Config) => void;
+export interface EditConfigDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export interface ValidationResponse {
+  valid: boolean;
+  message: string;
+  configId?: string;
+  suggestion?: {
+    os_version?: string;
+    browser_version?: string;
+  };
+}
+
+export interface ValidationDialogState {
+  isOpen: boolean;
+  data: ValidationResponse | null;
+}
