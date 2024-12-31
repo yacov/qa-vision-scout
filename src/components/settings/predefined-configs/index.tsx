@@ -18,6 +18,10 @@ export const PredefinedConfigs = () => {
     toggleConfig(config.id);
   };
 
+  const handleUpdate = (config: Config) => {
+    updateConfig.mutate(config);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -34,7 +38,7 @@ export const PredefinedConfigs = () => {
               isSelected={selectedConfigs.includes(config.id)}
               onSelect={() => handleConfigSelect(config)}
               onEdit={() => openValidationDialog({ valid: true, message: "", configId: config.id })}
-              onUpdate={updateConfig}
+              onUpdate={() => handleUpdate(config)}
             />
           ))
         ) : (

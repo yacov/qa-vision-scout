@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { UseMutationResult } from "@tanstack/react-query";
 
 export type DeviceType = "desktop" | "mobile";
 
@@ -51,6 +52,21 @@ export const browserStackConfigSchema = z.object({
 });
 
 export type BrowserStackConfigFormData = z.infer<typeof browserStackConfigSchema>;
+
+export interface ValidationResponse {
+  valid: boolean;
+  message: string;
+  configId?: string;
+  suggestion?: {
+    os_version?: string;
+    browser_version?: string;
+  };
+}
+
+export interface ValidationDialogState {
+  isOpen: boolean;
+  data: ValidationResponse | null;
+}
 
 export interface ConfigCardProps {
   config: Config;
