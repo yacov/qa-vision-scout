@@ -1,21 +1,21 @@
+import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TableCell, TableRow } from "@/components/ui/table";
 import { Loader2, Trash2, CheckCircle } from "lucide-react";
 import type { Config } from "../types";
 
 interface ConfigurationRowProps {
   config: Config;
-  isValidating: boolean;
   onValidate: (id: string) => void;
   onDelete: (id: string) => void;
+  isValidating: boolean;
 }
 
 export const ConfigurationRow = ({
   config,
-  isValidating,
   onValidate,
   onDelete,
+  isValidating,
 }: ConfigurationRowProps) => {
   return (
     <TableRow key={config.id}>

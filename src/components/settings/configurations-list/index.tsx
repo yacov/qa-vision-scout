@@ -4,7 +4,6 @@ import { Loader2 } from "lucide-react";
 import { ConfigurationRow } from "./ConfigurationRow";
 import { ValidationDialog } from "./ValidationDialog";
 import { useConfigurations, useConfigurationMutations, useValidationDialog } from "./hooks";
-import type { Config } from "../types";
 
 export const ConfigurationsList = () => {
   const { configs, isLoading } = useConfigurations();
@@ -26,62 +25,50 @@ export const ConfigurationsList = () => {
     closeValidationDialog();
   };
 
-  const renderContent = () => {
-    if (isLoading) {
-      return (
-        <div className="flex justify-center p-4">
-          <Loader2 className="h-6 w-6 animate-spin" />
-        </div>
-      );
-    }
-
-    if (!configs || configs.length === 0) {
-      return <p className="text-center text-muted-foreground">No configurations found</p>;
-    }
-
-    return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>OS</TableHead>
-            <TableHead>Browser/Device</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {configs.map((config: Config) => (
-            <ConfigurationRow
-              key={config.id}
-              config={config}
-              isValidating={validateConfig.isPending}
-              onValidate={handleValidate}
-              onDelete={(id) => deleteConfig.mutate(id)}
-            />
-          ))}
-        </TableBody>
-      </Table>
-    );
-  };
-
   return (
-    <>
-      <Card>
-        <CardHeader>
-          <CardTitle>Saved Configurations</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {renderContent()}
-        </CardContent>
-      </Card>
+    <Card>
+      <CardHeader>
+        <CardTitle>Saved Configurations</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex justify-center p-4">
+            <Loader2 className="h-6 w-6 animate-spin" />
+          </div>
+        ) : configs?.length ? (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>OS</TableHead>
+                <TableHead>Browser/Device</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {configs.map((config) => (
+                <ConfigurationRow
+                  key={config.id}
+                  config={config}
+                  onValidate={handleValidate}
+                  onDelete={(id) => deleteConfig.mutate(id)}
+                  isValidating={validateConfig.isPending}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <p className="text-center text-muted-foreground">No configurations found</p>
+        )}
+      </CardContent>
 
       <ValidationDialog
         dialog={validationDialog}
         onClose={closeValidationDialog}
         onUpdate={handleUpdate}
       />
-    </>
+    </Card>
   );
 };

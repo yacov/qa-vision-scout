@@ -19,6 +19,28 @@ export interface DatabaseConfig {
 
 export type Config = DatabaseConfig;
 
+export interface Test {
+  id: string;
+  user_id: string;
+  baseline_url: string;
+  new_url: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'failed';
+  created_at: string | null;
+  updated_at: string | null;
+  test_screenshots?: TestScreenshot[];
+}
+
+export interface TestScreenshot {
+  id: string;
+  test_id: string;
+  device_name: string;
+  os_version: string;
+  baseline_screenshot_url: string | null;
+  new_screenshot_url: string | null;
+  diff_percentage: number | null;
+  created_at: string | null;
+}
+
 export const browserStackConfigSchema = z.object({
   name: z.string().min(1, "Name is required"),
   deviceType: z.enum(["desktop", "mobile"]),
@@ -44,4 +66,10 @@ export interface ValidationResponse {
 export interface ValidationDialogState {
   isOpen: boolean;
   data: ValidationResponse | null;
+}
+
+export interface EditConfigDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  config?: Config;
 }

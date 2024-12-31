@@ -1,11 +1,11 @@
-import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 import type { Config, ValidationResponse, ValidationDialogState } from "../types";
 
 export const useConfigurations = () => {
-  const { data: configs, isLoading } = useQuery<Config[]>({
+  const { data: configs, isLoading } = useQuery({
     queryKey: ['browserstack-configs'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -14,7 +14,7 @@ export const useConfigurations = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data ?? [];
+      return data as Config[];
     }
   });
 
@@ -22,8 +22,8 @@ export const useConfigurations = () => {
 };
 
 export const useConfigurationMutations = () => {
-  const queryClient = useQueryClient();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const deleteConfig = useMutation({
     mutationFn: async (id: string) => {
@@ -64,7 +64,7 @@ export const useConfigurationMutations = () => {
         throw new Error('Failed to validate configuration');
       }
       
-      return response.json();
+      return response.json() as Promise<ValidationResponse>;
     },
     onError: () => {
       toast({
@@ -79,7 +79,10 @@ export const useConfigurationMutations = () => {
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
       const { error } = await supabase
         .from('browserstack_configs')
-        .update(data)
+        .update({
+          os_version: data.os_version,
+          browser_version: data.browser_version,
+        })
         .eq('id', id);
 
       if (error) throw error;
@@ -123,9 +126,5 @@ export const useValidationDialog = () => {
     });
   };
 
-  return {
-    validationDialog,
-    openValidationDialog,
-    closeValidationDialog,
-  };
+  return { validationDialog, openValidationDialog, closeValidationDialog };
 };

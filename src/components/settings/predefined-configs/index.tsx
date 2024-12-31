@@ -6,47 +6,44 @@ import { useConfigMutations, useConfigSelection, usePredefinedConfigs } from "./
 import type { Config } from "../types";
 
 export const PredefinedConfigs = () => {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingConfig, setEditingConfig] = useState<Config | undefined>(undefined);
   const { configs, isLoading } = usePredefinedConfigs();
   const { selectedConfigs, toggleConfig } = useConfigSelection();
   const { verifyConfig, updateConfig } = useConfigMutations();
 
   const handleConfigSelect = async (config: Config) => {
-    const validationResult = await verifyConfig.mutateAsync(config);
     toggleConfig(config.id);
   };
 
-  const handleUpdate = (config: Config) => {
-    updateConfig.mutate(config);
-  };
+  if (isLoading) {
+    return <div>Loading configurations...</div>;
+  }
 
   return (
-    <Card>
+    <Card className="mb-6">
       <CardHeader>
         <CardTitle>Predefined Configurations</CardTitle>
       </CardHeader>
-      <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {isLoading ? (
-          <p>Loading configurations...</p>
-        ) : configs?.length ? (
-          configs.map((config) => (
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {configs?.map((config) => (
             <ConfigCard
               key={config.id}
               config={config}
               isSelected={selectedConfigs.includes(config.id)}
               onSelect={() => handleConfigSelect(config)}
-              onEdit={() => setIsDialogOpen(true)}
+              onEdit={() => setEditingConfig(config)}
               onVerify={() => verifyConfig.mutate(config)}
               isVerifying={verifyConfig.isPending}
             />
-          ))
-        ) : (
-          <p>No configurations found</p>
-        )}
+          ))}
+        </div>
       </CardContent>
+
       <EditConfigDialog
-        open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
+        open={!!editingConfig}
+        onOpenChange={(open) => !open && setEditingConfig(undefined)}
+        config={editingConfig}
       />
     </Card>
   );
