@@ -21,7 +21,7 @@ class Logger {
   error(context: LogContext): void {
     const formattedContext = {
       ...context,
-      error: formatError(context.error),
+      error: context.error ? formatError(context.error) : undefined,
       timestamp: new Date().toISOString(),
     };
     console.error(JSON.stringify(formattedContext, null, 2));
@@ -40,4 +40,4 @@ class Logger {
   }
 }
 
-export const logger = new Logger(); 
+export const logger = new Logger();

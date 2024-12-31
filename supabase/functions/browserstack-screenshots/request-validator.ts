@@ -1,6 +1,7 @@
-import { logger } from "./logger";
+import { logger } from "./logger.ts";
 
 interface RequestData {
+  testId?: string;
   url?: string;
   selected_configs?: Array<{
     device_type: 'desktop' | 'mobile';
