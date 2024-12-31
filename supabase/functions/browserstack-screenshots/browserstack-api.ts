@@ -19,16 +19,50 @@ export async function getBrowsers(
     requestId
   });
 
-  const auth = btoa(`${credentials.username}:${credentials.password}`);
-  const response = await fetch('https://www.browserstack.com/screenshots/browsers.json', {
-    headers: {
-      'Authorization': `Basic ${auth}`,
-      'Content-Type': 'application/json'
-    }
-  });
+  if (!credentials?.username || !credentials?.password) {
+    throw new BrowserstackError(
+      'Missing Browserstack credentials',
+      400,
+      requestId
+    );
+  }
 
-  const data = await handleBrowserstackResponse<BrowsersResponse>(response, requestId);
-  return data.browsers;
+  const auth = btoa(`${credentials.username}:${credentials.password}`);
+  
+  try {
+    const response = await fetch('https://www.browserstack.com/screenshots/browsers.json', {
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const data = await handleBrowserstackResponse<BrowsersResponse>(response, requestId);
+    
+    if (!data?.browsers || !Array.isArray(data.browsers)) {
+      throw new BrowserstackError(
+        'Invalid response format from Browserstack API',
+        500,
+        requestId,
+        { data }
+      );
+    }
+
+    logger.info({
+      message: 'Successfully fetched browsers',
+      requestId,
+      browserCount: data.browsers.length
+    });
+
+    return data.browsers;
+  } catch (error) {
+    logger.error({
+      message: 'Failed to fetch browsers from Browserstack',
+      requestId,
+      error
+    });
+    throw error;
+  }
 }
 
 export async function generateScreenshots(
@@ -42,8 +76,26 @@ export async function generateScreenshots(
   }
 
   // First, get available browsers
-  const availableBrowsers = await getBrowsers(credentials, requestId);
-  
+  let availableBrowsers: Browser[];
+  try {
+    availableBrowsers = await getBrowsers(credentials, requestId);
+    
+    if (!availableBrowsers || !Array.isArray(availableBrowsers) || availableBrowsers.length === 0) {
+      throw new BrowserstackError(
+        'No browsers available from Browserstack',
+        500,
+        requestId
+      );
+    }
+  } catch (error) {
+    logger.error({
+      message: 'Failed to get available browsers',
+      requestId,
+      error
+    });
+    throw error;
+  }
+
   // Map browsers and handle versions
   const browsers = request.browsers.map(browser => {
     if (!browser.os || !browser.browser) {
