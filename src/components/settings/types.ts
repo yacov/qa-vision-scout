@@ -1,20 +1,6 @@
 import { z } from "zod";
-import { z } from "zod";
-import type { UseMutationResult } from "@tanstack/react-query";
 
 export type DeviceType = "desktop" | "mobile";
-
-export const browserStackConfigSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  device_type: z.enum(["desktop", "mobile"]),
-  os: z.string().min(1, "OS is required"),
-  os_version: z.string().min(1, "OS version is required"),
-  browser: z.string().optional(),
-  browser_version: z.string().optional(),
-  device: z.string().optional(),
-});
-
-export type BrowserStackConfigFormData = z.infer<typeof browserStackConfigSchema>;
 
 export interface Config {
   id: string;
@@ -28,7 +14,29 @@ export interface Config {
   is_active: boolean | null;
   created_at: string | null;
   user_id: string;
-  is_predefined?: boolean | null;
+  is_predefined: boolean | null;
+}
+
+export interface Test {
+  id: string;
+  user_id: string;
+  baseline_url: string;
+  new_url: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'failed';
+  created_at: string | null;
+  updated_at: string | null;
+  test_screenshots?: TestScreenshot[];
+}
+
+export interface TestScreenshot {
+  id: string;
+  test_id: string;
+  device_name: string;
+  os_version: string;
+  baseline_screenshot_url: string | null;
+  new_screenshot_url: string | null;
+  diff_percentage: number | null;
+  created_at: string | null;
 }
 
 export const browserStackConfigSchema = z.object({
@@ -42,3 +50,24 @@ export const browserStackConfigSchema = z.object({
 });
 
 export type BrowserStackConfigFormData = z.infer<typeof browserStackConfigSchema>;
+
+export interface ValidationResponse {
+  valid: boolean;
+  message: string;
+  configId?: string;
+  suggestion?: {
+    os_version?: string;
+    browser_version?: string;
+  };
+}
+
+export interface ValidationDialogState {
+  isOpen: boolean;
+  data: ValidationResponse | null;
+}
+
+export interface EditConfigDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  config?: Config;
+}
