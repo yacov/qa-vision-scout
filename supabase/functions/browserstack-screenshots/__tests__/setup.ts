@@ -1,4 +1,4 @@
-import { vi } from 'vitest';
+import { vi, beforeEach } from 'vitest';
 import type { ScreenshotSettings, BrowserConfig } from '../types';
 import type { RequestInfo, HeadersInit } from 'node-fetch';
 import { Response } from 'node-fetch';

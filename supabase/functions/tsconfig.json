@@ -18,7 +18,7 @@
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,
     "verbatimModuleSyntax": true,
-    "types": ["node", "vitest"]
+    "types": ["node"]
   },
   "include": ["**/*.ts"],
   "exclude": ["node_modules", "dist"]

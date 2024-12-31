@@ -1,3 +1,5 @@
+import { vi } from 'vitest';
+
 // Mock Deno.env
 export const env = {
   get: vi.fn((key: string) => {
