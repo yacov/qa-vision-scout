@@ -1,9 +1,9 @@
-import { defineConfig } from "vite";
+import { defineConfig, type ConfigEnv, type UserConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode }: ConfigEnv): UserConfig => ({
   server: {
     host: "::",
     port: 8080,
@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => ({
     }),
     mode === 'development' && {
       ...componentTagger(),
-      enforce: 'pre'
+      enforce: 'pre' as const
     }
   ].filter(Boolean),
   resolve: {

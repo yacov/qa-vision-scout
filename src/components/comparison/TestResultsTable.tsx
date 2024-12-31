@@ -3,14 +3,11 @@ import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Badge, type BadgeProps } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
+import type { Test } from "@/components/settings/types";
 
-interface Test {
-  id: string;
-  baseline_url: string;
-  new_url: string;
-  status: string;
-  created_at: string;
+interface TestResultsTableProps {
+  onTestSelect?: (baselineUrl: string, newUrl: string) => void;
 }
 
 const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" => {
@@ -26,10 +23,6 @@ const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destr
   }
 };
 
-interface TestResultsTableProps {
-  onTestSelect?: (baselineUrl: string, newUrl: string) => void;
-}
-
 export const TestResultsTable = ({ onTestSelect }: TestResultsTableProps) => {
   const { data: tests, isLoading: testsLoading } = useQuery({
     queryKey: ['comparison-tests'],
@@ -40,7 +33,7 @@ export const TestResultsTable = ({ onTestSelect }: TestResultsTableProps) => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data;
+      return data as Test[];
     }
   });
 
@@ -65,7 +58,7 @@ export const TestResultsTable = ({ onTestSelect }: TestResultsTableProps) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tests.map((test: Test) => (
+              {tests.map((test) => (
                 <TableRow 
                   key={test.id}
                   className="cursor-pointer hover:bg-muted"
@@ -74,7 +67,7 @@ export const TestResultsTable = ({ onTestSelect }: TestResultsTableProps) => {
                   <TableCell className="truncate max-w-xs">{test.baseline_url}</TableCell>
                   <TableCell className="truncate max-w-xs">{test.new_url}</TableCell>
                   <TableCell>
-                    <Badge className={getStatusBadgeVariant(test.status || 'unknown')}>
+                    <Badge variant={getStatusBadgeVariant(test.status)}>
                       {test.status}
                     </Badge>
                   </TableCell>
