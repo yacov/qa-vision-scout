@@ -1,49 +1,19 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Check, Edit2, Shield } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { browserStackConfigSchema } from "./types";
 import { supabase } from "@/integrations/supabase/client";
-
-interface Config {
-  id: string;
-  name: string;
-  device_type: string;
-  os: string;
-  os_version: string;
-  browser?: string;
-  browser_version?: string;
-  device?: string;
-}
+import { EditConfigDialog } from "./predefined-configs/EditConfigDialog";
+import type { Config } from "./types";
 
 export const PredefinedConfigs = () => {
   const [selectedConfigs, setSelectedConfigs] = useState<string[]>([]);
-  const [editingConfig, setEditingConfig] = useState<any>(null);
+  const [editingConfig, setEditingConfig] = useState<Config | null>(null);
   const [verifyingConfig, setVerifyingConfig] = useState<string | null>(null);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  const form = useForm({
-    resolver: zodResolver(browserStackConfigSchema),
-    defaultValues: {
-      name: "",
-      deviceType: "desktop",
-      os: "",
-      osVersion: "",
-      browser: "",
-      browserVersion: "",
-      device: "",
-    },
-  });
 
   const { data: configs, isLoading } = useQuery({
     queryKey: ['predefined-configs'],
@@ -55,43 +25,8 @@ export const PredefinedConfigs = () => {
         .order('created_at', { ascending: true });
       
       if (error) throw error;
-      return data;
+      return data as Config[];
     }
-  });
-
-  const updateConfig = useMutation({
-    mutationFn: async (data: any) => {
-      const { error } = await supabase
-        .from('browserstack_configs')
-        .update({
-          name: data.name,
-          device_type: data.deviceType,
-          os: data.os,
-          os_version: data.osVersion,
-          browser: data.deviceType === 'desktop' ? data.browser : null,
-          browser_version: data.deviceType === 'desktop' ? data.browserVersion : null,
-          device: data.deviceType === 'mobile' ? data.device : null,
-        })
-        .eq('id', editingConfig.id);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['predefined-configs'] });
-      toast({
-        title: "Configuration updated",
-        description: "The configuration has been successfully updated.",
-      });
-      setEditingConfig(null);
-      form.reset();
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to update configuration. Please try again.",
-        variant: "destructive",
-      });
-    },
   });
 
   const verifyConfig = async (config: any) => {
@@ -127,27 +62,6 @@ export const PredefinedConfigs = () => {
     );
   };
 
-  const handleEdit = (config: any) => {
-    setEditingConfig(config);
-    form.reset({
-      name: config.name,
-      deviceType: config.device_type,
-      os: config.os,
-      osVersion: config.os_version,
-      browser: config.browser || "",
-      browserVersion: config.browser_version || "",
-      device: config.device || "",
-    });
-  };
-
-  const onSubmit = (data: any) => {
-    updateConfig.mutate(data);
-  };
-
-  if (isLoading) {
-    return <div>Loading configurations...</div>;
-  }
-
   return (
     <>
       <Card className="mb-6">
@@ -172,7 +86,7 @@ export const PredefinedConfigs = () => {
                     className="h-8 w-8 bg-transparent hover:bg-accent"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleEdit(config);
+                      setEditingConfig(config);
                     }}
                     disabled={verifyingConfig === config.id}
                   >
@@ -198,10 +112,10 @@ export const PredefinedConfigs = () => {
                   </Badge>
                   {config.device_type === 'desktop' ? (
                     <Badge className="border bg-transparent">
-                      {config.browser} {config.browser_version}
+                      {config.browser || ''} {config.browser_version || ''}
                     </Badge>
                   ) : (
-                    <Badge className="border bg-transparent">{config.device}</Badge>
+                    <Badge className="border bg-transparent">{config.device || ''}</Badge>
                   )}
                 </div>
               </Button>
@@ -210,135 +124,11 @@ export const PredefinedConfigs = () => {
         </CardContent>
       </Card>
 
-      <Dialog 
+      <EditConfigDialog 
         open={!!editingConfig} 
         onOpenChange={(open: boolean) => !open && setEditingConfig(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Configuration</DialogTitle>
-          </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Configuration Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="deviceType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Device Type</FormLabel>
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        className="flex gap-4"
-                      >
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem value="desktop" />
-                          </FormControl>
-                          <FormLabel className="font-normal">Desktop</FormLabel>
-                        </FormItem>
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem value="mobile" />
-                          </FormControl>
-                          <FormLabel className="font-normal">Mobile</FormLabel>
-                        </FormItem>
-                      </RadioGroup>
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="os"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Operating System</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="osVersion"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>OS Version</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              {form.watch("deviceType") === "desktop" ? (
-                <>
-                  <FormField
-                    control={form.control}
-                    name="browser"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Browser</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="browserVersion"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Browser Version</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </>
-              ) : (
-                <FormField
-                  control={form.control}
-                  name="device"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Device</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              )}
-
-              <Button type="submit" className="w-full">
-                Save Changes
-              </Button>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+        config={editingConfig || undefined}
+      />
     </>
   );
 };

@@ -3,34 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { ButtonProps as BaseButtonProps } from "@/components/ui/button";
 import { Loader2, Trash2, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { useState } from "react";
-
-interface Config {
-  id: string;
-  name: string;
-  device_type: string;
-  os: string;
-  os_version: string;
-  browser?: string;
-  browser_version?: string;
-  device?: string;
-  is_active: boolean;
-}
-
-type ButtonProps = BaseButtonProps & {
-  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
-};
+import { ValidationDialog } from "./configurations-list/ValidationDialog";
+import type { Config } from "./types";
 
 export const ConfigurationsList = () => {
   const { toast } = useToast();
@@ -52,7 +29,7 @@ export const ConfigurationsList = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data;
+      return data as Config[];
     }
   });
 
@@ -176,8 +153,8 @@ export const ConfigurationsList = () => {
                     <TableCell>{`${config.os} ${config.os_version}`}</TableCell>
                     <TableCell>
                       {config.device_type === 'desktop' 
-                        ? `${config.browser} ${config.browser_version}`
-                        : config.device}
+                        ? `${config.browser || ''} ${config.browser_version || ''}`
+                        : config.device || ''}
                     </TableCell>
                     <TableCell>
                       <Badge className={config.is_active ? "default" : "secondary"}>
@@ -213,46 +190,18 @@ export const ConfigurationsList = () => {
         </CardContent>
       </Card>
 
-      <Dialog 
-        open={validationDialog.isOpen} 
-        onOpenChange={(open: boolean) => !open && setValidationDialog({ isOpen: false, data: null })}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {validationDialog.data?.valid ? 'Configuration Valid' : 'Configuration Invalid'}
-            </DialogTitle>
-            <DialogDescription>
-              {validationDialog.data?.message}
-              {validationDialog.data?.suggestion && (
-                <div className="mt-4">
-                  <p className="font-medium">Would you like to update to the suggested configuration?</p>
-                  <div className="mt-2 space-x-2">
-                    <Button
-                      onClick={() => {
-                        const configId = configs?.find((c: Config) => c.id === validationDialog.data?.configId)?.id;
-                        if (!configId) return;
-                        updateConfig.mutate({
-                          id: configId,
-                          data: validationDialog.data.suggestion
-                        });
-                      }}
-                    >
-                      Update Configuration
-                    </Button>
-                    <Button
-                      className="bg-transparent border hover:bg-accent"
-                      onClick={() => setValidationDialog({ isOpen: false, data: null })}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
+      <ValidationDialog
+        dialog={validationDialog}
+        onClose={() => setValidationDialog({ isOpen: false, data: null })}
+        onUpdate={(suggestion) => {
+          const configId = configs?.find((c) => c.id === validationDialog.data?.configId)?.id;
+          if (!configId) return;
+          updateConfig.mutate({
+            id: configId,
+            data: suggestion
+          });
+        }}
+      />
     </>
   );
 };

@@ -17,6 +17,27 @@ export interface Config {
   is_predefined: boolean | null;
 }
 
+export interface ValidationResponse {
+  valid: boolean;
+  message: string;
+  configId?: string;
+  suggestion?: {
+    os_version?: string;
+    browser_version?: string;
+  };
+}
+
+export interface ValidationDialogState {
+  isOpen: boolean;
+  data: ValidationResponse | null;
+}
+
+export interface EditConfigDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  config?: Config;
+}
+
 export const browserStackConfigSchema = z.object({
   name: z.string().min(1, "Name is required"),
   deviceType: z.enum(["desktop", "mobile"]),
