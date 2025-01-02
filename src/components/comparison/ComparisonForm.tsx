@@ -76,39 +76,24 @@ export const ComparisonForm = ({
           .insert({
             baseline_url: baselineUrl,
             new_url: newUrl,
-            user_id: '00000000-0000-0000-0000-000000000000', // This should be replaced with actual user ID
             status: 'pending'
           })
           .select()
           .single();
 
-        if (testError) {
-          console.error("Error creating test:", testError);
-          throw new Error(testError.message);
-        }
+        if (testError) throw testError;
+        if (!test) throw new Error('Failed to create test record');
 
-        if (!test) {
-          throw new Error('Failed to create test record');
-        }
-
-        if (!selectedConfigs || selectedConfigs.length === 0) {
-          throw new Error('No configurations found');
-        }
-
-        // Generate screenshots
+        // Generate screenshots for baseline URL
         const { error: screenshotError } = await supabase.functions
           .invoke('browserstack-screenshots', {
             body: {
-              testId: test.id,
               url: baselineUrl,
               selected_configs: selectedConfigs
             },
           });
 
-        if (screenshotError) {
-          console.error("Screenshot generation error:", screenshotError);
-          throw new Error('Failed to generate screenshots');
-        }
+        if (screenshotError) throw screenshotError;
 
         return test;
       } catch (error) {
@@ -133,7 +118,7 @@ export const ComparisonForm = ({
     }
   });
 
-  const handleScreenshotsGenerated = async (baselineUrl: string, newUrl: string, configs: Config[]) => {
+  const handleScreenshotsGenerated = async () => {
     await createTest.mutateAsync();
   };
 

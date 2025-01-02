@@ -9,20 +9,19 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { testId, url, selected_configs } = await req.json()
+    const { url, selected_configs } = await req.json()
 
-    if (!testId || !url || !selected_configs) {
-      throw new Error('Missing required parameters')
+    if (!url || !selected_configs) {
+      throw new Error('Missing required parameters: url and selected_configs')
     }
 
     logger.info({
       message: 'Generating screenshots',
-      testId,
       url,
       configCount: selected_configs.length
     })
 
-    const result = await generateScreenshots(testId, url, selected_configs)
+    const result = await generateScreenshots(url, selected_configs)
 
     return new Response(
       JSON.stringify(result),

@@ -1,10 +1,5 @@
 import { logger } from './utils/logger.ts'
 
-interface BrowserstackCredentials {
-  username: string;
-  accessKey: string;
-}
-
 interface BrowserConfig {
   os: string;
   os_version: string;
@@ -13,29 +8,22 @@ interface BrowserConfig {
   device?: string;
 }
 
-export async function generateScreenshots(
-  testId: string,
-  url: string,
-  selectedConfigs: BrowserConfig[]
-) {
-  const username = Deno.env.get('BROWSERSTACK_USERNAME');
-  const accessKey = Deno.env.get('BROWSERSTACK_ACCESS_KEY');
+export async function generateScreenshots(url: string, configs: BrowserConfig[]) {
+  const username = Deno.env.get('BROWSERSTACK_USERNAME')
+  const accessKey = Deno.env.get('BROWSERSTACK_ACCESS_KEY')
 
   if (!username || !accessKey) {
-    throw new Error('Missing BrowserStack credentials');
+    throw new Error('Missing BrowserStack credentials')
   }
 
-  const credentials: BrowserstackCredentials = { username, accessKey };
-
   logger.info({
-    message: 'Starting screenshot generation',
-    testId,
+    message: 'Calling BrowserStack API',
     url,
-    configCount: selectedConfigs.length
-  });
+    configCount: configs.length
+  })
 
   try {
-    const auth = btoa(`${credentials.username}:${credentials.accessKey}`);
+    const auth = btoa(`${username}:${accessKey}`)
     const response = await fetch('https://api.browserstack.com/screenshots/v1', {
       method: 'POST',
       headers: {
@@ -44,31 +32,36 @@ export async function generateScreenshots(
       },
       body: JSON.stringify({
         url,
-        browsers: selectedConfigs,
+        browsers: configs.map(config => ({
+          os: config.os,
+          os_version: config.os_version,
+          browser: config.browser,
+          browser_version: config.browser_version,
+          device: config.device
+        })),
         wait_time: 5,
         quality: 'compressed'
       })
-    });
+    })
 
     if (!response.ok) {
-      throw new Error(`BrowserStack API error: ${response.statusText}`);
+      const errorText = await response.text()
+      throw new Error(`BrowserStack API error: ${response.statusText || errorText}`)
     }
 
-    const result = await response.json();
+    const result = await response.json()
     
     logger.info({
       message: 'Screenshot generation successful',
-      testId,
       jobId: result.job_id
-    });
+    })
 
-    return result;
+    return result
   } catch (error) {
     logger.error({
       message: 'Screenshot generation failed',
-      testId,
       error: error.message
-    });
-    throw error;
+    })
+    throw error
   }
 }
