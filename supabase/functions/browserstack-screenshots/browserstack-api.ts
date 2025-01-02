@@ -1,4 +1,3 @@
-import { v4 as uuidv4 } from "npm:uuid@9.0.0";
 import { logger } from "./logger.ts";
 import { handleBrowserstackResponse, validateResolution, validateWaitTime } from "./utils/api-utils.ts";
 import { BrowserstackError } from "./errors/browserstack-error.ts";
@@ -129,7 +128,7 @@ export async function generateScreenshots(
   request: ScreenshotRequest,
   credentials: BrowserstackCredentials
 ): Promise<ScreenshotResponse> {
-  const requestId = uuidv4();
+  const requestId = crypto.randomUUID();
   
   logger.info({
     message: 'Starting screenshot generation',
