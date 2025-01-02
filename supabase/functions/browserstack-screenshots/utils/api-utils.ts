@@ -59,15 +59,24 @@ export async function handleBrowserstackResponse<T>(response: Response, requestI
         if (data.length === 0) {
           throw new Error('Empty browser list received');
         }
-        // Validate each browser object has required properties
+        // Validate each browser object has minimum required properties
         data.forEach((browser, index) => {
-          if (!browser.os || !browser.os_version) {
-            throw new Error(`Browser at index ${index} is missing required properties`);
+          if (!browser.os) {
+            throw new Error(`Browser at index ${index} is missing required os property`);
           }
         });
+        return data as T;
       }
 
-      return data as T;
+      // For screenshot generation response, validate object structure
+      if (typeof data === 'object') {
+        if (!data.id) {
+          throw new Error('Response missing required id field');
+        }
+        return data as T;
+      }
+
+      throw new Error('Invalid response format: expected array or object');
     } catch (parseError) {
       logger.error({
         message: 'Failed to parse BrowserStack API response',
@@ -76,7 +85,7 @@ export async function handleBrowserstackResponse<T>(response: Response, requestI
         error: parseError
       });
       throw new BrowserstackError(
-        'Invalid response format from Browserstack API',
+        parseError instanceof Error ? parseError.message : 'Invalid response format from Browserstack API',
         response.status,
         requestId,
         { responseText }
