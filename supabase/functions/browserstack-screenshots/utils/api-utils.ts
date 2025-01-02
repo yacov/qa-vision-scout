@@ -3,7 +3,7 @@ import { BrowserstackError } from "../errors/browserstack-error.ts";
 
 export async function handleBrowserstackResponse<T>(response: Response, requestId: string): Promise<T> {
   if (!response.ok) {
-    let errorMessage = `Browserstack API error: ${response.status}`;
+    let errorMessage = `BrowserStack API error: ${response.status}`;
     let errorText = '';
     
     try {
@@ -43,6 +43,10 @@ export async function handleBrowserstackResponse<T>(response: Response, requestI
 
     // Check if response is empty
     if (!responseText) {
+      logger.error({
+        message: 'Empty response from BrowserStack API',
+        requestId
+      });
       throw new Error('Empty response from BrowserStack API');
     }
 
@@ -51,12 +55,21 @@ export async function handleBrowserstackResponse<T>(response: Response, requestI
       
       // Basic validation of response structure
       if (data === null || data === undefined) {
+        logger.error({
+          message: 'Null or undefined response data',
+          requestId,
+          responseText
+        });
         throw new Error('Null or undefined response data');
       }
 
       // For browsers.json endpoint, validate array structure
       if (Array.isArray(data)) {
         if (data.length === 0) {
+          logger.error({
+            message: 'Empty browser list received',
+            requestId
+          });
           throw new Error('Empty browser list received');
         }
         // Validate each browser object has minimum required properties
@@ -71,11 +84,21 @@ export async function handleBrowserstackResponse<T>(response: Response, requestI
       // For screenshot generation response, validate object structure
       if (typeof data === 'object') {
         if (!data.id) {
+          logger.error({
+            message: 'Response missing required id field',
+            requestId,
+            responseText
+          });
           throw new Error('Response missing required id field');
         }
         return data as T;
       }
 
+      logger.error({
+        message: 'Invalid response format',
+        requestId,
+        responseText
+      });
       throw new Error('Invalid response format: expected array or object');
     } catch (parseError) {
       logger.error({
@@ -85,7 +108,7 @@ export async function handleBrowserstackResponse<T>(response: Response, requestI
         error: parseError
       });
       throw new BrowserstackError(
-        parseError instanceof Error ? parseError.message : 'Invalid response format from Browserstack API',
+        parseError instanceof Error ? parseError.message : 'Invalid response format from BrowserStack API',
         response.status,
         requestId,
         { responseText }

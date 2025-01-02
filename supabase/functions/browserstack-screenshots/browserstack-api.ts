@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "npm:uuid";
 import { logger } from "./logger.ts";
 import { handleBrowserstackResponse, validateResolution, validateWaitTime } from "./utils/api-utils.ts";
 import { BrowserstackError } from "./errors/browserstack-error.ts";
@@ -131,6 +131,25 @@ export async function generateScreenshots(
 ): Promise<ScreenshotResponse> {
   const requestId = uuidv4();
   
+  logger.info({
+    message: 'Starting screenshot generation',
+    requestId,
+    url: request.url,
+    browserCount: request.browsers?.length
+  });
+
+  if (!credentials?.username || !credentials?.password) {
+    logger.error({
+      message: 'Missing BrowserStack credentials',
+      requestId
+    });
+    throw new BrowserstackError(
+      'Missing BrowserStack credentials',
+      400,
+      requestId
+    );
+  }
+
   if (request.wait_time) {
     validateWaitTime(request.wait_time);
   }
@@ -145,8 +164,12 @@ export async function generateScreenshots(
     availableBrowsers = await getBrowsers(credentials, requestId);
     
     if (!availableBrowsers || !Array.isArray(availableBrowsers) || availableBrowsers.length === 0) {
+      logger.error({
+        message: 'No browsers available from BrowserStack',
+        requestId
+      });
       throw new BrowserstackError(
-        'No browsers available from Browserstack',
+        'No browsers available from BrowserStack',
         500,
         requestId
       );
@@ -197,13 +220,6 @@ export async function generateScreenshots(
       return false;
     });
 
-    logger.debug({
-      message: 'Browser matching result',
-      requestId,
-      browser,
-      matchingBrowser: matchingBrowser || null
-    });
-
     if (!matchingBrowser) {
       const deviceInfo = browser.device ? ` (${browser.device})` : '';
       const browserInfo = browser.browser ? ` ${browser.browser}` : '';
@@ -233,7 +249,7 @@ export async function generateScreenshots(
   };
 
   logger.info({
-    message: 'Generating screenshots',
+    message: 'Sending request to BrowserStack API',
     requestId,
     payload
   });
@@ -276,10 +292,21 @@ export async function generateScreenshots(
       const status = await handleBrowserstackResponse<ScreenshotResponse>(statusResponse, requestId);
 
       if (status.state === 'done') {
+        logger.info({
+          message: 'Screenshots generated successfully',
+          requestId,
+          jobId: result.id
+        });
         return status;
       }
 
       if (status.state === 'error') {
+        logger.error({
+          message: 'Screenshot generation failed',
+          requestId,
+          jobId: result.id,
+          status
+        });
         throw new BrowserstackError(
           'Screenshot generation failed',
           500,
@@ -291,6 +318,11 @@ export async function generateScreenshots(
       pollCount++;
     }
 
+    logger.error({
+      message: 'Screenshot generation timed out',
+      requestId,
+      jobId: result.id
+    });
     throw new BrowserstackError(
       'Screenshot generation timed out after 5 minutes',
       504,
