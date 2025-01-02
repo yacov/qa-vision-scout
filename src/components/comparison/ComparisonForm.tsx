@@ -70,13 +70,20 @@ export const ComparisonForm = ({
   const createTest = useMutation({
     mutationFn: async () => {
       try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          throw new Error('User not authenticated');
+        }
+
         // First create the test record
         const { data: test, error: testError } = await supabase
           .from('comparison_tests')
           .insert({
             baseline_url: baselineUrl,
             new_url: newUrl,
-            status: 'pending'
+            status: 'pending',
+            user_id: user.id
           })
           .select()
           .single();
