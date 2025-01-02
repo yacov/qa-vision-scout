@@ -20,7 +20,7 @@ export async function getAvailableBrowsers(credentials: BrowserstackCredentials)
   const auth = btoa(`${username}:${accessKey}`);
 
   try {
-    const response = await fetch('https://www.browserstack.com/screenshots/browsers.json', {
+    const response = await fetch('https://api.browserstack.com/screenshots/browsers.json', {
       headers: {
         'Authorization': `Basic ${auth}`
       }
@@ -64,12 +64,13 @@ export async function generateScreenshots(input: ScreenshotInput, credentials: B
 
   logger.info({
     message: 'Generating screenshots',
-    url: input
+    url: input.url,
+    browserCount: configs.length
   });
 
   try {
     const auth = btoa(`${username}:${accessKey}`);
-    const response = await fetch('https://www.browserstack.com/screenshots', {
+    const response = await fetch('https://api.browserstack.com/screenshots', {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${auth}`,
@@ -95,17 +96,32 @@ export async function generateScreenshots(input: ScreenshotInput, credentials: B
 
     if (!response.ok) {
       const errorText = await response.text();
-      if (response.status === 429) {
-        throw new Error('Rate limit exceeded');
-      }
       logger.error({
         message: 'BrowserStack API error',
         status: response.status,
         statusText: response.statusText,
         error: errorText,
-        url: url
+        url: url,
+        requestBody: {
+          url,
+          browserCount: configs.length,
+          callback_url
+        }
       });
-      throw new Error(`BrowserStack API error: ${response.statusText || errorText}`);
+
+      if (response.status === 429) {
+        throw new Error('Rate limit exceeded');
+      }
+
+      if (response.status === 401) {
+        throw new Error('Invalid BrowserStack credentials');
+      }
+
+      if (response.status === 422) {
+        throw new Error('Invalid request parameters: ' + errorText);
+      }
+
+      throw new Error(`BrowserStack API error (${response.status}): ${errorText}`);
     }
 
     const result = await response.json();
@@ -138,7 +154,7 @@ async function pollForCompletion(jobId: string, auth: string, options: PollingOp
   let polls = 0;
 
   while (polls < maxPolls) {
-    const response = await fetch(`https://www.browserstack.com/screenshots/${jobId}.json`, {
+    const response = await fetch(`https://api.browserstack.com/screenshots/${jobId}.json`, {
       headers: {
         'Authorization': `Basic ${auth}`
       }
@@ -154,7 +170,6 @@ async function pollForCompletion(jobId: string, auth: string, options: PollingOp
       return result;
     }
 
-    // Increment polls before waiting to ensure we don't wait unnecessarily on the last iteration
     polls++;
     if (polls < maxPolls) {
       await new Promise(resolve => setTimeout(resolve, pollInterval));

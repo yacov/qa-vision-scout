@@ -23,6 +23,18 @@ export async function handler(req: Request): Promise<Response> {
   }
 
   try {
+    // Log environment variables (excluding sensitive values)
+    logger.info({
+      message: 'Environment check',
+      requestId,
+      envVars: {
+        BROWSERSTACK_USERNAME: !!Deno.env.get('BROWSERSTACK_USERNAME'),
+        BROWSERSTACK_ACCESS_KEY: !!Deno.env.get('BROWSERSTACK_ACCESS_KEY'),
+        SUPABASE_URL: !!Deno.env.get('SUPABASE_URL'),
+        SUPABASE_ANON_KEY: !!Deno.env.get('SUPABASE_ANON_KEY')
+      }
+    });
+
     // Get BrowserStack credentials from environment
     const username = Deno.env.get('BROWSERSTACK_USERNAME');
     const accessKey = Deno.env.get('BROWSERSTACK_ACCESS_KEY');
@@ -49,7 +61,8 @@ export async function handler(req: Request): Promise<Response> {
       requestId,
       testId: data.testId,
       configCount: data.selected_configs?.length,
-      url: data.url
+      url: data.url,
+      headers: Object.fromEntries(req.headers.entries())
     });
 
     const validatedData = validateRequestData(data, requestId);

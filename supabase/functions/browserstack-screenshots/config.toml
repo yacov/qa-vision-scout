@@ -1,2 +1,6 @@
 [functions.browserstack-screenshots]
 verify_jwt = false
+
+[functions.browserstack-screenshots.env]
+BROWSERSTACK_USERNAME = "iakovvolfkovich_F75ojQ"
+BROWSERSTACK_ACCESS_KEY = "HYAZ4DUHsvFrouzKZqyj"
