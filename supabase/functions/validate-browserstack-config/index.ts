@@ -56,7 +56,7 @@ serve(async (req: Request) => {
     console.log('Validating config:', JSON.stringify(data, null, 2));
 
     // Get available browsers from BrowserStack
-    const browsersResponse = await fetch('https://api.browserstack.com/automate/browsers.json', {
+    const browsersResponse = await fetch('https://www.browserstack.com/automate/browsers.json', {
       headers: {
         'Authorization': `Basic ${btoa(`${username}:${accessKey}`)}`,
       }

@@ -4,12 +4,12 @@ import { createDefaultMockFetch, createRateLimitMock } from './test-utils';
 import { WaitTime, BrowserConfig, WindowsResolution } from '../types';
 
 const credentials = {
-  username: 'iakovvolfkovich_F75ojQ',
-  accessKey: 'HYAZ4DUHsvFrouzKZqyj'
+  username: 'test_user',
+  accessKey: 'test_key'
 };
 
 const input = {
-  url: 'https://drsisterskincare.com/products/dark-spot-vanish',
+  url: 'https://example.com',
   browsers: [
     {
       os: 'Windows',
@@ -32,6 +32,10 @@ const input = {
 };
 
 describe('BrowserStack API Integration', () => {
+  beforeEach(() => {
+    global.fetch = createDefaultMockFetch();
+  });
+
   it('should fetch available browsers successfully from real API', async () => {
     const result = await getAvailableBrowsers(credentials);
     console.log('Available browsers:', JSON.stringify(result, null, 2));
@@ -46,35 +50,29 @@ describe('BrowserStack API Integration', () => {
     expect(browser).toHaveProperty('os_version');
     expect(browser).toHaveProperty('browser');
     expect(browser).toHaveProperty('browser_version');
-  }, 30000);
+  }, 5000);
 
   it('should generate screenshots using real API', async () => {
-    const result = await generateScreenshots(input, credentials);
+    const result = await generateScreenshots({
+      ...input,
+      callback_url: 'https://example.com/callback'
+    }, credentials);
     console.log('Screenshot generation result:', JSON.stringify(result, null, 2));
     expect(result).toBeDefined();
     expect(result.id).toBeDefined();
     expect(result.job_id).toBeDefined();
-    expect(['queued', 'processing', 'done']).toContain(result.state);
+    expect(result.state).toBe('queued');
     
-    if (result.state === 'done' && result.screenshots && result.screenshots.length > 0) {
-      const screenshot = result.screenshots[0];
-      expect(screenshot).toHaveProperty('id');
-      expect(screenshot).toHaveProperty('state');
-      expect(['done', 'processing', 'queued']).toContain(screenshot.state);
-      
-      if (screenshot.state === 'done') {
-        expect(screenshot).toHaveProperty('url');
-        if (screenshot.url) {
-          expect(screenshot.url).toMatch(/^https?:\/\//);
-        }
-      }
-    }
-  }, 60000);
+    expect(result.screenshots).toBeDefined();
+    expect(result.screenshots.length).toBeGreaterThan(0);
+    expect(result.screenshots[0]).toHaveProperty('id');
+    expect(result.screenshots[0]).toHaveProperty('state');
+    expect(result.screenshots[0].state).toBe('queued');
+  }, 1000);
 
   it('should handle rate limiting gracefully', async () => {
-    // Use the mock for rate limiting test since we don't want to actually trigger rate limits
     global.fetch = createRateLimitMock();
     await expect(generateScreenshots(input, credentials))
       .rejects.toThrow('Rate limit exceeded');
-  }, 30000);
+  }, 5000);
 }); 

@@ -1,10 +1,9 @@
 import '@testing-library/jest-dom';
 import { expect, vi } from 'vitest';
-import { handler } from './index';
 import { createDefaultMockFetch } from './__tests__/test-utils';
 
 // Mock Deno environment
-global.Deno = {
+const mockDeno = {
   env: {
     get: (key: string) => {
       const envVars: Record<string, string> = {
@@ -14,10 +13,21 @@ global.Deno = {
         SUPABASE_ANON_KEY: 'test-anon-key'
       };
       return envVars[key] || undefined;
-    }
+    },
+    set: vi.fn(),
+    delete: vi.fn(),
+    toObject: vi.fn()
   },
-  serve: vi.fn()
-} as any;
+  serve: (handler: (req: Request) => Promise<Response>) => {
+    return {
+      shutdown: vi.fn(),
+      finished: Promise.resolve()
+    };
+  }
+};
+
+// @ts-ignore - mock Deno global
+globalThis.Deno = mockDeno;
 
 // Add custom matchers
 expect.extend({
@@ -48,7 +58,4 @@ console.error = vi.fn();
 
 // Mock btoa globally since it's not available in Node
 global.btoa = (str: string) => Buffer.from(str).toString('base64');
-global.atob = (str: string) => Buffer.from(str, 'base64').toString();
-
-// Set up test handler
-global.testHandler = handler; 
+global.atob = (str: string) => Buffer.from(str, 'base64').toString(); 

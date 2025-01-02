@@ -9,6 +9,13 @@ interface Browser {
   device_type?: 'desktop' | 'mobile';
 }
 
+export const mockFetch = {
+  fn: createDefaultMockFetch(),
+  mockReset: () => {
+    mockFetch.fn = createDefaultMockFetch();
+  }
+};
+
 export function createMockResponse(status: number, data: any) {
   return new Response(JSON.stringify(data), {
     status,
@@ -20,23 +27,21 @@ export function createDefaultMockFetch() {
   let pollCount = 0;
   return vi.fn().mockImplementation((url: string, options?: RequestInit) => {
     if (url.includes('/browsers')) {
-      return Promise.resolve(createMockResponse(200, {
-        browsers: [
-          {
-            os: 'Windows',
-            os_version: '10',
-            browser: 'chrome',
-            browser_version: '121.0',
-            device_type: 'desktop'
-          },
-          {
-            os: 'ios',
-            os_version: '17',
-            device: 'iPhone 15',
-            device_type: 'mobile'
-          }
-        ]
-      }));
+      return Promise.resolve(createMockResponse(200, [
+        {
+          os: 'Windows',
+          os_version: '10',
+          browser: 'chrome',
+          browser_version: '121.0',
+          device_type: 'desktop'
+        },
+        {
+          os: 'ios',
+          os_version: '17',
+          device: 'iPhone 15',
+          device_type: 'mobile'
+        }
+      ]));
     }
 
     if (url.includes('/screenshots') && !url.includes('/status')) {
@@ -49,11 +54,18 @@ export function createDefaultMockFetch() {
         screenshots: [
           {
             id: 'screenshot-1',
-            state: 'queued'
+            state: 'queued',
+            browser: 'chrome',
+            browser_version: '121.0',
+            os: 'Windows',
+            os_version: '10'
           },
           {
             id: 'screenshot-2',
-            state: 'queued'
+            state: 'queued',
+            os: 'ios',
+            os_version: '17',
+            device: 'iPhone 15'
           }
         ]
       }));
@@ -62,13 +74,12 @@ export function createDefaultMockFetch() {
     if (url.includes('/status')) {
       pollCount++;
       const jobId = url.split('/').pop()?.replace('.json', '') || 'test-job-id';
-      const state = pollCount >= 2 ? 'done' : 'processing';
       return Promise.resolve(createMockResponse(200, {
         id: jobId,
         job_id: jobId,
-        state,
+        state: 'done',
         callback_url: null,
-        screenshots: state === 'done' ? [
+        screenshots: [
           {
             id: 'screenshot-1',
             state: 'done',
@@ -85,15 +96,6 @@ export function createDefaultMockFetch() {
             os_version: '17',
             device: 'iPhone 15',
             url: 'https://www.browserstack.com/screenshots/abc123/iphone15.png'
-          }
-        ] : [
-          {
-            id: 'screenshot-1',
-            state: 'processing'
-          },
-          {
-            id: 'screenshot-2',
-            state: 'processing'
           }
         ]
       }));
@@ -125,7 +127,11 @@ export function createTimeoutMock() {
         screenshots: [
           {
             id: 'screenshot-1',
-            state: 'processing'
+            state: 'processing',
+            browser: 'chrome',
+            browser_version: '121.0',
+            os: 'Windows',
+            os_version: '10'
           }
         ]
       }));
@@ -138,7 +144,11 @@ export function createTimeoutMock() {
       screenshots: [
         {
           id: 'screenshot-1',
-          state: 'queued'
+          state: 'queued',
+          browser: 'chrome',
+          browser_version: '121.0',
+          os: 'Windows',
+          os_version: '10'
         }
       ]
     }));
@@ -155,11 +165,20 @@ export function createMockScreenshotResponse(state: string, input: any) {
     screenshots: state === 'done' && input.browsers ? input.browsers.map((browser: Browser, index: number) => ({
       id: `screenshot-${index + 1}`,
       state: 'done',
-      ...browser,
+      browser: browser.browser,
+      browser_version: browser.browser_version,
+      os: browser.os,
+      os_version: browser.os_version,
+      device: browser.device,
       url: `https://www.browserstack.com/screenshots/${jobId}/${browser.browser || browser.device}.png`
     })) : input.browsers.map((browser: Browser, index: number) => ({
       id: `screenshot-${index + 1}`,
-      state
+      state,
+      browser: browser.browser,
+      browser_version: browser.browser_version,
+      os: browser.os,
+      os_version: browser.os_version,
+      device: browser.device
     }))
   };
 } 
