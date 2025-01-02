@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from "https://deno.land/std@0.208.0/uuid/mod.ts";
+import { v4 as uuidv4 } from "npm:uuid@9.0.0";
 import { logger } from "./logger.ts";
 import { handleBrowserstackResponse, validateResolution, validateWaitTime } from "./utils/api-utils.ts";
 import { BrowserstackError } from "./errors/browserstack-error.ts";
