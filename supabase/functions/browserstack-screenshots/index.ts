@@ -73,7 +73,7 @@ Deno.serve(async (req: Request) => {
     // Map request data to Browserstack API format
     const screenshotRequest: ScreenshotRequest = {
       url: validatedData.url,
-      browsers: validatedData.selected_configs.map(config => ({
+      browsers: validatedData.selected_configs.map((config: { os: string; os_version: string; browser?: string; browser_version?: string; device?: string }) => ({
         os: config.os,
         os_version: config.os_version,
         ...(config.browser && { browser: config.browser }),
