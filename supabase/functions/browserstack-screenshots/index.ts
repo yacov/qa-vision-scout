@@ -1,57 +1,45 @@
-/// <reference types="deno" />
+import { corsHeaders } from '../_shared/cors.ts'
+import { generateScreenshots } from './browserstack-api.ts'
+import { logger } from './utils/logger.ts'
 
-import { generateScreenshots } from './browserstack-api';
-import { BrowserstackCredentials, ScreenshotInput } from './types';
-import { BrowserstackError } from './utils/errors';
-
-export const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type'
-};
-
-export const handler = async (request: Request): Promise<Response> => {
-  // Handle CORS preflight request
-  if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: corsHeaders
-    });
+Deno.serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    const { url, selected_configs, callback_url } = await request.json();
-    const credentials: BrowserstackCredentials = {
-      username: process.env.BROWSERSTACK_USERNAME || '',
-      accessKey: process.env.BROWSERSTACK_ACCESS_KEY || ''
-    };
+    const { testId, url, selected_configs } = await req.json()
 
-    const input: ScreenshotInput = {
+    if (!testId || !url || !selected_configs) {
+      throw new Error('Missing required parameters')
+    }
+
+    logger.info({
+      message: 'Generating screenshots',
+      testId,
       url,
-      selected_configs,
-      callback_url
-    };
+      configCount: selected_configs.length
+    })
 
-    const result = await generateScreenshots(input, credentials);
+    const result = await generateScreenshots(testId, url, selected_configs)
 
-    return new Response(JSON.stringify(result), {
-      status: 200,
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json'
+    return new Response(
+      JSON.stringify(result),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  } catch (error) {
+    logger.error({
+      message: 'Error in browserstack-screenshots function',
+      error: error.message
+    })
+
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { 
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
-    });
-  } catch (error: unknown) {
-    console.error('Error:', error);
-    const status = error instanceof BrowserstackError ? error.statusCode : 500;
-    const message = error instanceof Error ? error.message : 'Internal server error';
-
-    return new Response(JSON.stringify({ message }), {
-      status,
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json'
-      }
-    });
+    )
   }
-};
+})
