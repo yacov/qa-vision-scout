@@ -3,24 +3,11 @@ import { generateScreenshots } from './browserstack-api.ts'
 import { logger } from './utils/logger.ts'
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    const username = Deno.env.get('BROWSERSTACK_USERNAME')
-    const accessKey = Deno.env.get('BROWSERSTACK_ACCESS_KEY')
-
-    if (!username || !accessKey) {
-      logger.error({
-        message: 'Missing BrowserStack credentials',
-        username: !!username,
-        accessKey: !!accessKey
-      })
-      throw new Error('BrowserStack credentials not configured')
-    }
-
     const { url, selected_configs } = await req.json()
 
     if (!url || !selected_configs) {
@@ -33,7 +20,7 @@ Deno.serve(async (req) => {
     }
 
     logger.info({
-      message: 'Generating screenshots',
+      message: 'Processing screenshot request',
       url,
       configCount: selected_configs.length
     })

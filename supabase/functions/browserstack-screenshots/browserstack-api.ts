@@ -13,11 +13,16 @@ export async function generateScreenshots(url: string, configs: BrowserConfig[])
   const accessKey = Deno.env.get('BROWSERSTACK_ACCESS_KEY')
 
   if (!username || !accessKey) {
+    logger.error({
+      message: 'BrowserStack credentials missing',
+      username: !!username,
+      accessKey: !!accessKey
+    })
     throw new Error('BrowserStack credentials not configured')
   }
 
   logger.info({
-    message: 'Calling BrowserStack API',
+    message: 'Generating screenshots',
     url,
     configCount: configs.length
   })
@@ -49,7 +54,9 @@ export async function generateScreenshots(url: string, configs: BrowserConfig[])
       logger.error({
         message: 'BrowserStack API error',
         status: response.status,
-        error: errorText
+        statusText: response.statusText,
+        error: errorText,
+        url: url
       })
       throw new Error(`BrowserStack API error: ${response.statusText || errorText}`)
     }
@@ -58,14 +65,17 @@ export async function generateScreenshots(url: string, configs: BrowserConfig[])
     
     logger.info({
       message: 'Screenshot generation successful',
-      jobId: result.job_id
+      jobId: result.job_id,
+      url: url
     })
 
     return result
   } catch (error) {
     logger.error({
       message: 'Screenshot generation failed',
-      error: error.message
+      error: error.message,
+      stack: error.stack,
+      url: url
     })
     throw error
   }
