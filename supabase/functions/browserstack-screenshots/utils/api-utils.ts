@@ -50,8 +50,21 @@ export async function handleBrowserstackResponse<T>(response: Response, requestI
       const data = JSON.parse(responseText);
       
       // Basic validation of response structure
-      if (!data) {
+      if (data === null || data === undefined) {
         throw new Error('Null or undefined response data');
+      }
+
+      // For browsers.json endpoint, validate array structure
+      if (Array.isArray(data)) {
+        if (data.length === 0) {
+          throw new Error('Empty browser list received');
+        }
+        // Validate each browser object has required properties
+        data.forEach((browser, index) => {
+          if (!browser.os || !browser.os_version) {
+            throw new Error(`Browser at index ${index} is missing required properties`);
+          }
+        });
       }
 
       return data as T;
