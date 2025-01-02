@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
@@ -25,6 +25,11 @@ export const ComparisonForm = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  useEffect(() => {
+    setBaselineUrl(initialBaselineUrl);
+    setNewUrl(initialNewUrl);
+  }, [initialBaselineUrl, initialNewUrl]);
+
   const toggleConfig = (configId: string) => {
     setSelectedConfigs(prev => 
       prev.includes(configId) 
@@ -36,28 +41,43 @@ export const ComparisonForm = ({
   const createTest = useMutation({
     mutationFn: async () => {
       try {
+        // First create the test record
         const { data: test, error: testError } = await supabase
           .from('comparison_tests')
           .insert({
             baseline_url: baselineUrl,
             new_url: newUrl,
-            user_id: '00000000-0000-0000-0000-000000000000',
+            user_id: '00000000-0000-0000-0000-000000000000', // This should be replaced with actual user ID
             status: 'pending'
           })
           .select()
           .single();
 
-        if (testError) throw testError;
-        if (!test) throw new Error('Failed to create test record');
+        if (testError) {
+          console.error("Error creating test:", testError);
+          throw new Error(testError.message);
+        }
 
+        if (!test) {
+          throw new Error('Failed to create test record');
+        }
+
+        // Get the selected configurations
         const { data: configs, error: configError } = await supabase
           .from('browserstack_configs')
           .select('*')
           .in('id', selectedConfigs);
 
-        if (configError) throw new Error('Failed to fetch configurations');
-        if (!configs || configs.length === 0) throw new Error('No configurations found');
+        if (configError) {
+          console.error("Error fetching configs:", configError);
+          throw new Error('Failed to fetch configurations');
+        }
 
+        if (!configs || configs.length === 0) {
+          throw new Error('No configurations found');
+        }
+
+        // Generate screenshots
         const { error: screenshotError } = await supabase.functions
           .invoke('browserstack-screenshots', {
             body: {
@@ -67,7 +87,11 @@ export const ComparisonForm = ({
             },
           });
 
-        if (screenshotError) throw screenshotError;
+        if (screenshotError) {
+          console.error("Screenshot generation error:", screenshotError);
+          throw new Error('Failed to generate screenshots');
+        }
+
         return test;
       } catch (error) {
         console.error("Error in createTest:", error);
@@ -77,7 +101,7 @@ export const ComparisonForm = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comparison-tests'] });
       toast({
-        title: "Test created successfully",
+        title: "Test created",
         description: "Your comparison test has been created and screenshots are being generated.",
       });
       onTestCreated();
@@ -87,14 +111,16 @@ export const ComparisonForm = ({
     },
     onError: (error: Error) => {
       toast({
-        title: "Error creating test",
+        title: "Error",
         description: error.message || "Failed to create comparison test. Please try again.",
         variant: "destructive",
       });
+      console.error("Error creating test:", error);
     }
   });
 
   const handleCompare = () => {
+    // Validate URLs
     if (!baselineUrl || !newUrl) {
       toast({
         title: "Validation Error",
@@ -104,6 +130,7 @@ export const ComparisonForm = ({
       return;
     }
 
+    // Validate URL format
     try {
       new URL(baselineUrl);
       new URL(newUrl);
@@ -116,6 +143,7 @@ export const ComparisonForm = ({
       return;
     }
 
+    // Validate configurations
     if (selectedConfigs.length === 0) {
       toast({
         title: "Validation Error",
@@ -129,38 +157,34 @@ export const ComparisonForm = ({
   };
 
   return (
-    <Card>
+    <Card className="mb-6">
       <CardHeader>
-        <CardTitle className="text-xl font-semibold">URL Configuration</CardTitle>
+        <CardTitle>URL Configuration</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="space-y-4">
-          <UrlInputs
-            baselineUrl={baselineUrl}
-            newUrl={newUrl}
-            onBaselineUrlChange={setBaselineUrl}
-            onNewUrlChange={setNewUrl}
-          />
+        <UrlInputs
+          baselineUrl={baselineUrl}
+          newUrl={newUrl}
+          onBaselineUrlChange={setBaselineUrl}
+          onNewUrlChange={setNewUrl}
+        />
 
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-foreground">Select Configurations for Comparison</h3>
-            <p className="text-sm text-muted-foreground">Choose the device and browser configurations you want to test against.</p>
-            <ConfigSelection
-              selectedConfigs={selectedConfigs}
-              onConfigToggle={toggleConfig}
-            />
-          </div>
+        <div className="space-y-4">
+          <h3 className="font-semibold">Select Configurations for Comparison</h3>
+          <ConfigSelection
+            selectedConfigs={selectedConfigs}
+            onConfigToggle={toggleConfig}
+          />
         </div>
 
         <Button 
           onClick={handleCompare}
           disabled={createTest.isPending}
           className="w-full"
-          aria-label={createTest.isPending ? "Creating test..." : "Start comparison"}
         >
           {createTest.isPending ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Creating Test...
             </>
           ) : (
