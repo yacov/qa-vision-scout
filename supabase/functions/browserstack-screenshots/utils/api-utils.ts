@@ -4,31 +4,82 @@ import { BrowserstackError } from "../errors/browserstack-error";
 export async function handleBrowserstackResponse<T>(response: Response, requestId: string): Promise<T> {
   if (!response.ok) {
     let errorMessage = `Browserstack API error: ${response.status}`;
+    let errorText = '';
+    
+    try {
+      errorText = await response.text();
+      logger.error({
+        message: 'BrowserStack API error response',
+        requestId,
+        status: response.status,
+        errorText
+      });
+    } catch (e) {
+      logger.error({
+        message: 'Failed to read error response',
+        requestId,
+        error: e
+      });
+    }
     
     // Special handling for rate limit errors
     if (response.status === 429) {
       errorMessage = 'Rate limit exceeded';
     }
     
-    logger.error({
-      message: errorMessage,
-      requestId,
-      status: response.status,
+    throw new BrowserstackError(errorMessage, response.status, requestId, {
+      errorText,
       statusText: response.statusText
     });
-    throw new BrowserstackError(errorMessage, response.status, requestId);
   }
 
   try {
-    const data = await response.json();
-    return data as T;
+    const responseText = await response.text();
+    logger.debug({
+      message: 'Raw BrowserStack API response',
+      requestId,
+      responseText
+    });
+
+    // Check if response is empty
+    if (!responseText) {
+      throw new Error('Empty response from BrowserStack API');
+    }
+
+    try {
+      const data = JSON.parse(responseText);
+      
+      // Basic validation of response structure
+      if (!data) {
+        throw new Error('Null or undefined response data');
+      }
+
+      return data as T;
+    } catch (parseError) {
+      logger.error({
+        message: 'Failed to parse BrowserStack API response',
+        requestId,
+        responseText,
+        error: parseError
+      });
+      throw new BrowserstackError(
+        'Invalid response format from Browserstack API',
+        response.status,
+        requestId,
+        { responseText }
+      );
+    }
   } catch (error) {
     logger.error({
-      message: 'Failed to parse Browserstack API response',
+      message: 'Failed to handle BrowserStack API response',
       requestId,
       error
     });
-    throw new BrowserstackError('Invalid response format', response.status, requestId);
+    throw new BrowserstackError(
+      error instanceof Error ? error.message : 'Unknown error processing response',
+      response.status,
+      requestId
+    );
   }
 }
 
