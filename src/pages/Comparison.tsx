@@ -3,6 +3,7 @@ import { Layout, BarChart3, Smartphone, Settings } from "lucide-react";
 import { ComparisonForm } from "@/components/comparison/ComparisonForm";
 import { TestResultsTable } from "@/components/comparison/TestResultsTable";
 import { ResultsDialog } from "@/components/comparison/ResultsDialog";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 const Comparison = () => {
   const [showResults, setShowResults] = useState(false);
@@ -16,8 +17,8 @@ const Comparison = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
-      {/* Sidebar */}
+    <ProtectedRoute>
+      <div className="flex min-h-screen bg-background">
       <aside className="fixed inset-y-0 left-0 w-64 border-r border-border bg-card">
         <div className="p-4">
           <div className="flex items-center gap-2 mb-8">
@@ -45,24 +46,23 @@ const Comparison = () => {
           </nav>
         </div>
       </aside>
+        <main className="flex-1 ml-64">
+          <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-4">
+            <h2 className="text-2xl font-semibold text-foreground">Comparison Module</h2>
+          </header>
 
-      {/* Main Content */}
-      <main className="flex-1 ml-64">
-        <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-4">
-          <h2 className="text-2xl font-semibold text-foreground">Comparison Module</h2>
-        </header>
-
-        <div className="container mx-auto p-6 max-w-7xl">
-          <ComparisonForm 
-            onTestCreated={() => setShowResults(true)}
-            initialBaselineUrl={selectedUrls.baselineUrl}
-            initialNewUrl={selectedUrls.newUrl}
-          />
-          <TestResultsTable onTestSelect={handleTestSelect} />
-          <ResultsDialog open={showResults} onOpenChange={setShowResults} />
-        </div>
-      </main>
-    </div>
+          <div className="container mx-auto p-6 max-w-7xl">
+            <ComparisonForm 
+              onTestCreated={() => setShowResults(true)}
+              initialBaselineUrl={selectedUrls.baselineUrl}
+              initialNewUrl={selectedUrls.newUrl}
+            />
+            <TestResultsTable onTestSelect={handleTestSelect} />
+            <ResultsDialog open={showResults} onOpenChange={setShowResults} />
+          </div>
+        </main>
+      </div>
+    </ProtectedRoute>
   );
 };
 

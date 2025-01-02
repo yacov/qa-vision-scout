@@ -1,20 +1,17 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Index from './pages/Index';
-import Comparison from './pages/Comparison';
-import Settings from './pages/Settings';
-import { Toaster } from "@/components/ui/toaster";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import Comparison from "./pages/Comparison";
+import Settings from "./pages/Settings";
+import AuthPage from "./pages/Auth";
 
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-background">
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/comparison" element={<Comparison />} />
-          <Route path="/settings" element={<Settings />} />
-        </Routes>
-        <Toaster />
-      </div>
+      <Routes>
+        <Route path="/" element={<Navigate to="/comparison" replace />} />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/comparison" element={<Comparison />} />
+        <Route path="/settings" element={<Settings />} />
+      </Routes>
     </Router>
   );
 }
