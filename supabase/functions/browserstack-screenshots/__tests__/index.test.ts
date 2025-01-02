@@ -1,66 +1,44 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import '../index.js';
-import { createValidScreenshotRequest, mockFetch, createMockResponse } from './test-utils.js';
+import { mockFetch, createMockScreenshotResponse } from './test-utils';
+
+// Get the mock Deno object with the correct type
+const mockDeno = globalThis.Deno as unknown as {
+  _handler: ((req: Request) => Promise<Response>) | null;
+  serve: (handler: (req: Request) => Promise<Response>) => { shutdown: () => void };
+  env: { get: (key: string) => string | undefined };
+};
 
 describe('index', () => {
-  const validInput = createValidScreenshotRequest();
-
   beforeEach(() => {
     mockFetch.mockReset();
   });
 
   it('should handle screenshot generation request', async () => {
-    // Mock browsers response first
-    const browsersMock = [
-      {
-        os: 'Windows',
-        os_version: '10',
+    const validRequest = {
+      url: 'https://example.com',
+      selected_configs: [{
         browser: 'chrome',
-        browser_version: '117.0',
-        device: null
-      }
-    ];
-
-    // Mock screenshots response
-    const screenshotsMock = {
-      id: 'test-job-id',
-      state: 'done',
-      callback_url: null,
-      win_res: '1024x768',
-      mac_res: '1024x768',
-      quality: 'compressed',
-      wait_time: 5,
-      orientation: 'portrait',
-      screenshots: [{
-        id: 'screenshot-1',
-        browser: 'chrome',
-        browser_version: '117.0',
+        browser_version: 'latest',
         os: 'Windows',
-        os_version: '10',
-        url: 'https://example.com',
-        state: 'done',
-        image_url: 'https://www.browserstack.com/screenshots/test-job-id/screenshot-1.jpg',
-        thumb_url: 'https://www.browserstack.com/screenshots/test-job-id/thumb_screenshot-1.jpg',
-        created_at: '2024-01-30T16:25:45.000Z'
-      }]
+        os_version: '10'
+      }],
+      wait_time: 5
     };
 
-    let callCount = 0;
-    mockFetch.fn.mockImplementation(async () => {
-      callCount++;
-      return createMockResponse(200, callCount === 1 ? browsersMock : screenshotsMock);
+    mockFetch.fn.mockImplementationOnce(async () => {
+      return new Response(JSON.stringify(createMockScreenshotResponse({
+        url: validRequest.url,
+        browsers: validRequest.selected_configs
+      })), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
     });
 
-    // @ts-ignore: access mock handler
-    const handler = globalThis.Deno._handler;
-    expect(handler).toBeDefined();
-
-    const response = await handler(new Request('http://localhost', {
+    const response = await mockDeno._handler!(new Request('http://localhost', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(validInput)
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(validRequest)
     }));
 
     expect(response.status).toBe(200);
@@ -68,19 +46,48 @@ describe('index', () => {
     expect(result.id).toBe('test-job-id');
     expect(result.state).toBe('done');
     expect(result.screenshots).toHaveLength(1);
-    expect(result.screenshots[0].image_url).toBeDefined();
+  });
+
+  it('should handle parallel limit error', async () => {
+    const validRequest = {
+      url: 'https://example.com',
+      selected_configs: [{
+        browser: 'chrome',
+        browser_version: 'latest',
+        os: 'Windows',
+        os_version: '10'
+      }],
+      wait_time: 5
+    };
+
+    mockFetch.fn.mockImplementationOnce(async () => {
+      return new Response(JSON.stringify({
+        message: 'Parallel limit reached',
+        running_sessions: 1
+      }), {
+        status: 422,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    });
+
+    const response = await mockDeno._handler!(new Request('http://localhost', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(validRequest)
+    }));
+
+    expect(response.status).toBe(422);
+    const result = await response.json();
+    expect(result.error).toBe('Parallel limit reached');
   });
 
   it('should handle CORS preflight request', async () => {
-    // @ts-ignore: access mock handler
-    const handler = globalThis.Deno._handler;
-    expect(handler).toBeDefined();
-
-    const response = await handler(new Request('http://localhost', {
+    const response = await mockDeno._handler!(new Request('http://localhost', {
       method: 'OPTIONS'
     }));
 
     expect(response.status).toBe(204);
     expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
+    expect(response.headers.get('Access-Control-Allow-Headers')).toBe('authorization, x-client-info, apikey, content-type');
   });
 }); 

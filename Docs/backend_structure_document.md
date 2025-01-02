@@ -9,6 +9,7 @@ The backend of TestHub is built on Supabase, utilizing Edge Functions for server
 ```
 /supabase/
 ├── functions/
+│   ├── _shared/              # Shared utilities and types across functions
 │   ├── browserstack-screenshots/
 │   │   ├── __tests__/
 │   │   │   ├── test-utils.ts
@@ -20,7 +21,10 @@ The backend of TestHub is built on Supabase, utilizing Edge Functions for server
 │   │   ├── index.ts
 │   │   ├── vitest.config.ts
 │   │   └── vitest.setup.ts
-│   └── other-functions/
+│   ├── validate-browserstack-config/
+│   │   └── index.ts
+│   ├── tsconfig.json         # Shared TypeScript configuration
+│   └── types.d.ts           # Global type definitions
 ├── migrations/
 └── seed/
 ```

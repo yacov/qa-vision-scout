@@ -32,11 +32,13 @@ Results from these automated tests populate on the dashboard, visually enhanced 
 ## 4. Core Features
 
 *   **Authentication and User Management**: Managed through Supabase.
+*   **Configuration Validation**: Pre-validation of Browserstack configurations to ensure compatibility and suggest corrections.
 *   **Webpage Comparison Module**: Automatic detection of discrepancies in page layout, design, and functional elements.
 *   **Device Responsiveness Tester**: Real-time assessment of webpages across chosen configurations using Browserstack API.
 *   **Interactive Dashboard**: Central hub for visualization of testing data, integrated with advanced tools like Three.js, D3.js, and P5.js.
 *   **Exportable Reports**: Generate PDFs and CSVs to share findings, with built-in functionality for Asana integration.
 *   **AI Integration**: Integration of AI for automated visual comparisons to enhance detection accuracy, using latest Gemini vision models.
+*   **Shared Infrastructure**: Common utilities and type definitions across functions for consistency and maintainability.
 
 ## 5. Tech Stack & Tools
 

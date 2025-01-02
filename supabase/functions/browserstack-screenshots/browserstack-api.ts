@@ -8,6 +8,9 @@ import type {
   Browser 
 } from "./types/api-types.ts";
 
+const POLLING_INTERVAL = 1000; // 1 second
+const POLLING_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+
 export async function getBrowsers(
   credentials: BrowserstackCredentials,
   requestId: string
@@ -51,18 +54,16 @@ export async function getBrowsers(
         errorText
       });
       
-      // Special handling for rate limit errors
-      if (response.status === 429) {
-        throw new BrowserstackError(
-          'Rate limit exceeded',
-          response.status,
-          requestId,
-          { errorText }
-        );
+      let errorMessage;
+      try {
+        const errorData = JSON.parse(errorText);
+        errorMessage = errorData.message || `BrowserStack API error: ${response.statusText}`;
+      } catch {
+        errorMessage = `BrowserStack API error: ${response.statusText}`;
       }
       
       throw new BrowserstackError(
-        `Browserstack API error: ${response.statusText}`,
+        errorMessage,
         response.status,
         requestId,
         { errorText }
@@ -79,19 +80,6 @@ export async function getBrowsers(
     let data: Browser[];
     try {
       data = JSON.parse(responseText);
-      
-      // Validate that the response is an array and each item has required browser properties
-      if (!Array.isArray(data)) {
-        throw new Error('Response is not an array');
-      }
-      
-      // Validate each browser object has required properties
-      data.forEach((browser, index) => {
-        if (!browser.os || !browser.os_version) {
-          throw new Error(`Browser at index ${index} is missing required properties`);
-        }
-      });
-      
     } catch (error) {
       logger.error({
         message: 'Failed to parse Browserstack API response',
@@ -100,10 +88,9 @@ export async function getBrowsers(
         responseText
       });
       throw new BrowserstackError(
-        'Invalid JSON response from Browserstack API',
+        'Invalid response format from Browserstack API',
         500,
-        requestId,
-        { responseText }
+        requestId
       );
     }
 
@@ -115,12 +102,62 @@ export async function getBrowsers(
 
     return data;
   } catch (error) {
+    if (error instanceof BrowserstackError) {
+      throw error;
+    }
     logger.error({
       message: 'Failed to fetch browsers from Browserstack',
       requestId,
       error
     });
-    throw error;
+    throw new BrowserstackError(
+      'Failed to fetch browsers',
+      500,
+      requestId
+    );
+  }
+}
+
+async function pollJobStatus(
+  jobId: string,
+  credentials: BrowserstackCredentials,
+  requestId: string
+): Promise<ScreenshotResponse> {
+  const auth = btoa(`${credentials.username}:${credentials.password}`);
+  const startTime = Date.now();
+
+  while (true) {
+    const response = await fetch(`https://www.browserstack.com/screenshots/${jobId}.json`, {
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new BrowserstackError(
+        `Failed to poll job status: ${response.statusText}`,
+        response.status,
+        requestId,
+        { errorText }
+      );
+    }
+
+    const result = await response.json();
+    if (result.state === 'done') {
+      return result;
+    }
+
+    if (Date.now() - startTime > POLLING_TIMEOUT) {
+      throw new BrowserstackError(
+        'Polling timeout exceeded',
+        408,
+        requestId
+      );
+    }
+
+    await new Promise(resolve => setTimeout(resolve, POLLING_INTERVAL));
   }
 }
 
@@ -149,185 +186,77 @@ export async function generateScreenshots(
     );
   }
 
-  if (request.wait_time) {
-    validateWaitTime(request.wait_time);
-  }
-
-  // Validate resolutions
-  validateResolution(request.win_res, 'Windows');
-  validateResolution(request.mac_res, 'Mac');
-
-  // First, get available browsers
-  let availableBrowsers: Browser[];
+  const auth = btoa(`${credentials.username}:${credentials.password}`);
+  
   try {
-    availableBrowsers = await getBrowsers(credentials, requestId);
-    
-    if (!availableBrowsers || !Array.isArray(availableBrowsers) || availableBrowsers.length === 0) {
+    logger.debug({
+      message: 'Processing browser configuration',
+      requestId,
+      browser: request.browsers?.[0]
+    });
+
+    const response = await fetch('https://www.browserstack.com/screenshots', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(request)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
       logger.error({
-        message: 'No browsers available from BrowserStack',
-        requestId
+        message: 'BrowserStack API error response',
+        requestId,
+        status: response.status,
+        errorText
       });
+
+      let errorMessage;
+      try {
+        const errorData = JSON.parse(errorText);
+        errorMessage = errorData.message || `BrowserStack API error: ${response.statusText}`;
+      } catch {
+        errorMessage = `BrowserStack API error: ${response.statusText}`;
+      }
+
       throw new BrowserstackError(
-        'No browsers available from BrowserStack',
+        errorMessage,
+        response.status,
+        requestId,
+        { errorText }
+      );
+    }
+
+    const result = await response.json();
+    if (!result.id) {
+      throw new BrowserstackError(
+        'Response missing required id field',
         500,
         requestId
       );
     }
+
+    // If no callback URL is provided, poll for completion
+    if (!request.callback_url) {
+      return await pollJobStatus(result.id, credentials, requestId);
+    }
+
+    return result;
   } catch (error) {
+    if (error instanceof BrowserstackError) {
+      throw error;
+    }
     logger.error({
-      message: 'Failed to get available browsers',
+      message: 'Failed to generate screenshots',
       requestId,
       error
     });
-    throw error;
-  }
-
-  // Map browsers and handle versions
-  const browsers = request.browsers.map(browser => {
-    logger.debug({
-      message: 'Processing browser configuration',
-      requestId,
-      browser
-    });
-
-    if (!browser.os) {
-      throw new BrowserstackError(
-        `Invalid browser configuration: OS is a required field`,
-        400,
-        requestId
-      );
-    }
-
-    const matchingBrowser = availableBrowsers.find(b => {
-      // Match OS and OS version first
-      const osMatch = b.os && browser.os &&
-        b.os.toLowerCase() === browser.os.toLowerCase() &&
-        b.os_version === browser.os_version;
-
-      if (!osMatch) return false;
-
-      // For mobile devices, match by device name
-      if (browser.device) {
-        return b.device === browser.device;
-      }
-
-      // For desktop browsers, match by browser name
-      if (browser.browser) {
-        return b.browser && b.browser.toLowerCase() === browser.browser.toLowerCase();
-      }
-
-      return false;
-    });
-
-    if (!matchingBrowser) {
-      const deviceInfo = browser.device ? ` (${browser.device})` : '';
-      const browserInfo = browser.browser ? ` ${browser.browser}` : '';
-      throw new BrowserstackError(
-        `No matching browser configuration found for${browserInfo} on ${browser.os} ${browser.os_version || 'latest'}${deviceInfo}`,
-        400,
-        requestId
-      );
-    }
-
-    return {
-      ...browser,
-      browser_version: browser.browser_version === 'latest' ? matchingBrowser.browser_version : browser.browser_version
-    };
-  });
-
-  const payload = {
-    url: request.url,
-    browsers,
-    quality: request.quality || 'compressed',
-    wait_time: request.wait_time || 5,
-    callback_url: request.callback_url,
-    orientation: request.orientation || 'portrait',
-    mac_res: request.mac_res || '1024x768',
-    win_res: request.win_res || '1024x768',
-    local: request.local || false
-  };
-
-  logger.info({
-    message: 'Sending request to BrowserStack API',
-    requestId,
-    payload
-  });
-
-  const auth = btoa(`${credentials.username}:${credentials.password}`);
-  const response = await fetch('https://www.browserstack.com/screenshots', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Basic ${auth}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(payload)
-  });
-
-  const result = await handleBrowserstackResponse<ScreenshotResponse>(response, requestId);
-
-  // Start polling for completion if no callback URL is provided
-  if (!request.callback_url) {
-    logger.info({
-      message: 'Starting to poll for screenshot completion',
-      requestId,
-      jobId: result.id
-    });
-
-    // Poll every 10 seconds for up to 5 minutes
-    const maxPolls = 30;
-    const pollInterval = 10000;
-    let pollCount = 0;
-    
-    while (pollCount < maxPolls) {
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
-
-      const statusResponse = await fetch(`https://www.browserstack.com/screenshots/${result.id}.json`, {
-        headers: {
-          'Authorization': `Basic ${auth}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const status = await handleBrowserstackResponse<ScreenshotResponse>(statusResponse, requestId);
-
-      if (status.state === 'done') {
-        logger.info({
-          message: 'Screenshots generated successfully',
-          requestId,
-          jobId: result.id
-        });
-        return status;
-      }
-
-      if (status.state === 'error') {
-        logger.error({
-          message: 'Screenshot generation failed',
-          requestId,
-          jobId: result.id,
-          status
-        });
-        throw new BrowserstackError(
-          'Screenshot generation failed',
-          500,
-          requestId,
-          { status }
-        );
-      }
-
-      pollCount++;
-    }
-
-    logger.error({
-      message: 'Screenshot generation timed out',
-      requestId,
-      jobId: result.id
-    });
     throw new BrowserstackError(
-      'Screenshot generation timed out after 5 minutes',
-      504,
+      'Failed to generate screenshots',
+      500,
       requestId
     );
   }
-
-  return result;
 }

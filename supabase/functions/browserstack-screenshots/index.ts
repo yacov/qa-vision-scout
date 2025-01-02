@@ -116,12 +116,27 @@ Deno.serve(async (req: Request) => {
       stack: error instanceof Error ? error.stack : undefined,
     });
 
+    let status = 500;
+    let errorMessage = 'Internal server error';
+
+    if (error instanceof Error) {
+      if (error.message.includes('validation')) {
+        status = 400;
+        errorMessage = error.message;
+      } else if ('statusCode' in error) {
+        status = (error as { statusCode: number }).statusCode;
+        errorMessage = error.message;
+      } else {
+        errorMessage = error.message;
+      }
+    }
+
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : 'Internal server error'
+        error: errorMessage
       }),
       { 
-        status: error instanceof Error && error.message.includes('validation') ? 400 : 500,
+        status,
         headers: { 
           'Content-Type': 'application/json',
           ...corsHeaders 
