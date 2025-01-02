@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { UrlInputs } from "./UrlInputs";
 import { ConfigSelection } from "./ConfigSelection";
+import { ScreenshotButton } from "./ScreenshotButton";
+import { Config } from "./types";
 
 interface ComparisonFormProps {
   onTestCreated: () => void;
@@ -21,7 +21,8 @@ export const ComparisonForm = ({
 }: ComparisonFormProps) => {
   const [baselineUrl, setBaselineUrl] = useState(initialBaselineUrl);
   const [newUrl, setNewUrl] = useState(initialNewUrl);
-  const [selectedConfigs, setSelectedConfigs] = useState<string[]>([]);
+  const [selectedConfigIds, setSelectedConfigIds] = useState<string[]>([]);
+  const [selectedConfigs, setSelectedConfigs] = useState<Config[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -30,8 +31,36 @@ export const ComparisonForm = ({
     setNewUrl(initialNewUrl);
   }, [initialBaselineUrl, initialNewUrl]);
 
+  useEffect(() => {
+    const fetchConfigs = async () => {
+      if (selectedConfigIds.length === 0) {
+        setSelectedConfigs([]);
+        return;
+      }
+
+      const { data: configs, error } = await supabase
+        .from('browserstack_configs')
+        .select('*')
+        .in('id', selectedConfigIds);
+
+      if (error) {
+        console.error("Error fetching configs:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch configurations",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setSelectedConfigs(configs || []);
+    };
+
+    fetchConfigs();
+  }, [selectedConfigIds, toast]);
+
   const toggleConfig = (configId: string) => {
-    setSelectedConfigs(prev => 
+    setSelectedConfigIds(prev => 
       prev.includes(configId) 
         ? prev.filter(id => id !== configId)
         : [...prev, configId]
@@ -62,18 +91,7 @@ export const ComparisonForm = ({
           throw new Error('Failed to create test record');
         }
 
-        // Get the selected configurations
-        const { data: configs, error: configError } = await supabase
-          .from('browserstack_configs')
-          .select('*')
-          .in('id', selectedConfigs);
-
-        if (configError) {
-          console.error("Error fetching configs:", configError);
-          throw new Error('Failed to fetch configurations');
-        }
-
-        if (!configs || configs.length === 0) {
+        if (!selectedConfigs || selectedConfigs.length === 0) {
           throw new Error('No configurations found');
         }
 
@@ -83,7 +101,7 @@ export const ComparisonForm = ({
             body: {
               testId: test.id,
               url: baselineUrl,
-              selected_configs: configs
+              selected_configs: selectedConfigs
             },
           });
 
@@ -99,98 +117,49 @@ export const ComparisonForm = ({
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comparison-tests'] });
       toast({
-        title: "Test created",
-        description: "Your comparison test has been created and screenshots are being generated.",
+        title: "Test created successfully",
+        description: "Your comparison test has been created and is being processed."
       });
       onTestCreated();
-      setBaselineUrl("");
-      setNewUrl("");
-      setSelectedConfigs([]);
+      queryClient.invalidateQueries({ queryKey: ['tests'] });
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       toast({
-        title: "Error",
-        description: error.message || "Failed to create comparison test. Please try again.",
-        variant: "destructive",
+        title: "Error creating test",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive"
       });
-      console.error("Error creating test:", error);
     }
   });
 
-  const handleCompare = () => {
-    // Validate URLs
-    if (!baselineUrl || !newUrl) {
-      toast({
-        title: "Validation Error",
-        description: "Please provide both baseline and new URLs.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate URL format
-    try {
-      new URL(baselineUrl);
-      new URL(newUrl);
-    } catch (error) {
-      toast({
-        title: "Invalid URL",
-        description: "Please enter valid URLs for both baseline and new versions.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate configurations
-    if (selectedConfigs.length === 0) {
-      toast({
-        title: "Validation Error",
-        description: "Please select at least one configuration for comparison.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    createTest.mutate();
+  const handleScreenshotsGenerated = async (baselineUrl: string, newUrl: string, configs: Config[]) => {
+    await createTest.mutateAsync();
   };
 
   return (
-    <Card className="mb-6">
+    <Card>
       <CardHeader>
-        <CardTitle>URL Configuration</CardTitle>
+        <CardTitle>Compare Websites</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4">
         <UrlInputs
           baselineUrl={baselineUrl}
           newUrl={newUrl}
           onBaselineUrlChange={setBaselineUrl}
           onNewUrlChange={setNewUrl}
         />
-
-        <div className="space-y-4">
-          <h3 className="font-semibold">Select Configurations for Comparison</h3>
-          <ConfigSelection
-            selectedConfigs={selectedConfigs}
-            onConfigToggle={toggleConfig}
-          />
-        </div>
-
-        <Button 
-          onClick={handleCompare}
+        <ConfigSelection
+          selectedConfigs={selectedConfigIds}
+          onConfigToggle={toggleConfig}
+        />
+        <ScreenshotButton
+          baselineUrl={baselineUrl}
+          newUrl={newUrl}
+          selectedConfigs={selectedConfigs}
+          onScreenshotsGenerated={handleScreenshotsGenerated}
           disabled={createTest.isPending}
-          className="w-full"
-        >
-          {createTest.isPending ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Creating Test...
-            </>
-          ) : (
-            'Start Comparison'
-          )}
-        </Button>
+        />
       </CardContent>
     </Card>
   );

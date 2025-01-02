@@ -1,52 +1,38 @@
 export interface BrowserstackCredentials {
   username: string;
-  password: string;
+  accessKey: string;
 }
 
 export interface Browser {
   os: string;
   os_version: string;
-  browser?: string;
-  browser_version?: string;
-  device?: string;
+  browser: string;
+  browser_version: string;
 }
 
-export interface ScreenshotRequest {
+export interface ScreenshotInput {
   url: string;
   browsers: Browser[];
   quality?: 'compressed' | 'original';
   wait_time?: number;
   callback_url?: string;
-  orientation?: 'portrait' | 'landscape';
-  mac_res?: string;
-  win_res?: string;
-  local?: boolean;
 }
 
 export interface Screenshot {
   id: string;
-  browser: string;
-  browser_version: string | null;
-  os: string;
-  os_version: string;
   url: string;
-  state: 'done' | 'processing' | 'error';
-  image_url: string | null;
-  thumb_url: string | null;
-  device: string | null;
-  orientation: 'portrait' | 'landscape';
-  created_at: string;
 }
 
 export interface ScreenshotResponse {
   id: string;
-  state: 'done' | 'queued_all' | 'error';
-  callback_url: string | null;
-  win_res: string;
-  mac_res: string;
-  quality: 'compressed' | 'original';
-  wait_time: number;
-  orientation: 'portrait' | 'landscape';
+  state: 'queued' | 'processing' | 'done' | 'error';
   screenshots: Screenshot[];
-  stopped: boolean;
+  callback_url?: string;
+  [key: string]: unknown;
+}
+
+export interface BrowserstackError extends Error {
+  statusCode: number;
+  requestId: string;
+  context?: Record<string, unknown>;
 }

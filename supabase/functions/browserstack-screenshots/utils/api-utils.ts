@@ -1,131 +1,15 @@
-import { logger } from "../logger.ts";
-import { BrowserstackError } from "../errors/browserstack-error.ts";
+import { BrowserstackError } from './errors';
 
-export async function handleBrowserstackResponse<T>(response: Response, requestId: string): Promise<T> {
+export function handleBrowserstackResponse(response: Response, requestId: string = 'unknown') {
   if (!response.ok) {
-    let errorMessage = `BrowserStack API error: ${response.status}`;
-    let errorText = '';
-    
-    try {
-      errorText = await response.text();
-      logger.error({
-        message: 'BrowserStack API error response',
-        requestId,
-        status: response.status,
-        errorText
-      });
-    } catch (e) {
-      logger.error({
-        message: 'Failed to read error response',
-        requestId,
-        error: e
-      });
-    }
-    
-    // Special handling for rate limit errors
-    if (response.status === 429) {
-      errorMessage = 'Rate limit exceeded';
-    }
-    
-    throw new BrowserstackError(errorMessage, response.status, requestId, {
-      errorText,
-      statusText: response.statusText
-    });
+    const errorMessage = response.status === 429 
+      ? 'Rate limit exceeded'
+      : `BrowserStack API error: ${response.status}${
+          response.statusText ? ` - ${response.statusText}` : ''
+        }`;
+    throw new BrowserstackError(errorMessage, response.status, requestId);
   }
-
-  try {
-    const responseText = await response.text();
-    logger.debug({
-      message: 'Raw BrowserStack API response',
-      requestId,
-      responseText
-    });
-
-    // Check if response is empty
-    if (!responseText) {
-      logger.error({
-        message: 'Empty response from BrowserStack API',
-        requestId
-      });
-      throw new Error('Empty response from BrowserStack API');
-    }
-
-    try {
-      const data = JSON.parse(responseText);
-      
-      // Basic validation of response structure
-      if (data === null || data === undefined) {
-        logger.error({
-          message: 'Null or undefined response data',
-          requestId,
-          responseText
-        });
-        throw new Error('Null or undefined response data');
-      }
-
-      // For browsers.json endpoint, validate array structure
-      if (Array.isArray(data)) {
-        if (data.length === 0) {
-          logger.error({
-            message: 'Empty browser list received',
-            requestId
-          });
-          throw new Error('Empty browser list received');
-        }
-        // Validate each browser object has minimum required properties
-        data.forEach((browser, index) => {
-          if (!browser.os) {
-            throw new Error(`Browser at index ${index} is missing required os property`);
-          }
-        });
-        return data as T;
-      }
-
-      // For screenshot generation response, validate object structure
-      if (typeof data === 'object') {
-        if (!data.id) {
-          logger.error({
-            message: 'Response missing required id field',
-            requestId,
-            responseText
-          });
-          throw new Error('Response missing required id field');
-        }
-        return data as T;
-      }
-
-      logger.error({
-        message: 'Invalid response format',
-        requestId,
-        responseText
-      });
-      throw new Error('Invalid response format: expected array or object');
-    } catch (parseError) {
-      logger.error({
-        message: 'Failed to parse BrowserStack API response',
-        requestId,
-        responseText,
-        error: parseError
-      });
-      throw new BrowserstackError(
-        parseError instanceof Error ? parseError.message : 'Invalid response format from BrowserStack API',
-        response.status,
-        requestId,
-        { responseText }
-      );
-    }
-  } catch (error) {
-    logger.error({
-      message: 'Failed to handle BrowserStack API response',
-      requestId,
-      error
-    });
-    throw new BrowserstackError(
-      error instanceof Error ? error.message : 'Unknown error processing response',
-      response.status,
-      requestId
-    );
-  }
+  return response;
 }
 
 export function validateResolution(resolution: string | undefined, type: 'Windows' | 'Mac'): void {

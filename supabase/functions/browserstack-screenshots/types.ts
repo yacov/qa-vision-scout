@@ -130,3 +130,51 @@ export interface ScreenshotRequest {
   }[];
   waitTime: number;
 } 
+
+export interface BrowserstackCredentials {
+  username: string;
+  accessKey: string;
+}
+
+export interface Browser {
+  os: string;
+  os_version: string;
+  browser: string;
+  browser_version: string;
+}
+
+export interface ScreenshotInput {
+  url: string;
+  browsers: BrowserConfig[];
+  callback_url?: string;
+  quality?: 'compressed' | 'original';
+  wait_time?: WaitTime;
+  win_res?: WindowsResolution;
+  mac_res?: MacResolution;
+  orientation?: 'portrait' | 'landscape';
+  local?: boolean;
+}
+
+export interface Screenshot {
+  id: string;
+  browser: string;
+  browser_version: string;
+  os: string;
+  os_version: string;
+  url: string;
+}
+
+export interface ScreenshotResponse {
+  id: string;
+  job_id: string;
+  state: 'queued' | 'processing' | 'done' | 'error';
+  callback_url: string | null;
+  screenshots: Screenshot[];
+}
+
+export interface BrowserstackError {
+  message: string;
+  statusCode: number;
+  requestId: string;
+  context?: Record<string, unknown>;
+} 

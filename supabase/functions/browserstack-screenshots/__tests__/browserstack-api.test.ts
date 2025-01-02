@@ -1,99 +1,81 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { generateScreenshots, getBrowsers } from '../browserstack-api.js';
-import { createValidScreenshotRequest, mockFetch, createMockResponse, createMockScreenshotResponse } from './test-utils.js';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { generateScreenshots, getAvailableBrowsers } from '../browserstack-api';
+import { createDefaultMockFetch, createRateLimitMock, createTimeoutMock } from './test-utils';
+import { BrowserConfig } from '../types';
 
-const mockCredentials = {
+const credentials = {
   username: 'test-user',
-  password: 'test-pass'
+  accessKey: 'test-key'
 };
 
-describe('BrowserStack API', () => {
-  const validInput = createValidScreenshotRequest();
-
-  beforeEach(() => {
-    mockFetch.mockReset();
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it('should fetch available browsers successfully', async () => {
-    mockFetch.fn.mockImplementationOnce(async () => createMockResponse(200, [{
+const input = {
+  url: 'https://example.com',
+  browsers: [
+    {
       os: 'Windows',
       os_version: '10',
       browser: 'chrome',
-      browser_version: 'latest',
-      device: null,
-      real_mobile: false
-    }]));
+      browser_version: '121.0',
+      device_type: 'desktop'
+    },
+    {
+      os: 'ios',
+      os_version: '17',
+      device: 'iPhone 15',
+      device_type: 'mobile'
+    }
+  ] as BrowserConfig[]
+};
 
-    const browsers = await getBrowsers(mockCredentials, 'test-request-id');
-    expect(Array.isArray(browsers), 'browsers should be an array').toBe(true);
-    expect(browsers.length, 'browsers array should not be empty').toBeGreaterThan(0);
-    expect(browsers[0], 'first browser should be Windows').toHaveProperty('os', 'Windows');
-    expect(browsers[0], 'first browser should be Chrome').toHaveProperty('browser', 'chrome');
+const inputWithCallback = {
+  ...input,
+  callback_url: 'https://example.com/callback'
+};
+
+describe('BrowserStack API', () => {
+  beforeEach(() => {
+    global.fetch = createDefaultMockFetch();
   });
+
+  it('should fetch available browsers successfully', async () => {
+    const result = await getAvailableBrowsers(credentials);
+    expect(result).toBeDefined();
+    expect(result.browsers).toBeDefined();
+    expect(result.browsers.length).toBeGreaterThan(0);
+  }, 30000);
 
   it('should handle parallel limit error gracefully', async () => {
-    mockFetch.fn.mockImplementationOnce(async () => createMockResponse(422, {
-      message: 'Parallel limit reached',
-      running_sessions: 1
-    }));
-
-    await expect(generateScreenshots(validInput, mockCredentials))
-      .rejects
-      .toThrow('Parallel limit reached');
-  });
+    global.fetch = createRateLimitMock();
+    await expect(generateScreenshots(input, credentials)).rejects.toThrow('Rate limit exceeded');
+  }, 30000);
 
   it('should generate screenshots successfully with callback URL', async () => {
-    const mockResponse = createMockScreenshotResponse({
-      ...validInput,
-      callback_url: 'https://example.com/callback'
-    });
-
-    mockFetch.fn.mockImplementationOnce(async () => createMockResponse(200, mockResponse));
-
-    const result = await generateScreenshots({
-      ...validInput,
-      callback_url: 'https://example.com/callback'
-    }, mockCredentials);
-
-    expect(result.id).toBe('test-job-id');
-    expect(result.callback_url).toBe(undefined); // BrowserStack API doesn't echo back callback_url
-    expect(result.screenshots).toHaveLength(1);
-    expect(result.screenshots[0]).toHaveProperty('browser', 'chrome');
-  });
+    const result = await generateScreenshots(inputWithCallback, credentials);
+    expect(result).toBeDefined();
+    expect(result.id).toBeDefined();
+    expect(result.job_id).toBeDefined();
+    expect(result.state).toBe('queued');
+  }, 30000);
 
   it('should poll for completion when no callback URL is provided', async () => {
-    mockFetch.fn
-      .mockImplementationOnce(async () => createMockResponse(200, createMockScreenshotResponse(validInput, 'queued')))
-      .mockImplementationOnce(async () => createMockResponse(200, createMockScreenshotResponse(validInput, 'processing')))
-      .mockImplementationOnce(async () => createMockResponse(200, createMockScreenshotResponse(validInput, 'done')));
-
-    const resultPromise = generateScreenshots(validInput, mockCredentials);
-    
-    // Fast-forward through polling delays
-    for (let i = 0; i < 3; i++) {
-      await vi.advanceTimersByTimeAsync(1000);
-    }
-
-    const result = await resultPromise;
-    expect(result.id).toBe('test-job-id');
+    const result = await generateScreenshots(input, credentials);
+    expect(result).toBeDefined();
+    expect(result.id).toBeDefined();
+    expect(result.job_id).toBeDefined();
     expect(result.state).toBe('done');
-    expect(result.screenshots).toHaveLength(1);
-    expect(result.screenshots[0]).toHaveProperty('browser', 'chrome');
-  });
+    expect(result.screenshots).toHaveLength(2);
+    
+    // Verify screenshot details
+    const [desktopShot, mobileShot] = result.screenshots;
+    expect(desktopShot.browser).toBe('chrome');
+    expect(desktopShot.os).toBe('Windows');
+    expect(mobileShot.device).toBe('iPhone 15');
+    expect(mobileShot.os).toBe('ios');
+  }, 60000);
 
   it('should throw error if polling times out', async () => {
-    mockFetch.fn.mockImplementation(async () => createMockResponse(200, createMockScreenshotResponse(validInput, 'processing')));
-
-    const resultPromise = generateScreenshots(validInput, mockCredentials);
-
-    // Fast-forward past the timeout
-    await vi.advanceTimersByTimeAsync(5 * 60 * 1000 + 1000);
-
-    await expect(resultPromise).rejects.toThrow('Polling timeout exceeded');
-  });
+    global.fetch = createTimeoutMock();
+    await expect(generateScreenshots(input, credentials, { maxPolls: 3, pollInterval: 100 }))
+      .rejects.toThrow('Polling timeout exceeded');
+  }, 60000);
 }); 

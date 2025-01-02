@@ -1,38 +1,54 @@
-import { beforeEach, vi } from 'vitest';
-import { config } from 'dotenv';
-import { resolve } from 'path';
-import { mockFetch } from './__tests__/test-utils.js';
+import '@testing-library/jest-dom';
+import { expect, vi } from 'vitest';
+import { handler } from './index';
+import { createDefaultMockFetch } from './__tests__/test-utils';
 
-// Load environment variables from .env.test
-const envPath = resolve(__dirname, '.env.test');
-const result = config({ path: envPath });
+// Mock Deno environment
+global.Deno = {
+  env: {
+    get: (key: string) => {
+      const envVars: Record<string, string> = {
+        BROWSERSTACK_USERNAME: 'test_username',
+        BROWSERSTACK_ACCESS_KEY: 'test_access_key',
+        SUPABASE_URL: 'http://localhost:54321',
+        SUPABASE_ANON_KEY: 'test-anon-key'
+      };
+      return envVars[key] || undefined;
+    }
+  },
+  serve: vi.fn()
+} as any;
 
-if (result.error) {
-  console.warn(`Warning: Error loading environment variables from ${envPath}`);
-  console.warn(result.error);
-}
+// Add custom matchers
+expect.extend({
+  toHaveClass(received, className) {
+    const pass = received.classList.contains(className);
+    return {
+      pass,
+      message: () =>
+        `expected ${received} ${pass ? 'not to' : 'to'} have class "${className}"`,
+    };
+  },
+});
 
-// Ensure required environment variables are set
-const requiredEnvVars = ['BROWSERSTACK_USERNAME', 'BROWSERSTACK_ACCESS_KEY'];
-const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
-
-if (missingEnvVars.length > 0) {
-  console.warn('Warning: Missing required environment variables:');
-  missingEnvVars.forEach(varName => console.warn(`- ${varName}`));
-}
-
-// Mock database client
-vi.mock('./database', () => ({
-  default: {
-    createSupabaseClient: vi.fn().mockReturnValue({})
+// Mock crypto.randomUUID
+Object.defineProperty(global, 'crypto', {
+  value: {
+    randomUUID: () => '12345678-1234-1234-1234-123456789012',
+    subtle: {} as any,
+    getRandomValues: () => new Uint8Array(10)
   }
-}));
+});
 
-// Set up global fetch mock
-global.fetch = mockFetch.fn;
+// Mock fetch globally
+global.fetch = createDefaultMockFetch();
 
-// Reset mocks before each test
-beforeEach(() => {
-  vi.resetAllMocks();
-  global.fetch = mockFetch.fn;
-}); 
+// Mock console.error to not pollute test output
+console.error = vi.fn();
+
+// Mock btoa globally since it's not available in Node
+global.btoa = (str: string) => Buffer.from(str).toString('base64');
+global.atob = (str: string) => Buffer.from(str, 'base64').toString();
+
+// Set up test handler
+global.testHandler = handler; 
