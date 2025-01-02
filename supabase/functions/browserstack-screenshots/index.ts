@@ -95,7 +95,7 @@ Deno.serve(async (req: Request) => {
       message: 'Screenshots generated successfully',
       requestId,
       testId: validatedData.testId,
-      jobId: result.job_id,
+      jobId: result.id,
     });
 
     return new Response(
