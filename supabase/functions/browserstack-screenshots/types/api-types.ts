@@ -50,7 +50,3 @@ export interface ScreenshotResponse {
   screenshots: Screenshot[];
   stopped: boolean;
 }
-
-export interface BrowsersResponse {
-  browsers: Browser[];
-}

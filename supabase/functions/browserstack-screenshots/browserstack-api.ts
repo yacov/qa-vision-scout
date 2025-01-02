@@ -6,7 +6,6 @@ import type {
   BrowserstackCredentials, 
   ScreenshotRequest, 
   ScreenshotResponse,
-  BrowsersResponse,
   Browser 
 } from "./types/api-types";
 
@@ -78,9 +77,22 @@ export async function getBrowsers(
       responseText
     });
 
-    let data: BrowsersResponse | Browser[];
+    let data: Browser[];
     try {
       data = JSON.parse(responseText);
+      
+      // Validate that the response is an array and each item has required browser properties
+      if (!Array.isArray(data)) {
+        throw new Error('Response is not an array');
+      }
+      
+      // Validate each browser object has required properties
+      data.forEach((browser, index) => {
+        if (!browser.os || !browser.os_version) {
+          throw new Error(`Browser at index ${index} is missing required properties`);
+        }
+      });
+      
     } catch (error) {
       logger.error({
         message: 'Failed to parse Browserstack API response',
@@ -93,20 +105,6 @@ export async function getBrowsers(
         500,
         requestId,
         { responseText }
-      );
-    }
-    
-    if (!Array.isArray(data)) {
-      logger.error({
-        message: 'Invalid response format from Browserstack API',
-        requestId,
-        data
-      });
-      throw new BrowserstackError(
-        'Invalid response format from Browserstack API',
-        500,
-        requestId,
-        { data }
       );
     }
 
