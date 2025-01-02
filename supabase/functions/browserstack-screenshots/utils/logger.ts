@@ -1,16 +1,8 @@
 export const logger = {
   info: (data: Record<string, unknown>) => {
-    console.log(JSON.stringify({
-      ...data,
-      timestamp: new Date().toISOString(),
-      level: 'info'
-    }))
+    console.log(JSON.stringify({ level: 'info', ...data }))
   },
   error: (data: Record<string, unknown>) => {
-    console.error(JSON.stringify({
-      ...data,
-      timestamp: new Date().toISOString(),
-      level: 'error'
-    }))
+    console.error(JSON.stringify({ level: 'error', ...data }))
   }
 }

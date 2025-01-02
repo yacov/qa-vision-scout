@@ -9,9 +9,26 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const username = Deno.env.get('BROWSERSTACK_USERNAME')
+    const accessKey = Deno.env.get('BROWSERSTACK_ACCESS_KEY')
+
+    if (!username || !accessKey) {
+      logger.error({
+        message: 'Missing BrowserStack credentials',
+        username: !!username,
+        accessKey: !!accessKey
+      })
+      throw new Error('BrowserStack credentials not configured')
+    }
+
     const { url, selected_configs } = await req.json()
 
     if (!url || !selected_configs) {
+      logger.error({
+        message: 'Invalid request payload',
+        url: !!url,
+        configsPresent: !!selected_configs
+      })
       throw new Error('Missing required parameters: url and selected_configs')
     }
 
@@ -30,11 +47,15 @@ Deno.serve(async (req) => {
   } catch (error) {
     logger.error({
       message: 'Error in browserstack-screenshots function',
-      error: error.message
+      error: error.message,
+      stack: error.stack
     })
 
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        type: error.name || 'UnknownError'
+      }),
       { 
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

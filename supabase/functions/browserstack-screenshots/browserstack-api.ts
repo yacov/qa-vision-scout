@@ -13,7 +13,7 @@ export async function generateScreenshots(url: string, configs: BrowserConfig[])
   const accessKey = Deno.env.get('BROWSERSTACK_ACCESS_KEY')
 
   if (!username || !accessKey) {
-    throw new Error('Missing BrowserStack credentials')
+    throw new Error('BrowserStack credentials not configured')
   }
 
   logger.info({
@@ -46,6 +46,11 @@ export async function generateScreenshots(url: string, configs: BrowserConfig[])
 
     if (!response.ok) {
       const errorText = await response.text()
+      logger.error({
+        message: 'BrowserStack API error',
+        status: response.status,
+        error: errorText
+      })
       throw new Error(`BrowserStack API error: ${response.statusText || errorText}`)
     }
 
