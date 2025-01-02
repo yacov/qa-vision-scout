@@ -1,13 +1,13 @@
 import { v4 as uuidv4 } from 'uuid';
-import { logger } from "./logger";
-import { handleBrowserstackResponse, validateResolution, validateWaitTime } from "./utils/api-utils";
-import { BrowserstackError } from "./errors/browserstack-error";
+import { logger } from "./logger.ts";
+import { handleBrowserstackResponse, validateResolution, validateWaitTime } from "./utils/api-utils.ts";
+import { BrowserstackError } from "./errors/browserstack-error.ts";
 import type { 
   BrowserstackCredentials, 
   ScreenshotRequest, 
   ScreenshotResponse,
   Browser 
-} from "./types/api-types";
+} from "./types/api-types.ts";
 
 export async function getBrowsers(
   credentials: BrowserstackCredentials,

@@ -1,9 +1,9 @@
 /// <reference types="deno" />
 
-import { generateScreenshots } from './browserstack-api';
-import type { ScreenshotRequest, BrowserstackCredentials } from './types/api-types';
-import { validateRequestData } from './request-validator';
-import { logger } from './logger';
+import { generateScreenshots } from './browserstack-api.ts';
+import type { ScreenshotRequest, BrowserstackCredentials } from './types/api-types.ts';
+import { validateRequestData } from './request-validator.ts';
+import { logger } from './logger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

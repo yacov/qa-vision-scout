@@ -1,5 +1,5 @@
-import { logger } from "../logger";
-import { BrowserstackError } from "../errors/browserstack-error";
+import { logger } from "../logger.ts";
+import { BrowserstackError } from "../errors/browserstack-error.ts";
 
 export async function handleBrowserstackResponse<T>(response: Response, requestId: string): Promise<T> {
   if (!response.ok) {
