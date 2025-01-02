@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from "npm:uuid@9.0.0";
 import { logger } from "./logger.ts";
 import { handleBrowserstackResponse, validateResolution, validateWaitTime } from "./utils/api-utils.ts";
 import { BrowserstackError } from "./errors/browserstack-error.ts";
@@ -10,6 +11,35 @@ import type {
 
 const POLLING_INTERVAL = 1000; // 1 second
 const POLLING_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+
+function formatBrowserVersion(version: string | undefined): string | undefined {
+  if (!version) return undefined;
+  
+  // If version is 'latest', return as is
+  if (version.toLowerCase() === 'latest') return 'latest';
+  
+  // Extract major version number
+  const majorVersion = version.split('.')[0];
+  if (!majorVersion) return undefined;
+  
+  // Return formatted version (major.0)
+  return `${majorVersion}.0`;
+}
+
+function validateBrowserConfig(browser: Browser): void {
+  if (browser.browser && !browser.browser_version) {
+    throw new Error('Browser version is required when browser is specified');
+  }
+
+  if (browser.browser_version) {
+    const formattedVersion = formatBrowserVersion(browser.browser_version);
+    if (!formattedVersion) {
+      throw new Error('Invalid browser version format. Use "latest" or major version number (e.g., "121")');
+    }
+    // Update the browser version to the formatted version
+    browser.browser_version = formattedVersion;
+  }
+}
 
 export async function getBrowsers(
   credentials: BrowserstackCredentials,
@@ -54,46 +84,16 @@ export async function getBrowsers(
         errorText
       });
       
-      let errorMessage;
-      try {
-        const errorData = JSON.parse(errorText);
-        errorMessage = errorData.message || `BrowserStack API error: ${response.statusText}`;
-      } catch {
-        errorMessage = `BrowserStack API error: ${response.statusText}`;
-      }
-      
       throw new BrowserstackError(
-        errorMessage,
+        `BrowserStack API error: ${response.statusText}`,
         response.status,
         requestId,
         { errorText }
       );
     }
 
-    const responseText = await response.text();
-    logger.info({
-      message: 'Received response from Browserstack API',
-      requestId,
-      responseText
-    });
-
-    let data: Browser[];
-    try {
-      data = JSON.parse(responseText);
-    } catch (error) {
-      logger.error({
-        message: 'Failed to parse Browserstack API response',
-        requestId,
-        error,
-        responseText
-      });
-      throw new BrowserstackError(
-        'Invalid response format from Browserstack API',
-        500,
-        requestId
-      );
-    }
-
+    const data = await response.json();
+    
     logger.info({
       message: 'Successfully fetched browsers',
       requestId,
@@ -102,19 +102,12 @@ export async function getBrowsers(
 
     return data;
   } catch (error) {
-    if (error instanceof BrowserstackError) {
-      throw error;
-    }
     logger.error({
       message: 'Failed to fetch browsers from Browserstack',
       requestId,
       error
     });
-    throw new BrowserstackError(
-      'Failed to fetch browsers',
-      500,
-      requestId
-    );
+    throw error;
   }
 }
 
@@ -165,7 +158,7 @@ export async function generateScreenshots(
   request: ScreenshotRequest,
   credentials: BrowserstackCredentials
 ): Promise<ScreenshotResponse> {
-  const requestId = crypto.randomUUID();
+  const requestId = uuidv4();
   
   logger.info({
     message: 'Starting screenshot generation',
@@ -185,6 +178,25 @@ export async function generateScreenshots(
       requestId
     );
   }
+
+  // Validate and format browser configurations
+  request.browsers.forEach(browser => {
+    try {
+      validateBrowserConfig(browser);
+    } catch (error) {
+      logger.error({
+        message: 'Browser configuration validation failed',
+        requestId,
+        browser,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      throw new BrowserstackError(
+        error instanceof Error ? error.message : 'Invalid browser configuration',
+        422,
+        requestId
+      );
+    }
+  });
 
   const auth = btoa(`${credentials.username}:${credentials.password}`);
   
@@ -213,16 +225,8 @@ export async function generateScreenshots(
         errorText
       });
 
-      let errorMessage;
-      try {
-        const errorData = JSON.parse(errorText);
-        errorMessage = errorData.message || `BrowserStack API error: ${response.statusText}`;
-      } catch {
-        errorMessage = `BrowserStack API error: ${response.statusText}`;
-      }
-
       throw new BrowserstackError(
-        errorMessage,
+        `BrowserStack API error: ${response.statusText}`,
         response.status,
         requestId,
         { errorText }
@@ -245,18 +249,11 @@ export async function generateScreenshots(
 
     return result;
   } catch (error) {
-    if (error instanceof BrowserstackError) {
-      throw error;
-    }
     logger.error({
       message: 'Failed to generate screenshots',
       requestId,
       error
     });
-    throw new BrowserstackError(
-      'Failed to generate screenshots',
-      500,
-      requestId
-    );
+    throw error;
   }
 }
