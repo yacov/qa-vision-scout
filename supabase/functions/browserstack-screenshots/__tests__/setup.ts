@@ -40,7 +40,7 @@ if (typeof atob === 'undefined') {
 }
 
 // Replace global fetch with mock
-global.fetch = mockFetch.fn;
+global.fetch = mockFetch.fn as unknown as typeof fetch;
 
 // Reset all mocks before each test
 beforeEach(() => {
