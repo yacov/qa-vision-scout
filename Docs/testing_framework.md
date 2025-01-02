@@ -36,9 +36,6 @@ export const mockFetch = {
   mockReset() {
     this.fn.mockReset();
     this.fn.mockImplementation(defaultMockFetch);
-  },
-  mockResolvedValueOnce(value: Response) {
-    return this.fn.mockResolvedValueOnce(value);
   }
 };
 
@@ -48,45 +45,72 @@ export function createMockResponse(status: number, data: unknown): Response {
     headers: { 'Content-Type': 'application/json' }
   });
 }
+
+export function createValidScreenshotRequest() {
+  return {
+    url: 'https://example.com',
+    browsers: [{
+      os: 'ios',
+      os_version: '17',
+      device: 'iPhone 15'
+    }],
+    quality: 'compressed',
+    wait_time: 5,
+    orientation: 'portrait',
+    mac_res: '1024x768',
+    win_res: '1024x768'
+  };
+}
 ```
 
 ## Testing Patterns
 
 ### API Integration Tests
 
-1. **Request Mocking**
+1. **Request Mocking with Dynamic Responses**
 ```typescript
-// Example of mocking API requests
-it('should generate screenshots successfully', async () => {
-  const browsersMock = {
-    browsers: [{
-      os: 'Windows',
-      os_version: '10',
-      browser: 'chrome',
-      browser_version: '117.0',
-      device: null
-    }]
-  };
-
-  mockFetch.fn.mockImplementation(async () => 
-    createMockResponse(200, browsersMock)
-  );
-
-  const result = await generateScreenshots(validInput, credentials);
-  expect(result.job_id).toBeTruthy();
+// Example of mocking API requests with dynamic responses
+mockFetch.fn.mockImplementation(async (url: RequestInfo | URL, init?: RequestInit) => {
+  if (url.toString().includes('browsers.json')) {
+    return createMockResponse(200, browsersMock);
+  }
+  const body = init?.body ? JSON.parse(init.body.toString()) : {};
+  
+  return createMockResponse(200, {
+    id: 'test-job-id',
+    state: 'done',
+    quality: body.quality || 'compressed',
+    orientation: body.orientation || 'portrait',
+    // ... other response fields
+  });
 });
 ```
 
-2. **Error Handling**
+2. **Polling Tests**
+```typescript
+it('should poll for completion', async () => {
+  mockFetch.fn.mockImplementation(/* ... */);
+  const resultPromise = generateScreenshots(validInput);
+  
+  // Fast-forward time to simulate polling
+  for (let i = 0; i < 12; i++) {
+    await vi.advanceTimersByTimeAsync(10000);
+  }
+  
+  const result = await resultPromise;
+  expect(result.state).toBe('done');
+});
+```
+
+3. **Error Handling**
 ```typescript
 it('should handle rate limiting', async () => {
   mockFetch.fn.mockImplementation(async () => 
     createMockResponse(429, { message: 'Rate limit exceeded' })
   );
 
-  await expect(
-    generateScreenshots(validInput, credentials)
-  ).rejects.toThrow('Rate limit exceeded');
+  await expect(generateScreenshots(validInput))
+    .rejects.toThrow('Rate limit exceeded');
 });
 ```
 
@@ -94,83 +118,91 @@ it('should handle rate limiting', async () => {
 
 ### 1. Mock Implementation
 - Use centralized mock utilities
+- Implement dynamic response handling based on request parameters
 - Maintain type safety in mocks
-- Avoid global mock assignments
-- Use native implementations when available
+- Reset mocks before each test
+- Use native fetch implementation
 
 ### 2. Test Structure
 - Group related tests together
 - Use descriptive test names
-- Include both success and error cases
-- Test edge cases and rate limiting
+- Test both success and error cases
+- Include validation tests for all parameters
+- Test edge cases and timeouts
 
 ### 3. Async Testing
-- Properly handle async/await
+- Use `vi.useFakeTimers()` for time-dependent tests
+- Properly advance timers for polling tests
 - Set appropriate timeout values
-- Ensure efficient mock responses
-- Avoid unnecessary Promise chaining
+- Handle Promise rejections properly
 
-### 4. Type Safety
-- Ensure compatibility between mocks and actual implementations
-- Use TypeScript for better type checking
-- Maintain proper type definitions for all test utilities
+### 4. Validation Testing
+- Test all input validation scenarios
+- Validate configuration parameters
+- Test boundary conditions
+- Include error message validation
 
-## Configuration
+## Common Scenarios
 
-### Vitest Configuration
+### 1. Testing Polling Behavior
 ```typescript
-// vitest.config.ts
-export default defineConfig({
-  test: {
-    globals: true,
-    environment: 'node',
-    setupFiles: ['./vitest.setup.ts'],
-    include: ['**/*.test.ts'],
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html']
-    },
-    testTimeout: 60000,
-    hookTimeout: 60000
-  }
+// Setup mock with multiple responses
+let callCount = 0;
+mockFetch.fn.mockImplementation(async () => {
+  callCount++;
+  if (callCount === 1) return initialResponse;
+  if (callCount === 2) return processingResponse;
+  return completionResponse;
 });
+
+// Advance time appropriately
+await vi.advanceTimersByTimeAsync(10000);
 ```
 
-### Test Setup
+### 2. Testing Configuration Validation
 ```typescript
-// vitest.setup.ts
-import { mockFetch } from './__tests__/test-utils.js';
+// Test invalid configurations
+await expect(generateScreenshots({
+  ...validInput,
+  quality: 'invalid'
+})).rejects.toThrow('Invalid quality setting');
 
-// Set up global fetch mock
-global.fetch = mockFetch.fn;
-
-// Reset mocks before each test
-beforeEach(() => {
-  vi.resetAllMocks();
-  global.fetch = mockFetch.fn;
-});
+// Test required fields
+await expect(generateScreenshots({
+  ...validInput,
+  browsers: [{ os: '' }]
+})).rejects.toThrow('OS is a required field');
 ```
 
-## Common Issues and Solutions
+### 3. Testing Response Parameters
+```typescript
+// Verify response matches request parameters
+const result = await generateScreenshots({
+  ...validInput,
+  quality: 'original',
+  orientation: 'landscape'
+});
 
-1. **Type Mismatches**
-   - Problem: Incompatibility between mock and actual implementations
-   - Solution: Use native fetch types and proper type definitions
+expect(result.quality).toBe('original');
+expect(result.orientation).toBe('landscape');
+```
 
-2. **Test Timeouts**
-   - Problem: Long-running tests causing timeouts
-   - Solution: Configure appropriate timeout values and optimize mock responses
+## Debugging Tips
 
-3. **Mock Reset Issues**
-   - Problem: State bleeding between tests
-   - Solution: Properly reset mocks in beforeEach hooks
+1. **Mock Response Issues**
+   - Verify mock implementation handles all request parameters
+   - Check JSON parsing of request body
+   - Ensure mock returns correct response structure
 
-## Coverage Requirements
+2. **Polling Test Issues**
+   - Verify timer advancement matches polling interval
+   - Check call count expectations
+   - Handle Promise rejections properly
 
-- Minimum coverage: 80%
-- Critical paths: 100%
-- Integration tests: Key API endpoints must be covered
-- Error scenarios: All error handling must be tested
+3. **Validation Test Issues**
+   - Ensure error messages match expectations
+   - Verify all validation scenarios are covered
+   - Test boundary conditions
 
 ## Running Tests
 
@@ -188,8 +220,9 @@ npm run test:watch
 ## Contributing
 
 When adding new tests:
-1. Follow the established patterns
-2. Maintain proper type safety
-3. Add appropriate documentation
-4. Ensure all tests are properly isolated
-5. Include both success and error cases 
+1. Follow established patterns for mock implementations
+2. Include both success and error cases
+3. Test all configuration parameters
+4. Validate response structures
+5. Handle async operations properly
+6. Document complex test scenarios 

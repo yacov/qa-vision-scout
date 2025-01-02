@@ -1,15 +1,17 @@
 /// <reference types="deno" />
 
-import { generateScreenshots, type ScreenshotRequest, type BrowserstackCredentials } from './browserstack-api.ts';
-import { validateRequestData } from './request-validator.ts';
-import { logger } from './logger.ts';
+import { generateScreenshots } from './browserstack-api';
+import type { ScreenshotRequest, BrowserstackCredentials } from './types/api-types';
+import { validateRequestData } from './request-validator';
+import { logger } from './logger';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-Deno.serve(async (req) => {
+// @ts-ignore: Deno Deploy runtime provides serve
+Deno.serve(async (req: Request) => {
   const requestId = crypto.randomUUID();
 
   // Handle CORS preflight requests
@@ -42,49 +44,62 @@ Deno.serve(async (req) => {
 
     // Parse and validate request body
     const data = await req.json();
+    logger.debug({
+      message: 'Raw request data',
+      requestId,
+      data
+    });
+
     logger.info({
       message: 'Received request data',
       requestId,
       testId: data.testId,
-      configCount: data.selected_configs?.length,
-      url: data.url
+      url: data.url,
+      configCount: data.selected_configs?.length
     });
 
     const validatedData = validateRequestData(data, requestId);
 
-    // Generate screenshots
+    if (!validatedData.url || !validatedData.selected_configs) {
+      throw new Error('Missing required fields after validation');
+    }
+
+    logger.debug({
+      message: 'Validated request data',
+      requestId,
+      validatedData
+    });
+
+    // Map request data to Browserstack API format
     const screenshotRequest: ScreenshotRequest = {
       url: validatedData.url,
       browsers: validatedData.selected_configs.map(config => ({
         os: config.os,
         os_version: config.os_version,
-        browser: config.browser,
-        browser_version: config.browser_version,
-        device: config.device
-      })),
-      wait_time: 5,
-      quality: 'compressed'
+        ...(config.browser && { browser: config.browser }),
+        ...(config.browser_version && { browser_version: config.browser_version }),
+        ...(config.device && { device: config.device })
+      }))
     };
 
-    logger.info({
-      message: 'Generating screenshots',
+    logger.debug({
+      message: 'Mapped request data to Browserstack format',
       requestId,
-      testId: validatedData.testId,
-      url: validatedData.url,
-      configCount: validatedData.selected_configs.length,
+      screenshotRequest
     });
 
-    const response = await generateScreenshots(screenshotRequest, credentials, requestId);
+    // Generate screenshots
+    const result = await generateScreenshots(screenshotRequest, credentials);
 
     logger.info({
       message: 'Screenshots generated successfully',
       requestId,
       testId: validatedData.testId,
-      jobId: response.job_id,
+      jobId: result.job_id,
     });
 
     return new Response(
-      JSON.stringify(response),
+      JSON.stringify(result),
       { 
         headers: { 
           'Content-Type': 'application/json',

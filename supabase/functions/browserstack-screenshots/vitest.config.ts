@@ -24,7 +24,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': resolve(__dirname, './src')
+      '@': resolve(__dirname, './src'),
+      'uuid': resolve(__dirname, 'node_modules/uuid/dist/index.js')
     }
   }
 }); 

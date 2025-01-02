@@ -1,9 +1,15 @@
-import { logger } from "../logger.ts";
-import { BrowserstackError } from "../errors/browserstack-error.ts";
+import { logger } from "../logger";
+import { BrowserstackError } from "../errors/browserstack-error";
 
 export async function handleBrowserstackResponse<T>(response: Response, requestId: string): Promise<T> {
   if (!response.ok) {
-    const errorMessage = `Browserstack API error: ${response.status} ${response.statusText}`;
+    let errorMessage = `Browserstack API error: ${response.status}`;
+    
+    // Special handling for rate limit errors
+    if (response.status === 429) {
+      errorMessage = 'Rate limit exceeded';
+    }
+    
     logger.error({
       message: errorMessage,
       requestId,

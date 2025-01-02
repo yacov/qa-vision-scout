@@ -17,28 +17,38 @@ export interface ScreenshotRequest {
   quality?: 'compressed' | 'original';
   wait_time?: number;
   callback_url?: string;
+  orientation?: 'portrait' | 'landscape';
+  mac_res?: string;
+  win_res?: string;
+  local?: boolean;
 }
 
 export interface Screenshot {
   id: string;
-  url: string;
-  thumb_url: string;
-  image_url: string;
-  state: string;
+  browser: string;
+  browser_version: string | null;
   os: string;
   os_version: string;
-  browser?: string;
-  browser_version?: string;
+  url: string;
+  state: 'done' | 'processing' | 'error';
+  image_url: string | null;
+  thumb_url: string | null;
+  device: string | null;
+  orientation: 'portrait' | 'landscape';
   created_at: string;
 }
 
 export interface ScreenshotResponse {
-  job_id: string;
-  state: string;
+  id: string;
+  state: 'done' | 'queued_all' | 'error';
   callback_url: string | null;
+  win_res: string;
+  mac_res: string;
   quality: 'compressed' | 'original';
   wait_time: number;
+  orientation: 'portrait' | 'landscape';
   screenshots: Screenshot[];
+  stopped: boolean;
 }
 
 export interface BrowsersResponse {

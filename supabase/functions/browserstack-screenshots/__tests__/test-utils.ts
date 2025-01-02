@@ -1,5 +1,5 @@
 import { vi } from 'vitest';
-import type { ScreenshotRequest } from '../browserstack-api.js';
+import type { ScreenshotRequest } from '../types/api-types';
 
 export const mockCredentials = {
   username: 'test_user',
@@ -34,15 +34,16 @@ export function createMockResponse(status: number, data: unknown): Response {
 export function createValidScreenshotRequest(): ScreenshotRequest {
   return {
     url: 'https://example.com',
-    resolution: 'WINDOWS',
     browsers: [{
-      os: 'Windows',
-      os_version: '10',
-      browser: 'chrome',
-      browser_version: '117.0'
+      os: 'ios',
+      os_version: '17',
+      device: 'iPhone 15'
     }],
     wait_time: 5,
-    quality: 'compressed'
+    quality: 'compressed',
+    orientation: 'portrait',
+    mac_res: '1024x768',
+    win_res: '1024x768'
   };
 }
 

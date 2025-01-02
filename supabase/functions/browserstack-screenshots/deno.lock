@@ -1,0 +1,32 @@
+{
+  "version": "4",
+  "remote": {
+    "https://esm.sh/uuid@9.0.0": "6881a3fbde17d19de57ff9f90dd2e64e6e37f41324be68614e6cfb58cbfa7f60",
+    "https://esm.sh/v135/uuid@9.0.0/denonext/uuid.mjs": "c9af3bdfb79cd00c1eefc61f93dfaba9a5468c44245fb31a40d6bcaf21165603"
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:@hookform/resolvers@^3.9.1",
+        "npm:@radix-ui/react-label@^2.1.1",
+        "npm:@radix-ui/react-slot@^1.1.1",
+        "npm:@tanstack/react-query@^5.62.11",
+        "npm:@types/node@^18.15.11",
+        "npm:@types/uuid@9",
+        "npm:@vitest/coverage-v8@^1.6.0",
+        "npm:autoprefixer@10",
+        "npm:cross-env@^7.0.3",
+        "npm:dotenv@^16.4.7",
+        "npm:lucide-react@0.469",
+        "npm:postcss@8",
+        "npm:react-hook-form@^7.54.2",
+        "npm:tailwindcss@3",
+        "npm:typescript@^5.0.3",
+        "npm:uuid@9",
+        "npm:vite@5",
+        "npm:vitest@^1.6.0",
+        "npm:zod@^3.24.1"
+      ]
+    }
+  }
+}
