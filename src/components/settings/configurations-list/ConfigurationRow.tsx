@@ -43,6 +43,7 @@ export const ConfigurationRow = ({
           onClick={() => onValidate(config.id)}
           disabled={isValidating}
           aria-label={`Validate configuration: ${config.name}`}
+          title="Validate this configuration with Browserstack"
         >
           {isValidating ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -56,6 +57,7 @@ export const ConfigurationRow = ({
           className="hover:bg-destructive hover:text-destructive-foreground"
           onClick={() => onDelete(config.id)}
           aria-label={`Delete configuration: ${config.name}`}
+          title="Delete this configuration"
         >
           <Trash2 className="h-4 w-4" />
         </Button>
