@@ -23,7 +23,7 @@ export async function generateScreenshots(input: any, credentials: any) {
   try {
     const auth = btoa(`${username}:${accessKey}`);
     
-    // Log the request payload for debugging
+    // Format payload according to BrowserStack API specs
     const payload = {
       url,
       browsers: selected_configs.map(config => ({
