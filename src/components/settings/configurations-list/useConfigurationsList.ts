@@ -47,19 +47,12 @@ export const useConfigurationsList = () => {
 
   const validateConfig = useMutation({
     mutationFn: async (configId: string) => {
-      const response = await fetch('/api/validate-browserstack-config', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ configId }),
+      const { data, error } = await supabase.functions.invoke('validate-browserstack-config', {
+        body: { configId }
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to validate configuration');
-      }
-      
-      return response.json();
+      if (error) throw error;
+      return data;
     },
     onError: () => {
       toast({
