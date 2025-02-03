@@ -27,35 +27,30 @@ export async function generateScreenshots(input: any, credentials: any) {
     const payload = {
       url,
       browsers: selected_configs.map(config => {
-        const browser = {
+        // Base configuration
+        const browserConfig: any = {
           os: config.os.toLowerCase(),
           os_version: config.os_version,
-          device: config.device,
         };
 
-        // Add specific fields based on device type
+        // Handle mobile devices
         if (config.device_type === 'mobile') {
+          browserConfig.device = config.device;
+          browserConfig.orientation = 'portrait';
+          
           if (config.os.toLowerCase() === 'android') {
-            return {
-              ...browser,
-              browser: 'samsung',  // Required for Android devices
-              orientation: 'portrait'
-            };
+            browserConfig.browser = 'samsung';
           } else if (config.os.toLowerCase() === 'ios') {
-            return {
-              ...browser,
-              browser: 'Mobile Safari',  // Required for iOS devices
-              orientation: 'portrait'
-            };
+            browserConfig.browser = 'Mobile Safari';
           }
-        } else {
-          // Desktop configuration
-          return {
-            ...browser,
-            browser: config.browser?.toLowerCase(),
-            browser_version: config.browser_version
-          };
+        } 
+        // Handle desktop browsers
+        else {
+          browserConfig.browser = config.browser?.toLowerCase();
+          browserConfig.browser_version = config.browser_version;
         }
+
+        return browserConfig;
       }),
       wait_time: 5,
       quality: 'compressed'
