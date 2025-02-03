@@ -38,17 +38,18 @@ serve(async (req) => {
       });
     }
 
-    const { config } = await req.json();
+    const requestData = await req.json();
+    console.log('Received request data:', requestData);
     
-    if (!config) {
-      console.error('Missing config in request');
+    const { config } = requestData;
+    
+    if (!config || !config.id || !config.device_type || !config.os || !config.os_version) {
+      console.error('Invalid config in request:', config);
       throw new ValidationError({
-        message: 'Invalid request data',
+        message: 'Invalid request data: Missing required fields',
         status: 400
       });
     }
-
-    console.log('Validating config:', config);
 
     // Get available browsers from BrowserStack
     const browsersResponse = await fetch('https://www.browserstack.com/screenshots/browsers.json', {
@@ -74,13 +75,15 @@ serve(async (req) => {
       if (config.device_type === 'desktop') {
         return browser.os?.toLowerCase() === config.os?.toLowerCase() &&
                browser.os_version === config.os_version &&
-               browser.browser?.toLowerCase() === config.browser?.toLowerCase();
+               (!config.browser || browser.browser?.toLowerCase() === config.browser?.toLowerCase());
       } else {
         return browser.device === config.device &&
                browser.os?.toLowerCase() === config.os?.toLowerCase() &&
                browser.os_version === config.os_version;
       }
     });
+
+    console.log('Validation result:', isValid);
 
     return new Response(
       JSON.stringify({
