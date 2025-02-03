@@ -38,7 +38,8 @@ export const ConfigurationRow = ({
       </TableCell>
       <TableCell className="space-x-2">
         <Button
-          className="bg-transparent border hover:bg-accent"
+          variant="outline"
+          size="icon"
           onClick={() => onValidate(config.id)}
           disabled={isValidating}
         >
@@ -49,7 +50,9 @@ export const ConfigurationRow = ({
           )}
         </Button>
         <Button
-          className="hover:bg-accent hover:text-accent-foreground"
+          variant="outline"
+          size="icon"
+          className="hover:bg-destructive hover:text-destructive-foreground"
           onClick={() => onDelete(config.id)}
         >
           <Trash2 className="h-4 w-4" />
