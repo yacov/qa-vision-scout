@@ -1,6 +1,15 @@
 import { logger } from './utils/logger.ts';
 import { BrowserstackError } from './errors/browserstack-error.ts';
 
+interface BrowserConfig {
+  device_type: 'mobile' | 'desktop';
+  os: string;
+  os_version: string;
+  browser?: string;
+  browser_version?: string;
+  device?: string;
+}
+
 export async function generateScreenshots(input: any, credentials: any) {
   const { username, accessKey } = credentials;
   const { url, selected_configs } = input;
@@ -24,23 +33,34 @@ export async function generateScreenshots(input: any, credentials: any) {
     const auth = btoa(`${username}:${accessKey}`);
     
     // Format payload according to BrowserStack API specs
-    const browsers = selected_configs.map(config => {
+    const browsers = selected_configs.map((config: BrowserConfig) => {
       const browser: Record<string, any> = {
-        os: config.os,
-        os_version: config.os_version
+        os: config.os?.toLowerCase(),
+        os_version: config.os_version?.toString()
       };
 
       if (config.device_type === 'mobile') {
         browser.device = config.device;
-        // For mobile devices, don't set browser explicitly
-        // BrowserStack will use the default browser for the device
+        // For Android, we need to use specific version format
+        if (browser.os === 'android') {
+          // Convert version number to match BrowserStack format (e.g., 14.0)
+          browser.os_version = browser.os_version.includes('.') ? 
+            browser.os_version : 
+            `${browser.os_version}.0`;
+        }
         browser.orientation = 'portrait';  // Default to portrait mode
       } else {
         browser.browser = config.browser?.toLowerCase();
         browser.browser_version = config.browser_version;
-        // Use standardized resolution format
         browser.resolution = '1920x1080';
       }
+
+      // Clean up any undefined values
+      Object.keys(browser).forEach(key => {
+        if (browser[key] === undefined) {
+          delete browser[key];
+        }
+      });
 
       return browser;
     });
@@ -92,7 +112,7 @@ export async function generateScreenshots(input: any, credentials: any) {
     } catch (error) {
       logger.error({
         message: 'Failed to parse BrowserStack API response',
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         responseText
       });
       throw new Error('Invalid JSON response from BrowserStack API');
@@ -108,8 +128,8 @@ export async function generateScreenshots(input: any, credentials: any) {
   } catch (error) {
     logger.error({
       message: 'Screenshot generation failed',
-      error: error?.message || String(error),
-      stack: error?.stack,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
       url
     });
     throw error;
