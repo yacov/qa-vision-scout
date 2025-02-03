@@ -2,6 +2,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { ScreenshotButton } from '../ScreenshotButton';
 import { type Config } from '../types';
+import { vi, describe, it, expect } from 'vitest';
 
 describe('ScreenshotButton', () => {
   const mockConfig: Config = {

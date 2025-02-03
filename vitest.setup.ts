@@ -1,4 +1,5 @@
 import { vi } from 'vitest';
+import '@testing-library/jest-dom';
 import dotenv from 'dotenv';
 
 // Load environment variables
