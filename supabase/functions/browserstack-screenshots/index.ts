@@ -31,7 +31,15 @@ async function handler(req: Request): Promise<Response> {
         message: 'Missing BrowserStack credentials in environment',
         requestId
       });
-      throw new Error('BrowserStack credentials not configured');
+      return new Response(
+        JSON.stringify({
+          error: 'BrowserStack credentials not configured'
+        }),
+        { 
+          status: 500,
+          headers: corsHeaders
+        }
+      );
     }
 
     const credentials = { username, accessKey };

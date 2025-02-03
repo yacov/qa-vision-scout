@@ -1,52 +1,9 @@
 import { logger } from './utils/logger.ts';
-import { BrowserstackCredentials, Browser, ScreenshotInput } from './types.ts';
-
-interface BrowserConfig {
-  os: string;
-  os_version: string;
-  browser?: string;
-  browser_version?: string;
-  device?: string;
-  device_type?: string;
-}
+import { BrowserstackCredentials, ScreenshotInput } from './types.ts';
 
 interface PollingOptions {
   maxPolls?: number;
   pollInterval?: number;
-}
-
-export async function getAvailableBrowsers(credentials: BrowserstackCredentials) {
-  const { username, accessKey } = credentials;
-  const auth = btoa(`${username}:${accessKey}`);
-
-  try {
-    const response = await fetch('https://api.browserstack.com/screenshots/browsers.json', {
-      headers: {
-        'Authorization': `Basic ${auth}`
-      }
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      logger.error({
-        message: 'Failed to fetch available browsers',
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText
-      });
-      throw new Error(`Failed to fetch available browsers: ${response.statusText || errorText}`);
-    }
-
-    const browsers = await response.json();
-    return { browsers: Array.isArray(browsers) ? browsers : [] };
-  } catch (error: any) {
-    logger.error({
-      message: 'Failed to fetch available browsers',
-      error: error?.message || String(error),
-      stack: error?.stack
-    });
-    throw error;
-  }
 }
 
 export async function generateScreenshots(input: ScreenshotInput, credentials: BrowserstackCredentials, options: PollingOptions = {}) {
@@ -85,10 +42,6 @@ export async function generateScreenshots(input: ScreenshotInput, credentials: B
           ...(config.browser_version && { browser_version: config.browser_version }),
           ...(config.device && { device: config.device })
         })),
-        ...(input.wait_time && { wait_time: input.wait_time }),
-        ...(input.quality && { quality: input.quality }),
-        ...(input.win_res && { win_res: input.win_res }),
-        ...(input.orientation && { orientation: input.orientation }),
         ...(callback_url && { callback_url })
       })
     });
@@ -100,12 +53,7 @@ export async function generateScreenshots(input: ScreenshotInput, credentials: B
         status: response.status,
         statusText: response.statusText,
         error: errorText,
-        url: url,
-        requestBody: {
-          url,
-          browserCount: selected_configs.length,
-          callback_url
-        }
+        url: url
       });
 
       if (response.status === 429) {
