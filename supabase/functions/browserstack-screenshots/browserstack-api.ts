@@ -24,34 +24,30 @@ export async function generateScreenshots(input: any, credentials: any) {
     const auth = btoa(`${username}:${accessKey}`);
     
     // Format payload according to BrowserStack API specs
+    const browsers = selected_configs.map(config => {
+      const browser: Record<string, any> = {
+        os: config.os,
+        os_version: config.os_version
+      };
+
+      if (config.device_type === 'mobile') {
+        browser.device = config.device;
+        if (config.os.toLowerCase() === 'android') {
+          browser.browser = 'chrome';
+        } else if (config.os.toLowerCase() === 'ios') {
+          browser.browser = 'safari';
+        }
+      } else {
+        browser.browser = config.browser;
+        browser.browser_version = config.browser_version;
+      }
+
+      return browser;
+    });
+
     const payload = {
       url,
-      browsers: selected_configs.map(config => {
-        // Base configuration
-        const browserConfig: any = {
-          os: config.os.toLowerCase(),
-          os_version: config.os_version,
-        };
-
-        // Handle mobile devices
-        if (config.device_type === 'mobile') {
-          browserConfig.device = config.device;
-          browserConfig.orientation = 'portrait';
-          
-          if (config.os.toLowerCase() === 'android') {
-            browserConfig.browser = 'samsung';
-          } else if (config.os.toLowerCase() === 'ios') {
-            browserConfig.browser = 'Mobile Safari';
-          }
-        } 
-        // Handle desktop browsers
-        else {
-          browserConfig.browser = config.browser?.toLowerCase();
-          browserConfig.browser_version = config.browser_version;
-        }
-
-        return browserConfig;
-      }),
+      browsers,
       wait_time: 5,
       quality: 'compressed'
     };
