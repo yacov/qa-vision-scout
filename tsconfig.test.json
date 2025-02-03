@@ -1,7 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "types": ["vitest", "node"],
+    "types": ["vitest/globals", "node"],
     "isolatedModules": false,
     "esModuleInterop": true,
     "module": "commonjs",
@@ -13,9 +13,11 @@
     "resolveJsonModule": true
   },
   "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
     "supabase/functions/browserstack-screenshots/**/*.ts"
   ],
   "exclude": [
     "node_modules"
   ]
-} 
+}

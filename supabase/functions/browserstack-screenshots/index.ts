@@ -3,11 +3,12 @@ import { generateScreenshots } from './browserstack-api.ts';
 import { validateRequestData } from './request-validator.ts';
 import { logger } from './utils/logger.ts';
 import { createSupabaseClient } from './database.ts';
-import type { Browser, ScreenshotInput } from './types.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Content-Type': 'application/json'
 };
 
 export async function handler(req: Request): Promise<Response> {
@@ -41,91 +42,29 @@ export async function handler(req: Request): Promise<Response> {
     if (!username || !accessKey) {
       logger.error({
         message: 'Missing BrowserStack credentials in environment',
-        requestId,
-        username: !!username,
-        accessKey: !!accessKey
+        requestId
       });
-      throw new Error('BrowserStack credentials not configured in environment variables');
+      throw new Error('BrowserStack credentials not configured');
     }
 
-    const credentials = {
-      username,
-      accessKey
-    };
+    const credentials = { username, accessKey };
 
     // Parse and validate request body
     const data = await req.json();
     logger.info({
       message: 'Received request data',
       requestId,
-      testId: data.testId,
-      configCount: data.selected_configs?.length,
-      url: data.url,
-      headers: Object.fromEntries(req.headers.entries())
+      url: data.url
     });
 
     const validatedData = validateRequestData(data, requestId);
 
-    // Create initial database entry
-    const supabase = createSupabaseClient();
-    const { data: screenshotEntry, error: dbError } = await supabase
-      .from('screenshots')
-      .insert({
-        url: validatedData.url,
-        status: 'queued',
-        test_id: data.testId
-      })
-      .select()
-      .single();
-
-    if (dbError) {
-      logger.error({
-        message: 'Failed to create database entry',
-        requestId,
-        error: dbError
-      });
-      throw dbError;
-    }
-
-    // Generate webhook URL
-    const webhookUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/browserstack-webhook`;
-
     // Generate screenshots
-    const result = await generateScreenshots({
-      url: validatedData.url,
-      selected_configs: validatedData.selected_configs,
-      callback_url: webhookUrl,
-      wait_time: 5,
-      quality: 'compressed'
-    }, credentials);
-
-    // Update database with job ID
-    const { error: updateError } = await supabase
-      .from('screenshots')
-      .update({ 
-        job_id: result.job_id,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', screenshotEntry.id);
-
-    if (updateError) {
-      logger.error({
-        message: 'Failed to update job ID',
-        requestId,
-        error: updateError
-      });
-      throw updateError;
-    }
-
+    const result = await generateScreenshots(validatedData, credentials);
+    
     return new Response(
-      JSON.stringify({
-        ...result,
-        id: screenshotEntry.id
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-      }
+      JSON.stringify(result),
+      { headers: corsHeaders }
     );
 
   } catch (error: any) {
@@ -142,7 +81,7 @@ export async function handler(req: Request): Promise<Response> {
         type: error?.name || 'UnknownError'
       }),
       { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: corsHeaders,
         status: error?.statusCode === 429 ? 429 : 400
       }
     );
