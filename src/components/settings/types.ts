@@ -32,10 +32,10 @@ export interface Config {
   browser: string | null;
   browser_version: string | null;
   device: string | null;
-  orientation?: "portrait" | "landscape";
-  win_res?: "1024x768" | "1280x1024" | "1920x1080";
-  mac_res?: "1024x768" | "1280x960" | "1280x1024" | "1600x1200" | "1920x1080";
-  is_active: boolean;
+  orientation: "portrait" | "landscape" | null;
+  win_res: string | null;
+  mac_res: string | null;
+  is_active: boolean | null;
   created_at: string | null;
   user_id: string;
   is_predefined: boolean | null;

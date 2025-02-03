@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Config } from "../../types";
 
 export const usePredefinedConfigs = () => {
-  const { data: configs, isLoading } = useQuery<Config[]>({
+  const { data: configs, isLoading } = useQuery({
     queryKey: ['predefined-configs'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -13,7 +13,12 @@ export const usePredefinedConfigs = () => {
         .order('created_at', { ascending: true });
       
       if (error) throw error;
-      return data ?? [];
+      
+      // Transform the data to match the Config type
+      return (data ?? []).map(item => ({
+        ...item,
+        orientation: item.orientation as "portrait" | "landscape" | null,
+      })) as Config[];
     }
   });
 
