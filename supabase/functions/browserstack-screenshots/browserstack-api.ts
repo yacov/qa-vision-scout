@@ -15,7 +15,7 @@ export async function generateScreenshots(input: any, credentials: any) {
   }
 
   logger.info({
-    message: 'Generating screenshots',
+    message: 'Starting screenshot generation',
     url,
     browserCount: selected_configs.length
   });
@@ -24,36 +24,32 @@ export async function generateScreenshots(input: any, credentials: any) {
     const auth = btoa(`${username}:${accessKey}`);
     
     // Log the request payload for debugging
+    const payload = {
+      url,
+      browsers: selected_configs.map(config => ({
+        os: config.os,
+        os_version: config.os_version,
+        ...(config.browser && { browser: config.browser }),
+        ...(config.browser_version && { browser_version: config.browser_version }),
+        ...(config.device && { device: config.device })
+      })),
+      wait_time: 5,
+      quality: 'compressed'
+    };
+
     logger.info({
-      message: 'BrowserStack API request',
-      payload: {
-        url,
-        browsers: selected_configs.map(config => ({
-          os: config.os,
-          os_version: config.os_version,
-          ...(config.browser && { browser: config.browser }),
-          ...(config.browser_version && { browser_version: config.browser_version }),
-          ...(config.device && { device: config.device })
-        }))
-      }
+      message: 'BrowserStack API request payload',
+      payload
     });
 
     const response = await fetch('https://api.browserstack.com/screenshots', {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
-      body: JSON.stringify({
-        url,
-        browsers: selected_configs.map(config => ({
-          os: config.os,
-          os_version: config.os_version,
-          ...(config.browser && { browser: config.browser }),
-          ...(config.browser_version && { browser_version: config.browser_version }),
-          ...(config.device && { device: config.device })
-        }))
-      })
+      body: JSON.stringify(payload)
     });
 
     // Log the raw response for debugging
@@ -62,7 +58,8 @@ export async function generateScreenshots(input: any, credentials: any) {
       message: 'BrowserStack API raw response',
       status: response.status,
       statusText: response.statusText,
-      responseText
+      responseText,
+      headers: Object.fromEntries(response.headers.entries())
     });
 
     if (!response.ok) {
