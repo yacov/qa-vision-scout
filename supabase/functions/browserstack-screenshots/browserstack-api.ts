@@ -26,13 +26,37 @@ export async function generateScreenshots(input: any, credentials: any) {
     // Format payload according to BrowserStack API specs
     const payload = {
       url,
-      browsers: selected_configs.map(config => ({
-        os: config.os,
-        os_version: config.os_version,
-        ...(config.browser && { browser: config.browser }),
-        ...(config.browser_version && { browser_version: config.browser_version }),
-        ...(config.device && { device: config.device })
-      })),
+      browsers: selected_configs.map(config => {
+        const browser = {
+          os: config.os.toLowerCase(),
+          os_version: config.os_version,
+          device: config.device,
+        };
+
+        // Add specific fields based on device type
+        if (config.device_type === 'mobile') {
+          if (config.os.toLowerCase() === 'android') {
+            return {
+              ...browser,
+              browser: 'samsung',  // Required for Android devices
+              orientation: 'portrait'
+            };
+          } else if (config.os.toLowerCase() === 'ios') {
+            return {
+              ...browser,
+              browser: 'Mobile Safari',  // Required for iOS devices
+              orientation: 'portrait'
+            };
+          }
+        } else {
+          // Desktop configuration
+          return {
+            ...browser,
+            browser: config.browser?.toLowerCase(),
+            browser_version: config.browser_version
+          };
+        }
+      }),
       wait_time: 5,
       quality: 'compressed'
     };
