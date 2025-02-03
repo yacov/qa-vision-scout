@@ -42,6 +42,7 @@ export const ConfigurationRow = ({
           size="icon"
           onClick={() => onValidate(config.id)}
           disabled={isValidating}
+          aria-label={`Validate configuration: ${config.name}`}
         >
           {isValidating ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -54,6 +55,7 @@ export const ConfigurationRow = ({
           size="icon"
           className="hover:bg-destructive hover:text-destructive-foreground"
           onClick={() => onDelete(config.id)}
+          aria-label={`Delete configuration: ${config.name}`}
         >
           <Trash2 className="h-4 w-4" />
         </Button>
