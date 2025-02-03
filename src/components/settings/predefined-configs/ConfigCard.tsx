@@ -27,45 +27,56 @@ export const ConfigCard = ({
         isSelected ? "bg-primary text-primary-foreground" : "bg-transparent border hover:bg-accent"
       }`}
       onClick={() => onSelect(config.id)}
+      aria-label={`Select configuration: ${config.name}`}
     >
-      {isSelected && (
-        <Check className="h-4 w-4 absolute top-2 right-2" />
-      )}
-      <div className="absolute top-2 right-2 flex gap-2">
+      <div className="absolute top-2 right-2 flex items-center gap-2">
         <Button
-          className="h-8 w-8 bg-transparent hover:bg-accent"
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8"
           onClick={(e) => {
             e.stopPropagation();
             onEdit(config);
           }}
           disabled={isVerifying}
+          aria-label={`Edit configuration: ${config.name}`}
         >
           <Edit2 className="h-4 w-4" />
         </Button>
         <Button
-          className="h-8 w-8 bg-transparent hover:bg-accent"
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8"
           onClick={(e) => {
             e.stopPropagation();
             onVerify(config);
           }}
+          disabled={isVerifying}
+          aria-label={`Validate configuration: ${config.name}`}
         >
           <Shield className="h-4 w-4" />
         </Button>
+        {isSelected && (
+          <div className="h-8 w-8 flex items-center justify-center">
+            <Check className="h-4 w-4" aria-label="Configuration selected" />
+          </div>
+        )}
       </div>
+
       <div className="font-medium">{config.name}</div>
       <div className="flex flex-wrap gap-2">
-        <Badge className="bg-secondary text-secondary-foreground">
+        <Badge variant="secondary">
           {config.device_type === 'desktop' ? 'Desktop' : 'Mobile'}
         </Badge>
-        <Badge className="border bg-transparent">
+        <Badge variant="outline">
           {config.os} {config.os_version}
         </Badge>
         {config.device_type === 'desktop' ? (
-          <Badge className="border bg-transparent">
-            {config.browser || ''} {config.browser_version || ''}
+          <Badge variant="outline">
+            {config.browser} {config.browser_version}
           </Badge>
         ) : (
-          <Badge className="border bg-transparent">{config.device || ''}</Badge>
+          <Badge variant="outline">{config.device}</Badge>
         )}
       </div>
     </Button>
