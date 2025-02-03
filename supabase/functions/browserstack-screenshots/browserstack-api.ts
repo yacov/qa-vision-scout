@@ -40,13 +40,15 @@ export async function generateScreenshots(input: any, credentials: any) {
       } else {
         browser.browser = config.browser;
         browser.browser_version = config.browser_version;
+        // Add required resolution for desktop browsers
+        browser.win_res = '1920x1080';
       }
 
       return browser;
     });
 
     const payload = {
-      url,
+      url: encodeURI(url),
       browsers,
       wait_time: 5,
       quality: 'compressed'
@@ -88,7 +90,7 @@ export async function generateScreenshots(input: any, credentials: any) {
 
     let result;
     try {
-      result = JSON.parse(responseText);
+      result = JSON.parse(responseText || '{}');
     } catch (error) {
       logger.error({
         message: 'Failed to parse BrowserStack API response',
