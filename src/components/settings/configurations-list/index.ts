@@ -1,0 +1,1 @@
+export { ConfigurationsList } from "./ConfigurationsList";
