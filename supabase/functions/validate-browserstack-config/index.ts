@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from '../_shared/cors.ts';
 import { validateBrowserConfig } from '../browserstack-screenshots/browser-validation.ts';
+import type { Browser } from '../browserstack-screenshots/types.ts';
 
 interface ValidationResponse {
   isValid: boolean;
@@ -80,9 +81,10 @@ serve(async (req: Request) => {
     console.log('Validating config:', config);
 
     // Get available browsers from BrowserStack
-    const browsersResponse = await fetch('https://api.browserstack.com/automate/browsers.json', {
+    const browsersResponse = await fetch('https://www.browserstack.com/screenshots/browsers.json', {
       headers: {
         'Authorization': `Basic ${btoa(`${username}:${accessKey}`)}`,
+        'Accept': 'application/json'
       }
     });
 
@@ -97,29 +99,45 @@ serve(async (req: Request) => {
     const browsers = await browsersResponse.json();
     console.log('Available browsers:', browsers);
 
-    const isValid = validateBrowserConfig(config, browsers);
-    console.log('Validation result:', isValid);
+    // Ensure config has required device_type
+    if (!config.device_type) {
+      throw new ValidationError({
+        message: 'Device type is required',
+        status: 400
+      });
+    }
 
+    const isValid = validateBrowserConfig(config, browsers);
+    
     const response: ValidationResponse = {
       isValid,
-      message: isValid 
-        ? 'Configuration is valid'
-        : 'Configuration is invalid. Please check browser and version compatibility.',
+      message: isValid ? 'Configuration is valid' : 'Configuration is invalid'
     };
 
-    if (!isValid && config.browser_version !== 'latest') {
-      response.suggestion = {
-        browser_version: 'latest'
-      };
+    // If invalid, try to suggest corrections
+    if (!isValid && browsers.length > 0) {
+      const matchingOS = browsers.find((b: Browser) => 
+        b.os?.toLowerCase() === config.os?.toLowerCase()
+      );
+
+      if (matchingOS) {
+        response.suggestion = {};
+        
+        if (config.os_version && matchingOS.os_version !== config.os_version) {
+          response.suggestion.os_version = matchingOS.os_version;
+        }
+        
+        if (config.browser_version && matchingOS.browser_version !== config.browser_version) {
+          response.suggestion.browser_version = matchingOS.browser_version;
+        }
+      }
     }
 
     return new Response(
       JSON.stringify(response),
       { 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        } 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200 
       }
     );
   } catch (error) {
