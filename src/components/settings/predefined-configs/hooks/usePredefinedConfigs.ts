@@ -6,7 +6,7 @@ import type { Config } from "../../types";
 export const usePredefinedConfigs = () => {
   const { toast } = useToast();
 
-  const { data: configs, isLoading } = useQuery<Config[]>({
+  const { data: configs, isLoading } = useQuery({
     queryKey: ['predefined-configs'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -22,8 +22,9 @@ export const usePredefinedConfigs = () => {
         ...item,
         orientation: item.orientation as "portrait" | "landscape" | undefined,
         win_res: item.win_res as "1024x768" | "1280x1024" | "1920x1080" | undefined,
-        mac_res: item.mac_res as "1024x768" | "1280x960" | "1280x1024" | "1600x1200" | "1920x1080" | undefined
-      }));
+        mac_res: item.mac_res as "1024x768" | "1280x960" | "1280x1024" | "1600x1200" | "1920x1080" | undefined,
+        is_active: item.is_active
+      })) as Config[];
     }
   });
 
