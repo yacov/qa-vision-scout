@@ -32,16 +32,14 @@ export async function generateScreenshots(input: any, credentials: any) {
 
       if (config.device_type === 'mobile') {
         browser.device = config.device;
-        if (config.os.toLowerCase() === 'android') {
-          browser.browser = 'chrome';
-        } else if (config.os.toLowerCase() === 'ios') {
-          browser.browser = 'safari';
-        }
+        // For mobile devices, don't set browser explicitly
+        // BrowserStack will use the default browser for the device
+        browser.orientation = 'portrait';  // Default to portrait mode
       } else {
-        browser.browser = config.browser;
+        browser.browser = config.browser?.toLowerCase();
         browser.browser_version = config.browser_version;
-        // Add required resolution for desktop browsers
-        browser.win_res = '1920x1080';
+        // Use standardized resolution format
+        browser.resolution = '1920x1080';
       }
 
       return browser;
@@ -59,7 +57,7 @@ export async function generateScreenshots(input: any, credentials: any) {
       payload
     });
 
-    const response = await fetch('https://api.browserstack.com/screenshots', {
+    const response = await fetch('https://www.browserstack.com/screenshots', {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${auth}`,
