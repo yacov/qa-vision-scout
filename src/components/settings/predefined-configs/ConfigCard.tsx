@@ -23,7 +23,7 @@ export const ConfigCard = ({
   return (
     <Button
       key={config.id}
-      className={`h-auto p-4 flex flex-col items-start space-y-2 relative group ${
+      className={`h-auto p-4 flex flex-col items-start space-y-2 relative ${
         isSelected ? "bg-primary text-primary-foreground" : "bg-transparent border hover:bg-accent"
       }`}
       onClick={() => onSelect(config.id)}
@@ -31,7 +31,7 @@ export const ConfigCard = ({
       {isSelected && (
         <Check className="h-4 w-4 absolute top-2 right-2" />
       )}
-      <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="absolute top-2 right-2 flex gap-2">
         <Button
           className="h-8 w-8 bg-transparent hover:bg-accent"
           onClick={(e) => {
