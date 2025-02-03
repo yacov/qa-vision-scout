@@ -2,7 +2,6 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { generateScreenshots } from './browserstack-api.ts';
 import { validateRequestData } from './request-validator.ts';
 import { logger } from './utils/logger.ts';
-import { createSupabaseClient } from './database.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,7 +10,7 @@ const corsHeaders = {
   'Content-Type': 'application/json'
 };
 
-export async function handler(req: Request): Promise<Response> {
+async function handler(req: Request): Promise<Response> {
   const requestId = crypto.randomUUID();
 
   // Handle CORS preflight requests
@@ -23,18 +22,6 @@ export async function handler(req: Request): Promise<Response> {
   }
 
   try {
-    // Log environment variables (excluding sensitive values)
-    logger.info({
-      message: 'Environment check',
-      requestId,
-      envVars: {
-        BROWSERSTACK_USERNAME: !!Deno.env.get('BROWSERSTACK_USERNAME'),
-        BROWSERSTACK_ACCESS_KEY: !!Deno.env.get('BROWSERSTACK_ACCESS_KEY'),
-        SUPABASE_URL: !!Deno.env.get('SUPABASE_URL'),
-        SUPABASE_ANON_KEY: !!Deno.env.get('SUPABASE_ANON_KEY')
-      }
-    });
-
     // Get BrowserStack credentials from environment
     const username = Deno.env.get('BROWSERSTACK_USERNAME');
     const accessKey = Deno.env.get('BROWSERSTACK_ACCESS_KEY');
@@ -50,7 +37,27 @@ export async function handler(req: Request): Promise<Response> {
     const credentials = { username, accessKey };
 
     // Parse and validate request body
-    const data = await req.json();
+    let data;
+    try {
+      data = await req.json();
+    } catch (error) {
+      logger.error({
+        message: 'Failed to parse request body as JSON',
+        requestId,
+        error: error?.message || String(error)
+      });
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid JSON in request body',
+          details: error?.message || 'Failed to parse JSON'
+        }),
+        { 
+          status: 400,
+          headers: corsHeaders
+        }
+      );
+    }
+
     logger.info({
       message: 'Received request data',
       requestId,
