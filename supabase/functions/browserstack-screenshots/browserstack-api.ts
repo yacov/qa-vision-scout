@@ -1,14 +1,9 @@
 import { logger } from './utils/logger.ts';
-import { BrowserstackCredentials, ScreenshotInput } from './types.ts';
+import { BrowserstackError } from './errors/browserstack-error.ts';
 
-interface PollingOptions {
-  maxPolls?: number;
-  pollInterval?: number;
-}
-
-export async function generateScreenshots(input: ScreenshotInput, credentials: BrowserstackCredentials, options: PollingOptions = {}) {
+export async function generateScreenshots(input: any, credentials: any) {
   const { username, accessKey } = credentials;
-  const { url, selected_configs, callback_url } = input;
+  const { url, selected_configs } = input;
 
   if (!username || !accessKey) {
     logger.error({
@@ -21,12 +16,28 @@ export async function generateScreenshots(input: ScreenshotInput, credentials: B
 
   logger.info({
     message: 'Generating screenshots',
-    url: input.url,
+    url,
     browserCount: selected_configs.length
   });
 
   try {
     const auth = btoa(`${username}:${accessKey}`);
+    
+    // Log the request payload for debugging
+    logger.info({
+      message: 'BrowserStack API request',
+      payload: {
+        url,
+        browsers: selected_configs.map(config => ({
+          os: config.os,
+          os_version: config.os_version,
+          ...(config.browser && { browser: config.browser }),
+          ...(config.browser_version && { browser_version: config.browser_version }),
+          ...(config.device && { device: config.device })
+        }))
+      }
+    });
+
     const response = await fetch('https://api.browserstack.com/screenshots', {
       method: 'POST',
       headers: {
@@ -41,79 +52,54 @@ export async function generateScreenshots(input: ScreenshotInput, credentials: B
           ...(config.browser && { browser: config.browser }),
           ...(config.browser_version && { browser_version: config.browser_version }),
           ...(config.device && { device: config.device })
-        })),
-        ...(callback_url && { callback_url })
+        }))
       })
     });
 
+    // Log the raw response for debugging
+    const responseText = await response.text();
+    logger.info({
+      message: 'BrowserStack API raw response',
+      status: response.status,
+      statusText: response.statusText,
+      responseText
+    });
+
     if (!response.ok) {
-      const errorText = await response.text();
+      throw new BrowserstackError(
+        `BrowserStack API error: ${response.status} ${response.statusText}`,
+        response.status,
+        'request-id',
+        { responseText }
+      );
+    }
+
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch (error) {
       logger.error({
-        message: 'BrowserStack API error',
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText,
-        url: url
+        message: 'Failed to parse BrowserStack API response',
+        error: error.message,
+        responseText
       });
-
-      if (response.status === 429) {
-        throw new Error('Rate limit exceeded');
-      }
-
-      throw new Error(`BrowserStack API error (${response.status}): ${errorText}`);
+      throw new Error('Invalid JSON response from BrowserStack API');
     }
 
-    const result = await response.json();
-    
-    // If no callback URL is provided, poll for completion
-    if (!callback_url) {
-      return await pollForCompletion(result.job_id, auth, options);
-    }
-    
     logger.info({
       message: 'Screenshot generation queued',
       jobId: result.job_id,
-      url: url
+      url
     });
 
     return result;
-  } catch (error: any) {
+  } catch (error) {
     logger.error({
       message: 'Screenshot generation failed',
       error: error?.message || String(error),
       stack: error?.stack,
-      url: url
+      url
     });
     throw error;
   }
-}
-
-async function pollForCompletion(jobId: string, auth: string, options: PollingOptions = {}) {
-  const { maxPolls = 30, pollInterval = 2000 } = options;
-  let polls = 0;
-
-  while (polls < maxPolls) {
-    const response = await fetch(`https://api.browserstack.com/screenshots/${jobId}.json`, {
-      headers: {
-        'Authorization': `Basic ${auth}`
-      }
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to poll job status: ${response.statusText || errorText}`);
-    }
-
-    const result = await response.json();
-    if (result.state === 'done') {
-      return result;
-    }
-
-    polls++;
-    if (polls < maxPolls) {
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
-    }
-  }
-
-  throw new Error('Polling timeout exceeded');
 }
