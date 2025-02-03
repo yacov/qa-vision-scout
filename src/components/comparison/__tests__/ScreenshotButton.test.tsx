@@ -24,7 +24,7 @@ describe('ScreenshotButton', () => {
     baselineUrl: 'https://example.com',
     newUrl: 'https://example.com/new',
     selectedConfigs: [mockConfig],
-    onScreenshotsGenerated: vi.fn(),
+    onScreenshotsGenerated: vi.fn().mockImplementation(async () => {}),
     className: '',
     disabled: false
   };
@@ -46,7 +46,7 @@ describe('ScreenshotButton', () => {
   });
 
   it('shows processing state when generating screenshots', async () => {
-    const onScreenshotsGenerated = vi.fn(() => new Promise(resolve => setTimeout(resolve, 100)));
+    const onScreenshotsGenerated = vi.fn().mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)));
     
     render(
       <ScreenshotButton
@@ -68,7 +68,7 @@ describe('ScreenshotButton', () => {
   });
 
   it('handles errors gracefully', async () => {
-    const onScreenshotsGenerated = vi.fn(() => Promise.reject(new Error('Test error')));
+    const onScreenshotsGenerated = vi.fn().mockImplementation(() => Promise.reject(new Error('Test error')));
     
     render(
       <ScreenshotButton
