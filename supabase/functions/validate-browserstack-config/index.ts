@@ -41,12 +41,12 @@ serve(async (req) => {
     const requestData = await req.json();
     console.log('Received request data:', requestData);
     
-    const { config } = requestData;
+    const { configId } = requestData;
     
-    if (!config || !config.id || !config.device_type || !config.os || !config.os_version) {
-      console.error('Invalid config in request:', config);
+    if (!configId) {
+      console.error('Invalid request: Missing configId');
       throw new ValidationError({
-        message: 'Invalid request data: Missing required fields',
+        message: 'Invalid request data: Missing configId',
         status: 400
       });
     }
@@ -72,14 +72,14 @@ serve(async (req) => {
 
     // Basic validation logic
     const isValid = browsers.some((browser: any) => {
-      if (config.device_type === 'desktop') {
-        return browser.os?.toLowerCase() === config.os?.toLowerCase() &&
-               browser.os_version === config.os_version &&
-               (!config.browser || browser.browser?.toLowerCase() === config.browser?.toLowerCase());
+      if (requestData.device_type === 'desktop') {
+        return browser.os?.toLowerCase() === requestData.os?.toLowerCase() &&
+               browser.os_version === requestData.os_version &&
+               (!requestData.browser || browser.browser?.toLowerCase() === requestData.browser?.toLowerCase());
       } else {
-        return browser.device === config.device &&
-               browser.os?.toLowerCase() === config.os?.toLowerCase() &&
-               browser.os_version === config.os_version;
+        return browser.device === requestData.device &&
+               browser.os?.toLowerCase() === requestData.os?.toLowerCase() &&
+               browser.os_version === requestData.os_version;
       }
     });
 
