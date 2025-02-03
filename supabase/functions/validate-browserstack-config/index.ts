@@ -44,19 +44,43 @@ serve(async (req: Request) => {
       });
     }
 
-    const { data } = await req.json();
+    const { configId } = await req.json();
     
-    if (!data) {
+    if (!configId) {
+      console.error('Missing configId in request');
       throw new ValidationError({
         message: 'Invalid request data',
         status: 400
       });
     }
 
-    console.log('Validating config:', JSON.stringify(data, null, 2));
+    // Create Supabase client
+    const supabaseClient = createClient(
+      // @ts-ignore: Deno types
+      Deno.env.get('SUPABASE_URL') ?? '',
+      // @ts-ignore: Deno types
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Fetch the configuration
+    const { data: config, error: fetchError } = await supabaseClient
+      .from('browserstack_configs')
+      .select('*')
+      .eq('id', configId)
+      .single();
+
+    if (fetchError || !config) {
+      console.error('Error fetching config:', fetchError);
+      throw new ValidationError({
+        message: 'Configuration not found',
+        status: 404
+      });
+    }
+
+    console.log('Validating config:', config);
 
     // Get available browsers from BrowserStack
-    const browsersResponse = await fetch('https://www.browserstack.com/automate/browsers.json', {
+    const browsersResponse = await fetch('https://api.browserstack.com/automate/browsers.json', {
       headers: {
         'Authorization': `Basic ${btoa(`${username}:${accessKey}`)}`,
       }
@@ -71,9 +95,9 @@ serve(async (req: Request) => {
     }
 
     const browsers = await browsersResponse.json();
-    console.log('Available browsers:', JSON.stringify(browsers, null, 2));
+    console.log('Available browsers:', browsers);
 
-    const isValid = validateBrowserConfig(data, browsers);
+    const isValid = validateBrowserConfig(config, browsers);
     console.log('Validation result:', isValid);
 
     const response: ValidationResponse = {
@@ -83,7 +107,7 @@ serve(async (req: Request) => {
         : 'Configuration is invalid. Please check browser and version compatibility.',
     };
 
-    if (!isValid && data.browser_version !== 'latest') {
+    if (!isValid && config.browser_version !== 'latest') {
       response.suggestion = {
         browser_version: 'latest'
       };
