@@ -89,34 +89,52 @@ export type Database = {
       }
       test_screenshots: {
         Row: {
+          ai_analysis_results: Json | null
+          ai_analysis_status: string | null
+          analysis_completed_at: string | null
           baseline_screenshot_url: string | null
+          color_diff_score: number | null
           created_at: string | null
           device_name: string
           diff_percentage: number | null
           id: string
+          layout_diff_score: number | null
           new_screenshot_url: string | null
           os_version: string
           test_id: string | null
+          text_diff_score: number | null
         }
         Insert: {
+          ai_analysis_results?: Json | null
+          ai_analysis_status?: string | null
+          analysis_completed_at?: string | null
           baseline_screenshot_url?: string | null
+          color_diff_score?: number | null
           created_at?: string | null
           device_name: string
           diff_percentage?: number | null
           id?: string
+          layout_diff_score?: number | null
           new_screenshot_url?: string | null
           os_version: string
           test_id?: string | null
+          text_diff_score?: number | null
         }
         Update: {
+          ai_analysis_results?: Json | null
+          ai_analysis_status?: string | null
+          analysis_completed_at?: string | null
           baseline_screenshot_url?: string | null
+          color_diff_score?: number | null
           created_at?: string | null
           device_name?: string
           diff_percentage?: number | null
           id?: string
+          layout_diff_score?: number | null
           new_screenshot_url?: string | null
           os_version?: string
           test_id?: string | null
+          text_diff_score?: number | null
         }
         Relationships: [
           {
