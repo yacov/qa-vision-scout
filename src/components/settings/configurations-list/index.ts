@@ -1,1 +1,1 @@
-export { ConfigurationsList } from "../ConfigurationsList";
+export { ConfigurationsList } from "./ConfigurationsList";
