@@ -1,7 +1,7 @@
 import { Layout, BarChart3, Smartphone, Settings as SettingsIcon } from "lucide-react";
 import { BrowserstackConfigForm } from "@/components/settings/BrowserstackConfigForm";
-import { ConfigurationsList } from "@/components/settings/configurations-list";
-import { PredefinedConfigs } from "@/components/settings/predefined-configs";
+import { ConfigurationsList } from "@/components/settings/configurations-list/index";
+import { PredefinedConfigs } from "@/components/settings/predefined-configs/index";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 const Settings = () => {
