@@ -1,10 +1,10 @@
+import { Browser, BrowserstackQuality, BrowserstackWaitTime } from "../types.ts";
+
 export interface RequestData {
   url: string;
-  selected_configs: Array<{
-    os: string;
-    os_version: string;
-    browser?: string;
-    browser_version?: string;
-    device?: string;
-  }>;
+  selected_configs: Browser[];
+  callback_url?: string;
+  wait_time?: BrowserstackWaitTime;
+  quality?: BrowserstackQuality;
+  local?: boolean;
 }

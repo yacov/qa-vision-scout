@@ -52,7 +52,12 @@ export async function generateScreenshots(input: any, credentials: any) {
       } else {
         browser.browser = config.browser?.toLowerCase();
         browser.browser_version = config.browser_version;
-        browser.resolution = '1920x1080';
+        // Set resolution based on OS
+        if (browser.os === 'windows') {
+          browser.win_res = '1920x1080';  // Valid values: 1024x768, 1280x1024
+        } else if (browser.os === 'os x') {
+          browser.mac_res = '1920x1080';  // Valid values: 1024x768, 1280x960, 1280x1024, 1600x1200, 1920x1080
+        }
       }
 
       // Clean up any undefined values
@@ -68,8 +73,9 @@ export async function generateScreenshots(input: any, credentials: any) {
     const payload = {
       url: encodeURI(url),
       browsers,
-      wait_time: 5,
-      quality: 'compressed'
+      wait_time: 5, // Valid values: 2, 5, 10, 15, 20, 60
+      quality: 'compressed', // Valid values: Original, Compressed
+      local: false // Required for local testing
     };
 
     logger.info({

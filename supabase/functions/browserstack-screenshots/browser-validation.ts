@@ -1,4 +1,5 @@
 interface BrowserConfig {
+  device_type: 'mobile' | 'desktop';
   os: string;
   os_version: string;
   browser?: string;
@@ -14,14 +15,19 @@ interface AvailableBrowser {
   device?: string;
 }
 
+const VALID_WIN_RESOLUTIONS = ['1024x768', '1280x1024'];
+const VALID_MAC_RESOLUTIONS = ['1024x768', '1280x960', '1280x1024', '1600x1200', '1920x1080'];
+const VALID_ORIENTATIONS = ['portrait', 'landscape'];
+
 // Browser configuration validation logic
 export const validateBrowserConfig = (config: BrowserConfig, availableBrowsers: AvailableBrowser[]): boolean => {
   const normalizedConfig = {
     os: config.os?.toLowerCase(),
-    os_version: config.os_version,
+    os_version: config.os_version?.toString(),
     browser: config.browser?.toLowerCase(),
     browser_version: config.browser_version,
-    device: config.device
+    device: config.device,
+    device_type: config.device_type
   };
 
   console.log('Validating config:', JSON.stringify(normalizedConfig, null, 2));
@@ -36,14 +42,27 @@ export const validateBrowserConfig = (config: BrowserConfig, availableBrowsers: 
     return false;
   }
 
-  // For mobile devices
-  if (config.device) {
-    const isValid = osMatches.some(b => b.device === normalizedConfig.device);
-    console.log(`Mobile device validation result for ${normalizedConfig.device}:`, isValid);
-    return isValid;
+  // Mobile device validation
+  if (normalizedConfig.device_type === 'mobile') {
+    // Check if device exists for the OS
+    const isValidDevice = osMatches.some(b => b.device === normalizedConfig.device);
+    if (!isValidDevice) {
+      console.log(`Invalid device ${normalizedConfig.device} for ${normalizedConfig.os}`);
+      return false;
+    }
+
+    // For Android, ensure version format is X.Y
+    if (normalizedConfig.os === 'android' && normalizedConfig.os_version) {
+      if (!normalizedConfig.os_version.includes('.')) {
+        console.log(`Invalid Android version format: ${normalizedConfig.os_version}`);
+        return false;
+      }
+    }
+
+    return true;
   }
 
-  // For desktop browsers
+  // Desktop browser validation
   if (!normalizedConfig.browser) {
     console.log('Missing browser information for desktop configuration');
     return false;
@@ -58,31 +77,13 @@ export const validateBrowserConfig = (config: BrowserConfig, availableBrowsers: 
     return false;
   }
 
-  // For specific versions, check if they exist
-  if (!normalizedConfig.browser_version) {
-    console.log('Missing browser version');
-    return false;
-  }
-
-  // Accept 'latest' as a valid version
-  if (normalizedConfig.browser_version === 'latest') {
-    console.log('Using latest browser version');
-    return true;
-  }
-
-  // Check if the version is a valid format (major.minor)
-  const versionRegex = /^\d+\.\d+$/;
-  const isValidFormat = versionRegex.test(normalizedConfig.browser_version);
-  if (!isValidFormat) {
-    console.log(`Invalid version format: ${normalizedConfig.browser_version}`);
-    return false;
-  }
-
-  // For Chrome browser, ensure version is in correct format
-  if (normalizedConfig.browser === 'chrome') {
-    const [major, minor] = normalizedConfig.browser_version.split('.');
-    if (parseInt(major) < 1 || parseInt(minor) !== 0) {
-      console.log(`Invalid Chrome version format: ${normalizedConfig.browser_version}`);
+  // Version validation
+  if (normalizedConfig.browser_version && normalizedConfig.browser_version !== 'latest') {
+    const versionExists = browserMatches.some(b => 
+      b.browser_version === normalizedConfig.browser_version
+    );
+    if (!versionExists) {
+      console.log(`Browser version ${normalizedConfig.browser_version} not found`);
       return false;
     }
   }
