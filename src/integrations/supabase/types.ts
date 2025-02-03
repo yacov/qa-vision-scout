@@ -19,11 +19,14 @@ export type Database = {
           id: string
           is_active: boolean | null
           is_predefined: boolean | null
+          mac_res: string | null
           name: string
+          orientation: string | null
           os: string
           os_version: string
           updated_at: string | null
           user_id: string
+          win_res: string | null
         }
         Insert: {
           browser?: string | null
@@ -34,11 +37,14 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_predefined?: boolean | null
+          mac_res?: string | null
           name: string
+          orientation?: string | null
           os: string
           os_version: string
           updated_at?: string | null
           user_id: string
+          win_res?: string | null
         }
         Update: {
           browser?: string | null
@@ -49,11 +55,14 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_predefined?: boolean | null
+          mac_res?: string | null
           name?: string
+          orientation?: string | null
           os?: string
           os_version?: string
           updated_at?: string | null
           user_id?: string
+          win_res?: string | null
         }
         Relationships: []
       }

@@ -1,7 +1,7 @@
+import { useFormContext, useWatch } from "react-hook-form";
 import { FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useFormContext, useWatch } from "react-hook-form";
 import type { BrowserStackConfigFormData } from "./types";
 
 export const DesktopFields = () => {
