@@ -8,6 +8,9 @@ interface BrowserConfig {
   browser?: string;
   browser_version?: string;
   device?: string;
+  orientation?: string;
+  win_res?: string;
+  mac_res?: string;
 }
 
 export async function generateScreenshots(input: any, credentials: any) {
@@ -32,55 +35,54 @@ export async function generateScreenshots(input: any, credentials: any) {
   try {
     const auth = btoa(`${username}:${accessKey}`);
     
-    // Format payload according to BrowserStack API specs
+    // Format browsers array according to BrowserStack API specs
     const browsers = selected_configs.map((config: BrowserConfig) => {
-      const browser: Record<string, any> = {
-        os: config.os?.toLowerCase(),
-        os_version: config.os_version?.toString()
+      const formattedBrowser: Record<string, any> = {
+        os: config.os.toLowerCase(),
+        os_version: config.os_version
       };
 
       if (config.device_type === 'mobile') {
-        browser.device = config.device;
-        // For Android, we need to use specific version format
-        if (browser.os === 'android') {
-          // Convert version number to match BrowserStack format (e.g., 14.0)
-          browser.os_version = browser.os_version.includes('.') ? 
-            browser.os_version : 
-            `${browser.os_version}.0`;
-        }
-        browser.orientation = 'portrait';  // Default to portrait mode
+        formattedBrowser.device = config.device;
       } else {
-        browser.browser = config.browser?.toLowerCase();
-        browser.browser_version = config.browser_version;
-        // Set resolution based on OS
-        if (browser.os === 'windows') {
-          browser.win_res = '1920x1080';  // Valid values: 1024x768, 1280x1024
-        } else if (browser.os === 'os x') {
-          browser.mac_res = '1920x1080';  // Valid values: 1024x768, 1280x960, 1280x1024, 1600x1200, 1920x1080
+        formattedBrowser.browser = config.browser?.toLowerCase();
+        formattedBrowser.browser_version = config.browser_version;
+      }
+
+      // Add resolution settings
+      if (config.device_type === 'desktop') {
+        if (config.os.toLowerCase() === 'windows' && config.win_res) {
+          formattedBrowser.resolution = config.win_res;
+        } else if (config.os.toLowerCase() === 'os x' && config.mac_res) {
+          formattedBrowser.resolution = config.mac_res;
         }
       }
 
-      // Clean up any undefined values
-      Object.keys(browser).forEach(key => {
-        if (browser[key] === undefined) {
-          delete browser[key];
+      // Add orientation for mobile devices
+      if (config.device_type === 'mobile' && config.orientation) {
+        formattedBrowser.orientation = config.orientation;
+      }
+
+      // Clean up undefined values
+      Object.keys(formattedBrowser).forEach(key => {
+        if (formattedBrowser[key] === undefined) {
+          delete formattedBrowser[key];
         }
       });
 
-      return browser;
+      return formattedBrowser;
     });
 
     const payload = {
-      url: encodeURI(url),
+      url,
       browsers,
-      wait_time: 5, // Valid values: 2, 5, 10, 15, 20, 60
-      quality: 'compressed', // Valid values: Original, Compressed
-      local: false // Required for local testing
+      wait_time: 5,
+      quality: 'compressed'
     };
 
     logger.info({
       message: 'BrowserStack API request payload',
-      payload
+      payload: JSON.stringify(payload, null, 2)
     });
 
     const response = await fetch('https://www.browserstack.com/screenshots', {
@@ -93,14 +95,12 @@ export async function generateScreenshots(input: any, credentials: any) {
       body: JSON.stringify(payload)
     });
 
-    // Log the raw response for debugging
     const responseText = await response.text();
     logger.info({
       message: 'BrowserStack API raw response',
       status: response.status,
       statusText: response.statusText,
-      responseText,
-      headers: Object.fromEntries(response.headers.entries())
+      responseText
     });
 
     if (!response.ok) {
@@ -114,7 +114,7 @@ export async function generateScreenshots(input: any, credentials: any) {
 
     let result;
     try {
-      result = JSON.parse(responseText || '{}');
+      result = JSON.parse(responseText);
     } catch (error) {
       logger.error({
         message: 'Failed to parse BrowserStack API response',
