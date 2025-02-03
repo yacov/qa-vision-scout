@@ -1,1 +1,1 @@
-export { ConfigurationsList } from "./index.tsx";
+export { ConfigurationsList } from "../ConfigurationsList";

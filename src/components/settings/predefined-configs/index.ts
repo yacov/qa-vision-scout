@@ -1,1 +1,1 @@
-export { PredefinedConfigs } from "./index.tsx";
+export { PredefinedConfigs } from "../PredefinedConfigs";
