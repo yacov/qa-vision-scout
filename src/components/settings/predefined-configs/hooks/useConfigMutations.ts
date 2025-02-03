@@ -9,6 +9,7 @@ export const useConfigMutations = () => {
 
   const verifyConfig = useMutation({
     mutationFn: async (config: Config) => {
+      console.log('Verifying config:', config);
       const { data, error } = await supabase.functions.invoke('validate-browserstack-config', {
         body: { config }
       });
@@ -23,7 +24,8 @@ export const useConfigMutations = () => {
         variant: data.valid ? "default" : "destructive",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Verification error:', error);
       toast({
         title: "Verification Error",
         description: "Failed to verify configuration with BrowserStack",

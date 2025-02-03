@@ -1,21 +1,21 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from '../_shared/cors.ts';
-import { validateBrowserConfig } from '../browserstack-screenshots/browser-validation.ts';
-import type { Browser } from '../browserstack-screenshots/types.ts';
 
-interface ValidationResponse {
-  isValid: boolean;
-  message?: string;
-  suggestion?: {
-    os_version?: string;
-    browser_version?: string;
-  };
+const BROWSERSTACK_USERNAME = Deno.env.get('BROWSERSTACK_USERNAME');
+const BROWSERSTACK_ACCESS_KEY = Deno.env.get('BROWSERSTACK_ACCESS_KEY');
+
+interface Config {
+  id: string;
+  device_type: 'desktop' | 'mobile';
+  os: string;
+  os_version: string;
+  browser?: string | null;
+  browser_version?: string | null;
+  device?: string | null;
 }
 
 class ValidationError extends Error {
   status: number;
-
   constructor({ message, status }: { message: string; status: number }) {
     super(message);
     this.status = status;
@@ -23,21 +23,14 @@ class ValidationError extends Error {
   }
 }
 
-// @ts-ignore: Deno types
-serve(async (req: Request) => {
+serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    // Get BrowserStack credentials from environment
-    // @ts-ignore: Deno types
-    const username = Deno.env.get('BROWSERSTACK_USERNAME');
-    // @ts-ignore: Deno types
-    const accessKey = Deno.env.get('BROWSERSTACK_ACCESS_KEY');
-
-    if (!username || !accessKey) {
+    if (!BROWSERSTACK_USERNAME || !BROWSERSTACK_ACCESS_KEY) {
       console.error('Missing BrowserStack credentials');
       throw new ValidationError({
         message: 'BrowserStack credentials not configured',
@@ -45,36 +38,13 @@ serve(async (req: Request) => {
       });
     }
 
-    const { configId } = await req.json();
+    const { config } = await req.json();
     
-    if (!configId) {
-      console.error('Missing configId in request');
+    if (!config) {
+      console.error('Missing config in request');
       throw new ValidationError({
         message: 'Invalid request data',
         status: 400
-      });
-    }
-
-    // Create Supabase client
-    const supabaseClient = createClient(
-      // @ts-ignore: Deno types
-      Deno.env.get('SUPABASE_URL') ?? '',
-      // @ts-ignore: Deno types
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    // Fetch the configuration
-    const { data: config, error: fetchError } = await supabaseClient
-      .from('browserstack_configs')
-      .select('*')
-      .eq('id', configId)
-      .single();
-
-    if (fetchError || !config) {
-      console.error('Error fetching config:', fetchError);
-      throw new ValidationError({
-        message: 'Configuration not found',
-        status: 404
       });
     }
 
@@ -83,7 +53,7 @@ serve(async (req: Request) => {
     // Get available browsers from BrowserStack
     const browsersResponse = await fetch('https://www.browserstack.com/screenshots/browsers.json', {
       headers: {
-        'Authorization': `Basic ${btoa(`${username}:${accessKey}`)}`,
+        'Authorization': `Basic ${btoa(`${BROWSERSTACK_USERNAME}:${BROWSERSTACK_ACCESS_KEY}`)}`,
         'Accept': 'application/json'
       }
     });
@@ -99,47 +69,30 @@ serve(async (req: Request) => {
     const browsers = await browsersResponse.json();
     console.log('Available browsers:', browsers);
 
-    // Ensure config has required device_type
-    if (!config.device_type) {
-      throw new ValidationError({
-        message: 'Device type is required',
-        status: 400
-      });
-    }
-
-    const isValid = validateBrowserConfig(config, browsers);
-    
-    const response: ValidationResponse = {
-      isValid,
-      message: isValid ? 'Configuration is valid' : 'Configuration is invalid'
-    };
-
-    // If invalid, try to suggest corrections
-    if (!isValid && browsers.length > 0) {
-      const matchingOS = browsers.find((b: Browser) => 
-        b.os?.toLowerCase() === config.os?.toLowerCase()
-      );
-
-      if (matchingOS) {
-        response.suggestion = {};
-        
-        if (config.os_version && matchingOS.os_version !== config.os_version) {
-          response.suggestion.os_version = matchingOS.os_version;
-        }
-        
-        if (config.browser_version && matchingOS.browser_version !== config.browser_version) {
-          response.suggestion.browser_version = matchingOS.browser_version;
-        }
+    // Basic validation logic
+    const isValid = browsers.some((browser: any) => {
+      if (config.device_type === 'desktop') {
+        return browser.os?.toLowerCase() === config.os?.toLowerCase() &&
+               browser.os_version === config.os_version &&
+               browser.browser?.toLowerCase() === config.browser?.toLowerCase();
+      } else {
+        return browser.device === config.device &&
+               browser.os?.toLowerCase() === config.os?.toLowerCase() &&
+               browser.os_version === config.os_version;
       }
-    }
+    });
 
     return new Response(
-      JSON.stringify(response),
+      JSON.stringify({
+        valid: isValid,
+        message: isValid ? 'Configuration is valid' : 'Configuration is not supported by BrowserStack'
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200 
       }
     );
+
   } catch (error) {
     console.error('Error in validate-browserstack-config function:', error);
 
