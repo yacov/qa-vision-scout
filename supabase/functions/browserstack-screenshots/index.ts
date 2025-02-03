@@ -145,15 +145,13 @@ export async function handler(req: Request): Promise<Response> {
       stack: error?.stack
     });
 
-    const status = error?.statusCode === 429 ? 429 : 400;
-
     return new Response(
       JSON.stringify({ 
-        message: error?.message || 'Unknown error',
+        error: error?.message || 'Unknown error',
         type: error?.name || 'UnknownError'
       }),
       { 
-        status,
+        status: error?.statusCode === 429 ? 429 : 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );

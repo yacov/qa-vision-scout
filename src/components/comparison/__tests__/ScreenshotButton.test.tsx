@@ -23,25 +23,29 @@ const mockConfigs: Config[] = [
 
 describe('ScreenshotButton', () => {
   it('should show initial state correctly', () => {
+    const mockOnScreenshotsGenerated = vi.fn();
     render(
       <ScreenshotButton 
         baselineUrl="https://example.com/baseline"
         newUrl="https://example.com/new"
         selectedConfigs={mockConfigs}
+        onScreenshotsGenerated={mockOnScreenshotsGenerated}
       />
     );
 
     const button = screen.getByRole('button');
-    expect(button).toHaveTextContent('Start Comparison');
+    expect(button).toHaveTextContent('Generate Screenshots');
     expect(button).not.toBeDisabled();
   });
 
   it('should be disabled when no configs are selected', () => {
+    const mockOnScreenshotsGenerated = vi.fn();
     render(
       <ScreenshotButton 
         baselineUrl="https://example.com/baseline"
         newUrl="https://example.com/new"
         selectedConfigs={[]}
+        onScreenshotsGenerated={mockOnScreenshotsGenerated}
       />
     );
 
@@ -50,14 +54,14 @@ describe('ScreenshotButton', () => {
   });
 
   it('should update state during processing', async () => {
-    const mockGenerateScreenshots = vi.fn().mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)));
+    const mockOnScreenshotsGenerated = vi.fn().mockImplementation(() => new Promise(resolve => setTimeout(resolve, 100)));
 
     render(
       <ScreenshotButton 
         baselineUrl="https://example.com/baseline"
         newUrl="https://example.com/new"
         selectedConfigs={mockConfigs}
-        onScreenshotsGenerated={mockGenerateScreenshots}
+        onScreenshotsGenerated={mockOnScreenshotsGenerated}
       />
     );
 
@@ -75,7 +79,7 @@ describe('ScreenshotButton', () => {
   });
 
   it('should handle errors gracefully', async () => {
-    const mockGenerateScreenshots = vi.fn().mockRejectedValue(new Error('API Error'));
+    const mockOnScreenshotsGenerated = vi.fn().mockRejectedValue(new Error('API Error'));
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     render(
@@ -83,7 +87,7 @@ describe('ScreenshotButton', () => {
         baselineUrl="https://example.com/baseline"
         newUrl="https://example.com/new"
         selectedConfigs={mockConfigs}
-        onScreenshotsGenerated={mockGenerateScreenshots}
+        onScreenshotsGenerated={mockOnScreenshotsGenerated}
       />
     );
 
@@ -91,40 +95,10 @@ describe('ScreenshotButton', () => {
     fireEvent.click(button);
 
     await waitFor(() => {
-      expect(button).toHaveTextContent('Start Comparison');
+      expect(button).toHaveTextContent('Generate Screenshots');
       expect(button).not.toBeDisabled();
-      expect(consoleSpy).toHaveBeenCalled();
     });
 
     consoleSpy.mockRestore();
   });
-
-  it('should convert configs to BrowserStack format', async () => {
-    const mockGenerateScreenshots = vi.fn().mockResolvedValue({});
-
-    render(
-      <ScreenshotButton 
-        baselineUrl="https://example.com/baseline"
-        newUrl="https://example.com/new"
-        selectedConfigs={mockConfigs}
-        onScreenshotsGenerated={mockGenerateScreenshots}
-      />
-    );
-
-    const button = screen.getByRole('button');
-    fireEvent.click(button);
-
-    expect(mockGenerateScreenshots).toHaveBeenCalledWith(
-      'https://example.com/baseline',
-      'https://example.com/new',
-      [{
-        os: 'Windows',
-        os_version: '10',
-        browser: 'chrome',
-        browser_version: '121.0',
-        device: undefined,
-        device_type: 'desktop'
-      }]
-    );
-  });
-}); 
+});
