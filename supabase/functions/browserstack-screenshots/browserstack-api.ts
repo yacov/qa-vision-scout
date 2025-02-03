@@ -1,5 +1,5 @@
-import { logger } from './utils/logger.ts'
-import { BrowserstackCredentials, Browser, ScreenshotInput } from './types/api-types'
+import { logger } from './utils/logger.ts';
+import { BrowserstackCredentials, Browser, ScreenshotInput } from './types.ts';
 
 interface BrowserConfig {
   os: string;
@@ -51,7 +51,7 @@ export async function getAvailableBrowsers(credentials: BrowserstackCredentials)
 
 export async function generateScreenshots(input: ScreenshotInput, credentials: BrowserstackCredentials, options: PollingOptions = {}) {
   const { username, accessKey } = credentials;
-  const { url, browsers: configs, callback_url } = input;
+  const { url, selected_configs, callback_url } = input;
 
   if (!username || !accessKey) {
     logger.error({
@@ -65,7 +65,7 @@ export async function generateScreenshots(input: ScreenshotInput, credentials: B
   logger.info({
     message: 'Generating screenshots',
     url: input.url,
-    browserCount: configs.length
+    browserCount: selected_configs.length
   });
 
   try {
@@ -78,13 +78,12 @@ export async function generateScreenshots(input: ScreenshotInput, credentials: B
       },
       body: JSON.stringify({
         url,
-        browsers: configs.map(config => ({
+        browsers: selected_configs.map(config => ({
           os: config.os,
           os_version: config.os_version,
           ...(config.browser && { browser: config.browser }),
           ...(config.browser_version && { browser_version: config.browser_version }),
-          ...(config.device && { device: config.device }),
-          ...(config.device_type && { device_type: config.device_type })
+          ...(config.device && { device: config.device })
         })),
         ...(input.wait_time && { wait_time: input.wait_time }),
         ...(input.quality && { quality: input.quality }),
@@ -104,21 +103,13 @@ export async function generateScreenshots(input: ScreenshotInput, credentials: B
         url: url,
         requestBody: {
           url,
-          browserCount: configs.length,
+          browserCount: selected_configs.length,
           callback_url
         }
       });
 
       if (response.status === 429) {
         throw new Error('Rate limit exceeded');
-      }
-
-      if (response.status === 401) {
-        throw new Error('Invalid BrowserStack credentials');
-      }
-
-      if (response.status === 422) {
-        throw new Error('Invalid request parameters: ' + errorText);
       }
 
       throw new Error(`BrowserStack API error (${response.status}): ${errorText}`);

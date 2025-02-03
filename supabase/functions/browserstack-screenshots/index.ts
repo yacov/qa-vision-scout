@@ -1,11 +1,9 @@
-/// <reference types="deno" />
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { generateScreenshots } from './browserstack-api.ts';
 import { validateRequestData } from './request-validator.ts';
 import { logger } from './utils/logger.ts';
 import { createSupabaseClient } from './database.ts';
-import type { Browser, BrowserstackCredentials, ScreenshotInput, WaitTime } from './types/api-types.ts';
+import type { Browser, ScreenshotInput } from './types.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,6 +13,7 @@ const corsHeaders = {
 export async function handler(req: Request): Promise<Response> {
   const requestId = crypto.randomUUID();
 
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { 
       headers: corsHeaders,
@@ -49,7 +48,7 @@ export async function handler(req: Request): Promise<Response> {
       throw new Error('BrowserStack credentials not configured in environment variables');
     }
 
-    const credentials: BrowserstackCredentials = {
+    const credentials = {
       username,
       accessKey
     };
@@ -92,21 +91,13 @@ export async function handler(req: Request): Promise<Response> {
     const webhookUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/browserstack-webhook`;
 
     // Generate screenshots
-    const screenshotRequest: ScreenshotInput = {
+    const result = await generateScreenshots({
       url: validatedData.url,
-      browsers: validatedData.selected_configs.map((config: Browser) => ({
-        os: config.os,
-        os_version: config.os_version,
-        browser: config.browser,
-        browser_version: config.browser_version,
-        device: config.device
-      })),
-      wait_time: 5 as WaitTime,
-      quality: 'compressed',
-      callback_url: webhookUrl
-    };
-
-    const result = await generateScreenshots(screenshotRequest, credentials);
+      selected_configs: validatedData.selected_configs,
+      callback_url: webhookUrl,
+      wait_time: 5,
+      quality: 'compressed'
+    }, credentials);
 
     // Update database with job ID
     const { error: updateError } = await supabase
@@ -140,7 +131,7 @@ export async function handler(req: Request): Promise<Response> {
   } catch (error: any) {
     logger.error({
       message: 'Error in browserstack-screenshots function',
-      requestId: requestId,
+      requestId,
       error: error?.message || String(error),
       stack: error?.stack
     });
@@ -151,8 +142,8 @@ export async function handler(req: Request): Promise<Response> {
         type: error?.name || 'UnknownError'
       }),
       { 
-        status: error?.statusCode === 429 ? 429 : 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: error?.statusCode === 429 ? 429 : 400
       }
     );
   }
