@@ -2,7 +2,7 @@ import { logger } from "./utils/logger.ts";
 import type { RequestData } from "./types/api-types.ts";
 
 export function validateRequestData(data: any, requestId: string): RequestData {
-  logger.debug({
+  logger.info({
     message: 'Validating request data',
     requestId,
     data
