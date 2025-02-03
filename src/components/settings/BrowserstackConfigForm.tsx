@@ -30,12 +30,15 @@ export const BrowserstackConfigForm = () => {
       browser: null,
       browserVersion: null,
       device: null,
+      orientation: "portrait",
+      win_res: "1920x1080",
+      mac_res: "1920x1080",
     },
   });
 
   const createConfig = useMutation({
     mutationFn: async (data: BrowserStackConfigFormData) => {
-      const { error } = await supabase.from("browserstack_configs").insert({
+      const configData = {
         name: data.name,
         device_type: data.deviceType,
         os: data.os,
@@ -43,8 +46,13 @@ export const BrowserstackConfigForm = () => {
         browser: data.deviceType === "desktop" ? data.browser : null,
         browser_version: data.deviceType === "desktop" ? data.browserVersion : null,
         device: data.deviceType === "mobile" ? data.device : null,
+        orientation: data.deviceType === "mobile" ? data.orientation : null,
+        win_res: data.deviceType === "desktop" && data.os.toLowerCase() === "windows" ? data.win_res : null,
+        mac_res: data.deviceType === "desktop" && data.os.toLowerCase() === "os x" ? data.mac_res : null,
         user_id: "00000000-0000-0000-0000-000000000000", // Default system user UUID
-      });
+      };
+
+      const { error } = await supabase.from("browserstack_configs").insert(configData);
 
       if (error) throw error;
     },
@@ -103,6 +111,16 @@ export const BrowserstackConfigForm = () => {
                       onValueChange={(value: "desktop" | "mobile") => {
                         field.onChange(value);
                         setDeviceType(value);
+                        // Reset device-specific fields
+                        if (value === "desktop") {
+                          form.setValue("device", null);
+                          form.setValue("orientation", undefined);
+                        } else {
+                          form.setValue("browser", null);
+                          form.setValue("browserVersion", null);
+                          form.setValue("win_res", undefined);
+                          form.setValue("mac_res", undefined);
+                        }
                       }}
                       defaultValue={field.value}
                       className="flex gap-4"

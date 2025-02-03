@@ -11,6 +11,9 @@ export interface Config {
   browser: string | null;
   browser_version: string | null;
   device: string | null;
+  orientation?: "portrait" | "landscape";
+  win_res?: "1024x768" | "1280x1024" | "1920x1080";
+  mac_res?: "1024x768" | "1280x960" | "1280x1024" | "1600x1200" | "1920x1080";
   is_active: boolean | null;
   created_at: string | null;
   user_id: string;
@@ -46,6 +49,9 @@ export const browserStackConfigSchema = z.object({
   browser: z.string().nullable(),
   browserVersion: z.string().nullable(),
   device: z.string().nullable(),
+  orientation: z.enum(["portrait", "landscape"]).optional(),
+  win_res: z.enum(["1024x768", "1280x1024", "1920x1080"]).optional(),
+  mac_res: z.enum(["1024x768", "1280x960", "1280x1024", "1600x1200", "1920x1080"]).optional(),
 });
 
 export type BrowserStackConfigFormData = z.infer<typeof browserStackConfigSchema>;
